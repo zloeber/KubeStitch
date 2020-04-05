@@ -1,0 +1,16 @@
+## Ingress
+repositories:
+- name: "stable"
+  url: "https://kubernetes-charts.storage.googleapis.com/"
+
+releases:
+- name: ambassador
+  chart: "stable/ambassador"
+  version: "1.4.0"
+  namespace: "platform"
+  labels:
+    chart: "stable/nginx-ingress"
+    namespace: "platform"
+  set:
+  - name: prometheusExporter.enabled
+    value: "true"

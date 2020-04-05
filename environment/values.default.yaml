@@ -1,0 +1,5 @@
+environments:
+  default:
+    values:
+    - helm:
+        FQDN: {{ env "ZONE" | default "" }}{{ env "TEAM" | default "team1" }}.{{ env "TARGET" | default "cicd" }}.{{ env "DNS_DOMAIN" | default "micro.svc" }}

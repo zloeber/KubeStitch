@@ -1,0 +1,28 @@
+bases:
+- "../helmfiles/defaults.yaml"
+
+repositories:
+- name: "stable"
+  url: "https://kubernetes-charts.storage.googleapis.com/"
+
+releases:
+- name: external-dns
+  chart: "stable/external-dns"
+#  version: "2.4.0"
+  namespace: "externaldns"
+  labels:
+    chart: "external-dns"
+    namespace: "externaldns"
+  values:
+  - nodeSelector:
+      agentpool: {{ env "AKS_RESERVED_NODESELECTOR" | default "agentpool" }}
+    provider: azure
+    azure.resourceGroup: glo-mda-rg-{{ env "TARGET" | default "cicd" }}
+    sources:
+    - service
+    - ingress
+    - crd
+    publishInternalServices: true
+    crd.create: true
+    rbac.create: true
+    metric.enabled: true

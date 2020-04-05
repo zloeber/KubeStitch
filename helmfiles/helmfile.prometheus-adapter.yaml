@@ -1,0 +1,22 @@
+helmDefaults:
+  tillerless: true
+  tillerNamespace: platform
+  atomic: true
+  verify: false
+  wait: true
+  timeout: 600
+  recreatePods: true
+  force: false
+
+releases:
+- name: prometheus-adapter
+  namespace: {{ env "STACK_MONITORING_NAMESPACE" | default "monitoring" }}
+  chart: "../charts/prometheus-adapter"
+  labels:
+    chart: "prometheus-adapter"
+    component: "monitoring"
+    namespace: {{ env "STACK_MONITORING_NAMESPACE" | default "monitoring" }}
+  values:
+  - prometheus:
+      url: http://kube-prometheus.monitoring.svc
+      port: 9090

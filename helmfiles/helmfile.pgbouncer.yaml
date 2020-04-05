@@ -1,0 +1,60 @@
+helmDefaults:
+  tillerless: true
+  tillerNamespace: platform
+  atomic: false
+  verify: false
+  wait: false
+  timeout: 600
+  recreatePods: false
+  force: true
+
+
+## Deploy local certificate
+releases:
+## Create a base self-signed cert
+- name: "cert-pgbouncer"
+  namespace: 'pgbouncer'
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  labels:
+    chart: "sparkoperator-pgbouncer"
+    component: "certificate"
+    namespace: 'pgbouncer'
+  values:
+  - project:
+      team: {{ env "TEAM" | default "team1" }}
+      target: {{ env "TARGET" | default "cicd" }}
+      stage: {{ env "STAGE" | default "dev" }}
+      client: {{ env "CLIENT" | default "client1" }}
+      app: pgbouncer
+    certificate:
+      enabled: true
+      name: spark-{{ env "TARGET" | default "cicd" }}-selfsigned-issuer
+      kind: ClusterIssuer
+      isCA: true
+      selfSigned: true
+
+- name: pgbouncer
+  namespace: pgbouncer
+  chart: "../charts/pgbouncer"
+  version: 0.2.1
+  labels:
+    chart: "pgbouncer"
+    component: "pgbouncer"
+    namespace: "pgbouncer"
+  values:
+  - target: {{ env "TARGET" | default "cicd" }}
+    username: {{ requiredEnv "PG_USER" }}
+    password: {{ requiredEnv "PG_PASS" }}
+    host: {{ requiredEnv "PG_SERVER" }}
+    hostPort: 5432
+    loadBalancerIP: {{ requiredEnv "IP_PG_BOUNCER" }}
+    poolSize: 600
+    serverLifetime: 7200
+{{- if eq (env "CICD" | default "false") "false" }}
+    nodeSelector:
+      agentpool: {{ env "AKS_RESERVED_NODESELECTOR" | default "agentpool" }}
+{{- end }}
+    probes:
+      database: {{ requiredEnv "PG_DATABASE" }}
+    injectConfig:
+      server_tls_sslmode: "required"

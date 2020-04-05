@@ -1,0 +1,12 @@
+repositories:
+- name: "submariner-latest"
+  url: "https://releases.rancher.com/submariner-charts/latest"
+
+releases:
+- name: app-submarinerbroker
+  namespace: "app-submariner"
+  chart: "submariner-latest/submariner-k8s-broker"
+  labels:
+    chart: "submariner-broker"
+    component: "submariner"
+    namespace: "app-submariner"

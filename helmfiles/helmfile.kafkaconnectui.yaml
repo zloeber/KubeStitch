@@ -1,0 +1,61 @@
+helmDefaults:
+  tillerless: true
+  tillerNamespace: platform
+  atomic: false
+  verify: false
+  wait: false
+  timeout: 600
+  recreatePods: true
+  force: true
+
+releases:
+## Deploy kafka-connect-ui using archtype
+- name: deployment-kafkaconnectui
+  namespace: "database"
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+#  version: 0.0.1
+  labels:
+    chart: "deployment-kafkaconnectui"
+    component: "kafkaconnectui"
+    namespace: "database"
+  values:
+  - fullnameOverride: "kafka-connect-ui"
+    nameOverride: "kafka-connect-ui"
+    project:
+      buildid: "latest"
+      team: "inventory"
+      target: {{ env "TARGET" | default "cicd" }}
+      client: "internal"
+      workload: "kafkaconnectui"
+      engine: "nextgen"
+    image:
+      repository: landoop/kafka-connect-ui
+      tag: latest
+      pullPolicy: IfNotPresent
+    deployment:
+      enabled: true
+      pod:
+        env:
+          CONNECT_URL: "http://{{ requiredEnv "KAFKA_CONNECT_HOST" }}:8083"
+      ports:
+        www: 8000
+    service:
+      enabled: true
+      type: ClusterIP
+      ports:
+        http:
+          port: 80
+          protocol: TCP
+          targetPort: 8000
+    ingressInternalClass: {{ env "STACK_INGRESS_INT_CLASS" | default "internal" }}
+    ingress:
+      enabled: true
+      hosts:
+      - name: kafkaconnectui.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+        config:
+          http:
+            paths:
+            - path: "/"
+              backend:
+                serviceName: kafka-connect-ui
+                servicePort: 8000

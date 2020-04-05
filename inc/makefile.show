@@ -1,0 +1,50 @@
+
+show: show/env ## Displays current brief environment
+
+show/base: ## Base env
+	@echo "************************"
+	@echo 'PROJECT_PATH: $(PROJECT_PATH)'
+	@echo 'CURRENT_FOLDER: $(CURRENT_FOLDER)'
+	@echo 'ROOT_DIR: $(ROOT_DIR)'
+	@echo "************************"
+
+show/env/brief: ## Show minimum env information
+	@echo "$(BOLD)TEAM:$(RESET) ${TEAM}"
+	@echo "$(BOLD)TARGET:$(RESET) ${TARGET}"
+	@echo "$(BOLD)STACK:$(RESET) ${STACK}"
+	@echo "$(BOLD)ZONE:$(RESET) ${ZONE}"
+
+show/env/vars: ## Show env var information
+	@echo "$(BOLD)BIN_PATH:$(RESET) ${BIN_PATH}"
+	@echo "$(BOLD)SCRIPT_PATH:$(RESET) ${SCRIPT_PATH}"
+	@echo "$(BOLD)STACK:$(RESET) ${STACK}"
+	@echo "$(BOLD)ROOT_PATH:$(RESET) ${ROOT_PATH}"
+	@echo "$(BOLD)HELMFILE_PATH:$(RESET) ${HELMFILE_PATH}"
+	@echo "$(BOLD)ENVRC:$(RESET) ${ENVRC}"
+	@echo "$(BOLD)CHART_PATH:$(RESET) ${CHART_PATH}"
+
+show/env: ## Show env information
+	@echo "************************"
+	@echo "TEAM: ${TEAM}"
+	@echo "TARGET: ${TARGET}"
+	@echo "CLOUD: ${CLOUD}"
+	@echo "STACK: ${STACK}"
+	@echo "HELM_VERSION: ${HELM_VERSION}"
+	@echo "HELM_HOME: ${HELM_HOME}"
+	@echo "ROOT_PATH: ${ROOT_PATH}"
+	@echo "CLUSTER: ${CLUSTER}"
+	@echo ""
+
+show/env/sources: ## Show env sources
+	@echo "************************"
+	@echo "ENV_GLOBALS: ${ENV_GLOBALS}"
+	@echo "ENV_TEAM_COMMON: ${ENV_TEAM_COMMON}"
+	@echo "ENV_TARGET_COMMON: ${ENV_TARGET_COMMON}"
+	@echo "ENV_TARGET_TEAM: ${ENV_TARGET_TEAM}"
+	@echo ""
+    
+show/az/context/command: ## Shows commands requird to get proper k8s context
+	@echo az account set --subscription '${AZ_SUBSCRIPTION}'
+	@echo "az aks get-credentials --resource-group ${RG} --name ${CLUSTER} --overwrite-existing"
+	@echo "kubectl config set-context ${CLUSTER}"
+	@echo "kubectl config use-context ${CLUSTER}"

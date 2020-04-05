@@ -1,0 +1,22 @@
+ROOT_PATH ?= $(abspath $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST))))))
+CHART_PATH ?= $(ROOT_PATH)/charts
+CUSTOM_CHART_PATH ?= $(ROOT_PATH)/charts/custom
+
+helm/plugins: ## Installs helm plugins
+	$(helm) plugin install https://github.com/databus23/helm-diff --version master 2> /dev/null || true
+	$(helm) plugin install https://github.com/rimusz/helm-tiller 2>/dev/null || true
+	$(helm) plugin install https://github.com/futuresimple/helm-secrets 2>/dev/null || true
+	$(helm) plugin install https://github.com/mumoshu/helm-x 2>/dev/null || true
+	$(helm) plugin install https://github.com/aslafy-z/helm-git.git 2>/dev/null || true
+	$(helm) plugin install https://github.com/helm/helm-2to3 2>/dev/null || true
+	$(helm) plugin install https://github.com/thomastaylor312/helm-namespace 2>/dev/null || true
+	@echo "Helm plugins: Installed"
+
+helm/2to3/config/dry: context tiller/start ## helm migration, dry run
+	$(BIN_PATH)/helm3 2to3 move config --dry-run
+
+helm/2to3/config: context tiller/start ## helm migration
+	$(BIN_PATH)/helm3 2to3 move config --dry-run
+
+helm/secrets/encrypt: ## Encrypt helm secrets file for target env (if exists)
+	$(helm) secrets enc ${TARGET_CONFIG_PATH}/secrets.yaml.dec

@@ -1,0 +1,61 @@
+helmDefaults:
+  tillerless: true
+  tillerNamespace: platform
+  atomic: false
+  verify: false
+  wait: false
+  timeout: 900
+  recreatePods: true
+  force: true
+
+repositories:
+- name: spv-charts
+  url: "http://charts.spvapi.no"
+
+releases:
+- name: config-keyvault-security
+  namespace: {{ env "STACK_KEYVAULT_NAMESPACE" | default "security" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  installed: {{ env "STACK_KEYVAULT" | default "true" }}
+  labels:
+    chart: config-keyvault-security
+    component: keyvault
+    namespace: {{ env "STACK_KEYVAULT_NAMESPACE" | default "security" }}
+    {{ env "CLOUD" | default "local" }}-key-vault-env-injection: enabled
+  values:
+  - project:
+      team: {{ env "TEAM" | default "cicd" }}
+      target: {{ env "TARGET" | default "cicd" }}
+      client: {{ env "CLIENT" | default "client1" }}
+      app: keyvault
+    clusterRole:
+      enabled: true
+      name: security-cluster-kv-admin
+    clusterRoleBinding:
+      enabled: true
+      name: security-cluster-kv-admin
+      roleName: security-cluster-kv-admin
+      serviceAccountnamespace: {{ env "STACK_KEYVAULT_NAMESPACE" | default "security" }}
+      serviceAccountName: default
+
+- name: {{ env "CLOUD" | default "local" }}-key-vault-controller
+  namespace: {{ env "STACK_KEYVAULT_NAMESPACE" | default "security" }}
+  chart: spv-charts/{{ env "CLOUD" | default "local" }}-key-vault-controller
+  installed: {{ env "STACK_KEYVAULT" | default "true" }}
+  labels:
+    chart: spv-charts/{{ env "CLOUD" | default "local" }}-key-vault-controller
+    component: vault-controller
+    namespace: {{ env "STACK_KEYVAULT_NAMESPACE" | default "security" }}
+  values:
+  - installCrd: false
+
+- name: {{ env "CLOUD" | default "local" }}-key-vault-env-injector
+  namespace: {{ env "STACK_KEYVAULT_NAMESPACE" | default "security" }}
+  chart: spv-charts/{{ env "CLOUD" | default "local" }}-key-vault-env-injector
+  installed: {{ env "STACK_KEYVAULT" | default "true" }}
+  labels:
+    chart: spv-charts/{{ env "CLOUD" | default "local" }}-key-vault-env-injector
+    component: vault-injector
+    namespace: {{ env "STACK_KEYVAULT_NAMESPACE" | default "security" }}
+  values:
+  - installCrd: true

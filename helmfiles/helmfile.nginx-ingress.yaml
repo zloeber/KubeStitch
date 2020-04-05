@@ -1,0 +1,89 @@
+helmDefaults:
+  tillerless: true
+  tillerNamespace: platform
+  atomic: true
+  verify: false
+  wait: true
+  timeout: 600
+  recreatePods: false
+  force: true
+
+repositories:
+- name: stable
+  url: "https://kubernetes-charts.storage.googleapis.com/"
+
+releases:
+{{- if eq (env "HELM_VERSION" | default "2") "3" }}
+- name: namespace-ingress-int
+  # Helm 3 needs to put deployment info into a namespace. As this creates a namespace it will not exist yet so we use 'kube-system' 
+  #  which should exist in all clusters.
+  chart: ../charts/namespace/chart/namespace
+  namespace: kube-system
+  labels:
+    chart: namespace-ingress-int
+    component: "ingress"
+    namespace: "{{ env "STACK_INGRESS_INT_NAMESPACE" | default "ingress-int" }}"
+  wait: true
+  installed: {{ env "STACK_INGRESSINTERNAL" | default "true" }}
+  values:
+  - namespaces:
+    - {{ env "STACK_INGRESS_INT_NAMESPACE" | default "ingress-int" }}
+{{- end }}
+
+- name: ingress-int-cert
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}  
+  namespace: ingress-int
+  labels:
+    chart: ingress-int
+    component: "ingress"
+    namespace: "{{ env "STACK_INGRESS_INT_NAMESPACE" }}"
+{{- if eq (env "HELM_VERSION" | default "2") "3" }}
+  needs:
+  - kube-system/namespace-ingress-int
+{{- end }}
+  values:
+  - project:
+      team: "{{ env "TEAM" | default "team1" }}"
+      target: "{{ env "TARGET" | default "cicd" }}"
+      client: "{{ env "CLIENT" | default "client1" }}"
+      app: ingress-int
+    certificate:
+      enabled: true
+      kind: Certificate
+      name: {{ env "TEAM" | default "team1" }}-{{ env "TARGET" | default "cicd" }}-wildcard
+      commonName: '*.{{ env "TEAM" | default "team1" }}.{{ env "TARGET" | default "cicd" }}.{{ env "DOMAIN" | default "micro.svc" }}'
+      isCA: false
+ 
+- name: nginx-ingress
+  chart: "stable/nginx-ingress"
+  namespace: {{ env "STACK_INGRESS_INT_NAMESPACE" | default "ingress-int" }}
+  installed: {{ env "STACK_INGRESSINTERNAL" | default "true" }}
+  labels:
+    chart: "stable/nginx-ingress"
+    namespace: {{ env "STACK_INGRESS_INT_NAMESPACE" | default "ingress-int" }}
+{{- if eq (env "HELM_VERSION" | default "2") "3" }}
+  needs:
+  - kube-system/namespace-ingress-int
+{{- end }}
+  values:
+  - controller:
+      service:
+        enabled: true
+        annotations:
+          service.beta.kubernetes.io/{{ env "CLOUD" | default "local" }}-load-balancer-internal: "true"
+        type: LoadBalancer
+        loadBalancerIP: "{{ env "STACK_INGRESS_INTERNALIP" | default "127.0.0.1" }}"
+      replicaCount: 1
+      ingressClass: "{{ env "STACK_INGRESS_INT_CLASS" | default "internal" }}"
+      defaultTLS:
+        secret: "ingress-int/local-wildcard-cert"
+      wildcardTLS:
+        secret: "ingress-int/local-wildcard-cert"
+      extraArgs:
+        publish-service: "ingress-int/nginx-ingress-controller"
+      autoscaling:
+        enabled: true
+      hostNetwork: {{ env "CICD" | default "false" }}
+{{- if eq (env "CICD" | default "false") "true" }}
+      dnsPolicy: ClusterFirstWithHostNet
+{{- end }}

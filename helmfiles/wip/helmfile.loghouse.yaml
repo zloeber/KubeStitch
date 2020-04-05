@@ -1,0 +1,43 @@
+helmDefaults:
+  # defaults for verify, wait, force, timeout and recreatePods under releases[]
+  verify: false
+  wait: false
+  recreatePods: false
+
+repositories:
+- name: "loghouse"
+  url: "https://flant.github.io/loghouse/charts/"
+
+releases:
+- name: loghouse
+  chart: "../charts/loghouse"
+  version: 0.2.5
+  namespace: "loghouse"
+  wait: false
+  labels:
+    chart: "loghouse"
+    component: "logging"
+    namespace: "loghouse"
+  values:
+  - ingress:
+      enabled: true
+      enable_https: true
+      clickhouse:
+        host: clickhouse.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+        path: "/"
+        tls_secret_name: clickhouse
+      loghouse:
+        host: loghouse.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+        path: "/"
+        tls_secret_name: loghouse
+      tabix:
+        host: tabix.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+        path: "/"
+        tls_secret_name: loghouse
+      annotations:
+      - 'kubernetes.io/ingress.class: nginx'
+      - 'traefik.frontend.passHostHeader: "true"'
+      - 'ingress.kubernetes.io/rewrite-target: "/"'
+      - 'kubernetes.io/ingress.class: "nginx"'
+      - 'kubernetes.io/tls-acme: "false"'
+      - 'nginx.ingress.kubernetes.io/ssl-redirect: "false"'

@@ -1,0 +1,77 @@
+helmDefaults:
+  tillerless: true
+  tillerNamespace: platform
+  atomic: false
+  verify: false
+  wait: false
+  timeout: 900
+  recreatePods: true
+  force: true
+
+repositories:
+- name: confluentinc
+  url: "https://confluentinc.github.io/cp-helm-charts/"
+
+### Helm Releases
+releases:
+## Kafka
+- name: confluent-kafka-connect
+  namespace: database
+  chart: "confluentinc/cp-helm-charts"
+#  version: 0.1.0
+  labels:
+    chart: confluent-kafka
+    component: kafka
+    namespace: database
+  values:
+  - nodeSelector:
+      agentpool: {{ env "AKS_RESERVED_NODESELECTOR" | default "agentpool" }}
+    cp-kafka:
+      enabled: false
+    cp-zookeeper:
+      enabled: false
+    cp-schema-registry:
+      enabled: false
+    cp-kafka-rest:
+      enabled: false
+    cp-ksql-server:
+      enabled: false
+    cp-kafka-connect:
+      enabled: true
+      customEnv:
+        CONNECT_PLUGIN_PATH: "/usr/share/java"
+        CONNECT_VALUE_CONVERTER_SCHEMAS_ENABLE: "false"
+        CONNECT_KEY_CONVERTER_SCHEMAS_ENABLE: "false"
+        CONNECT_INTERNAL_VALUE_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
+        CONNECT_INTERNAL_KEY_CONVERTER: "org.apache.kafka.connect.storage.StringConverter"
+        CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: "{{ env "KAFKA_BROKERS" | default 3 }}"
+        CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: "{{ env "KAFKA_BROKERS" | default 3 }}"
+        CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: "{{ env "KAFKA_BROKERS" | default 3 }}"
+
+- name: ingress-kafkaconnect
+  namespace: "database"
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  labels:
+    chart: "ingress-kafkaconnect"
+    component: "ingress"
+    namespace: "database"
+  values:
+  - project:
+      team: "operations"
+      target: {{ env "TARGET" | default "cicd" }}
+      client: {{ env "CLIENT" | default "client1" }}
+      workload: "kafkaconnect"
+      engine: "database"
+    ingressInternalClass: {{ env "STACK_INGRESS_INT_CLASS" | default "internal" }}
+    ingress:
+      enabled: true
+      hosts:
+      - name: kafkaconnect.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+        config:
+          http:
+            paths:
+            - path: "/"
+              backend:
+                serviceName: {{ requiredEnv "KAFKA_CHART_RELEASE" }}-cp-kafka-connect
+                servicePort: 8083
+

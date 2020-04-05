@@ -1,0 +1,69 @@
+## Some relevent vars
+BACKUP_PATH ?= ${ROOT_PATH}/.backup
+
+kube/test: ## Validate the kubernetes deployment
+	$(docker) run --pid=host -t -v $${HOME}/.kube/config:/opt/kube-bench/cfg/config.yaml aquasec/kube-bench:latest node
+kube/show/prometheus-rules: ## Show current prometheus-operator rules
+	$(kubectl) --namespace=$${PLATFORM_NAMESPACE} get prometheusrules
+kube/show/grafana-dashboards: ## Show dashboards
+	$(kubectl) --namespace=$${PLATFORM_NAMESPACE} get configmap --selector grafana_dashboard=1
+kube/show/token: ## Shows the token for the platform.default service account
+	$(kubectl) -n platform get serviceaccount default -o jsonpath="{.secrets[0].name}") -o jsonpath="{.data.token}" | base64 --decode
+kube/show/utilization: ## Show aks node utilization
+	$(kubectl) get nodes --no-headers | awk '{print $$1}' | xargs -I {} sh -c 'echo {}; $(kubectl) describe node {} | grep Allocated -A 5 | grep -ve Event -ve Allocated -ve percent -ve -- ; echo'
+kube/reset/dns: ## Deletes coredns pods to restart dns services on k8s cluster
+	$(kubectl) -n kube-system delete po -l k8s-app=kube-dns
+kube/simple/backup: ## Quick backup of kubernetes manifests
+	@rm -rf ${BACKUP_PATH}
+	@mkdir -p ${BACKUP_PATH}
+	$(kubectl) get all --export=true -o yaml --all-namespaces >> ${BACKUP_PATH}/${TARGET}-backup.yaml
+	cd ${BACKUP_PATH} && ${SCRIPT_PATH}/backup-kubernetes.sh
+	@echo "Basic backups saved in ${BACKUP_PATH}"
+kube/full/backup: ## Use katafygio to backup cluster
+	$(MAKE) sync STACK=katafygio
+	sleep 30
+	mkdir -p $(BACKUP_PATH)
+	$(kubectl) cp katafygio/$$($(kubectl) get pods --namespace katafygio -l app=katafygio -o jsonpath='{.items[0].metadata.name}'):/var/lib/katafygio/data/ $(BACKUP_PATH)
+	$(MAKE) destroy STACK=katafygio
+kube/clean/complete/pods: ## Remove completed pods from namespace
+	$(kubectl) -n ${NAMESPACE} get pods | tail -n+2 | grep Completed | awk '{print $1}' | xargs -I{} $(kubectl) -n ${NAMESPACE} delete pod {}
+kube/clean/pending/pods: ## Remove completed pods from namespace
+	$(kubectl) -n ${NAMESPACE} get pods | tail -n+2 | grep Pending | awk '{print $1}' | xargs -I{} $(kubectl) -n ${NAMESPACE} delete pod {}
+kube/clean/evicted/pods: ## Remove completed pods from namespace
+	$(kubectl) -n ${NAMESPACE} get pods | tail -n+2 | grep Evicted | awk '{print $1}' | xargs -I{} $(kubectl) -n ${NAMESPACE} delete pod {}
+kube/remove/pvc/finalizers: ## removes annotations preventing removal of pvcs in a cluster
+	$(kubectl) get pvc -n ${NAMESPACE} | tail -n+2 | awk '{print $$1}' | xargs -I{} $(kubectl) -n ${NAMESPACE} patch pvc {} -p '{"metadata":{"finalizers": null}}'
+	$(kubectl) get pv -n ${NAMESPACE} | tail -n+2 | awk '{print $$1}' | xargs -I{} $(kubectl) patch pv {} -p '{"metadata":{"finalizers": null}}'
+kube/install/olm: ## Install Operator lifecycle manager
+	$(kubectl) apply -f https://github.com/operator-framework/operator-lifecycle-manager/releases/download/0.13.0/crds.yaml
+	$(kubectl) apply -f https://github.com/operator-framework/operator-lifecycle-manager/releases/download/0.13.0/olm.yaml
+kube/launch/landoop: ## Launch landoop
+    $(kubectl) -n database run kafka-init-db --rm -i --tty --image nextgena3d.azurecr.io/kafkatopics:latest -- "bash"
+
+kube/launch/kafkaclient: ## Launch Confluent kafka client pod
+	$(kubectl) -n database run --generator=run-pod/v1 kafka-client --rm -i --tty --image confluentinc/cp-kafka:5.3.1 -- "bash"
+
+kube/launch/postgrestool: ## Launch postgresql enabled pod
+	$(kubectl) -n platform run --generator=run-pod/v1 pgtool --rm -i --tty --image mycontainerrepo.azurecr.io/postgres-tool:0.0.1 -- "/bin/sh"
+kube/test/msteams: ## Perform msteams test alert
+	curl -X POST -d @./deploy/templates/teams-alert.json http://msteams.${TEAM}.${TARGET}.${DOMAIN}/low_priority_channel
+kube/test/am: ## Perform msteams test alert
+	curl -X POST -d @./deploy/templates/am-alert.json ${ALERTMANAGER_EXTERNAL_ENDPOINT}
+
+kube/context: ## Set kubectl config context to TARGET
+	$(kubectl) config set-context $(CLUSTER)
+	$(kubectl) config use-context $(CLUSTER)
+
+argocd/install: ## Install argocd
+	$(kubectl) create namespace argocd
+	$(kubectl) apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+
+argocd/password: ## Pull the argocd password
+	$(kubectl) get pods -n argocd -l app.kubernetes.io/name=argocd-server -o name | cut -d'/' -f 2
+
+metallb/install: ## Install metallb
+	$(kubectl) apply -f https://raw.githubusercontent.com/google/metallb/v0.8.3/manifests/metallb.yaml
+	$(kubectl) apply -f https://git.io/km-config.yaml
+
+kind/localstorage: ## Install local kind storage
+	$(kubectl) apply -f https://raw.githubusercontent.com/kudobuilder/operators/master/test/manifests/local-path-storage.yaml

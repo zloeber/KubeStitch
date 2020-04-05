@@ -1,0 +1,61 @@
+helmDefaults:
+  tillerless: true
+  tillerNamespace: platform
+  atomic: false
+  verify: false
+  wait: false
+  timeout: 600
+  recreatePods: false
+  force: true
+
+releases:
+## Deploy zipkin using archtype
+- name: deployment-zipkin
+  namespace: "database"
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+#  version: 0.0.1
+  labels:
+    chart: "deployment-zipkin"
+    component: "zipkin"
+    namespace: "database"
+  values:
+  - fullnameOverride: "zipkin"
+    nameOverride: "zipkin"
+    project:
+      target: {{ env "TARGET" | default "cicd" }}
+      stage: {{ env "STAGE" | default "dev" }}
+      team: {{ requiredEnv "TEAM" }}
+      client: mcd
+      workload: zipkin
+      engine: nextgen
+      app: zipkin
+    image:
+      repository: openzipkin/zipkin
+      tag: latest
+      pullPolicy: IfNotPresent
+    deployment:
+      enabled: true
+      # pod:
+      #   env:
+      #     CONNECT_URL: "http://-cp-kafka-connect.database.svc:8083"
+      ports:
+        www: 9411
+    service:
+      enabled: true
+      type: ClusterIP
+      ports:
+        http:
+          port: 80
+          protocol: TCP
+          targetPort: 9411
+    ingress:
+      enabled: true
+      hosts:
+      - name: zipkin.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+        config:
+          http:
+            paths:
+            - path: "/"
+              backend:
+                serviceName: zipkin
+                servicePort: 9411

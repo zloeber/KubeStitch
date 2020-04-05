@@ -1,0 +1,22 @@
+# Pipeline Overview
+name: $(BuildDefinitionName).$(DayOfYear)$(Rev:.r)
+trigger:
+  batch: true
+  paths:
+    include:
+      - 'charts/grafana-dashboards'
+
+resources:
+  repositories:
+    - repository: platform
+      type: git
+      name: Pipelines
+
+stages:
+- template: publish/helm-chart.yml@platform
+  parameters:
+    name: grafana-dashboards
+    chartPath: 'charts/grafana-dashboards'
+    repo: 'mycontainerrepo'
+    stage: 'preprod'
+    team: 'inv'

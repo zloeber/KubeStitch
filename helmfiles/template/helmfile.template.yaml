@@ -1,0 +1,101 @@
+helmDefaults:
+  tillerless: true
+  tillerNamespace: platform
+  atomic: true
+  verify: false
+  wait: false
+  timeout: 900
+  recreatePods: false
+  force: false
+
+repositories:
+- name: stable
+  url: https://kubernetes-charts.storage.googleapis.com
+# - name: "forecastle"
+#   # Cannot use release tags, see https://github.com/aslafy-z/helm-git/issues/9
+#   #url: "git+https://github.com/stakater/Forecastle@deployments/kubernetes/chart?ref=19b369aa684152ad52c33d1935a74b0f425db2cb"
+#   url: "git+https://github.com/stakater/Forecastle@deployments/kubernetes/chart"
+
+###############
+## Template App
+releases:
+{{- if eq (env "HELM_VERSION" | default "2") "3" }}
+- name: namespace-template
+  # Helm 3 needs to put deployment info into a namespace. As this creates a namespace it will not exist yet so we use 'kube-system' 
+  #  which should exist in all clusters.
+  chart: ../charts/namespace/chart/namespace
+  namespace: kube-system
+  labels:
+    chart: namespace-template
+    component: "template"
+    namespace: "template"
+  wait: true
+  installed: true
+  values:
+  - namespaces:
+    - template
+    helmResourcePolicy: keep
+    labels:
+      {{ env "CLOUD" | default "local" }}-key-vault-env-injection: enabled
+    annotations:
+      certmanager.k8s.io/disable-validation: "true"
+{{- end }}
+## Template Deployment
+- name: template
+  namespace: template
+  installed: {{ env "PLATFORM_TEMPLATE_INSTALLED" | default "true" }}
+  chart: template/template
+  labels:
+    chart: template
+    component: template
+    namespace: template
+  hooks:
+    # This hook adds the keyvault injection annotation
+    - events: ["presync"]
+      showlogs: true
+      command: "/bin/sh"
+      args:
+      - "-c"
+      - >-
+        kubectl get namespace "{{`{{ .Release.Namespace }}`}}" >/dev/null 2>&1 || kubectl create namespace "{{`{{ .Release.Namespace }}`}}";
+        kubectl label --overwrite namespace "{{`{{ .Release.Namespace }}`}}" "{{ env "CLOUD" | default "local" }}-key-vault-env-injection=enabled" ;
+{{- if eq (env "HELM_VERSION" | default "2") "3" }}
+  needs:
+    - kube-system/namespace-template
+{{- end }}
+  values:
+  - someElement:
+{{- if env "AKS_RESERVED_NODESELECTOR" | default "" }}
+      nodeSelector:
+        agentpool: {{ env "AKS_RESERVED_NODESELECTOR" | default "agentpool" }}
+{{- end }}
+
+- name: ingress-template
+  namespace: "template"
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  installed: {{ env "PLATFORM_TEMPLATE_INSTALLED" | default "true" }}
+  labels:
+    chart: "ingress-template"
+    component: "ingress"
+    namespace: "template"
+{{- if eq (env "HELM_VERSION" | default "2") "3" }}
+  needs:
+    - kube-system/namespace-template
+{{- end }}
+  values:
+  - project:
+      team: {{ env "TEAM" | default "team1" }}
+      stage: {{ env "STAGE" | default "dev" }}
+      target: {{ env "TARGET" | default "cicd" }}
+      client: {{ env "CLIENT" | default "client1" }}
+    ingress:
+      enabled: true
+      hosts:
+      - name: template.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+        config:
+          http:
+            paths:
+            - path: "/"
+              backend:
+                serviceName: template-service
+                servicePort: 9092

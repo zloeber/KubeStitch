@@ -1,0 +1,21 @@
+name: $(BuildDefinitionName).$(DayOfYear)$(Rev:.r)
+trigger:
+  batch: true
+  paths:
+    include:
+      - 'charts/raw'
+
+resources:
+  repositories:
+    - repository: platform
+      type: git
+      name: Pipelines
+
+stages:
+- template: publish/helm-chart.yml@platform
+  parameters:
+    name: raw
+    chartPath: 'charts/raw'
+    repo: 'mycontainerrepo'
+    stage: 'preprod'
+    team: 'inv'

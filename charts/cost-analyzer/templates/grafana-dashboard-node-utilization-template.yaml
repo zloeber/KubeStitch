@@ -1,0 +1,18 @@
+{{- if .Values.grafana -}}
+{{- if .Values.grafana.sidecar -}}
+{{- if .Values.grafana.sidecar.dashboards -}}
+{{- if .Values.grafana.sidecar.dashboards.enabled -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: node-utilization-dashboard
+  labels:
+    {{ include "cost-analyzer.commonLabels" . | nindent 4 }}
+    grafana_dashboard: "1"
+data:
+    node-utilization.json: |-
+{{ .Files.Get "node-utilization.json" | indent 8 }}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}

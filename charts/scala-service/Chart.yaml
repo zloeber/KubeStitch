@@ -1,0 +1,14 @@
+apiVersion: v2
+name: scala-service
+description: Scala service helm chart
+type: application
+# Chart version
+version: 0.0.1
+# Application/service version
+appVersion: 0.0.1
+maintainers:
+  - name: Zachary Loeber
+dependencies:
+  - name: archtype
+    version: "0.0.1"
+    repository: https://mycontainerrepo.azurecr.io/helm/v1/repo

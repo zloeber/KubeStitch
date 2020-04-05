@@ -1,0 +1,71 @@
+{{- $root := . -}}
+{{- $common := dict "Values" .Values.common -}}
+{{- $noCommon := omit .Values "common" -}}
+{{- $overrides := dict "Values" $noCommon -}}
+{{- $noValues := omit . "Values" -}}
+
+{{- with merge $noValues $overrides $common -}}
+{{- range $name, $config := .Values.sparkApplications -}}
+{{- if $config.enabled }}
+---
+apiVersion: "sparkoperator.k8s.io/v1beta2"
+kind: SparkApplication
+metadata:
+  name: "{{ $name }}"
+  annotations:
+  #   "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": before-hook-creation
+#      "helm.sh/hook": "post-install"
+#    "helm.sh/hook-weight": "-2"
+
+{{- with $config.annotations }}
+  annotations:
+{{ toYaml . | indent 4 }}
+{{- end }}
+
+  labels:
+    component: spark
+{{ include "common.labels" $root | indent 4 }}
+
+  spec:
+    image: "{{ $config.repository }}/{{ $config.image }}:{{ $config.version }}"
+    imagePullPolicy: "Always"
+    restartPolicy:
+      type: OnFailure
+      onFailureRetries: 3
+      onFailureRetryInterval: 10
+      onSubmissionFailureRetries: 5
+      onSubmissionFailureRetryInterval: 20
+{{- with $config.spec }}
+{{ toYaml . | indent 4 }}
+{{- end }}
+
+    volumes:
+    - name: config-vol
+      configMap:
+        name: {{ include "spark.configmap.name" $root }}
+
+    driver:
+{{- with $config.driver }}
+{{ toYaml . | indent 6 }}
+{{- end }}
+{{ include "spark.configmap" $root | indent 6 }}
+
+    executor:
+{{- with $config.executor }}
+{{ toYaml . | indent 6 }}
+{{- end }}
+{{ include "spark.configmap" $root | indent 6 }}
+
+    monitoring:
+{{- if $config.monitoring }}
+{{- with $config.monitoring }}
+{{ toYaml . | indent 6 }}
+{{- end }}
+{{- else }}
+{{ include "spark.jmxmonitoring" $root | indent 6 }}
+{{- end }}
+
+{{- end }}
+{{- end -}}
+{{- end -}}

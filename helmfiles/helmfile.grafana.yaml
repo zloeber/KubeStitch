@@ -1,0 +1,50 @@
+helmDefaults:
+  tillerless: true
+  tillerNamespace: platform
+  atomic: true
+  verify: false
+  wait: true
+  timeout: 900
+  recreatePods: true
+  force: false
+
+releases:
+#######################################################################################
+## kube-prometheus-grafana                                                           ##
+## Integrates kube-prometheus with external grafana                                  ##
+- name: "grafana-custom-config"
+  namespace: {{ env "STACK_MONITORING_NAMESPACE" | default "monitoring" }}
+  labels:
+    chart: "grafana-custom-config"
+    component: "config"
+    namespace: {{ env "STACK_MONITORING_NAMESPACE" | default "monitoring" }}
+  chart: "../charts/grafana-dashboards"
+  values:
+  - fullnameOverride: "grafana-custom-config"
+
+- name: ingress-grafana
+  namespace: {{ env "STACK_MONITORING_NAMESPACE" | default "monitoring" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  labels:
+    chart: "ingress-grafana"
+    component: "ingress"
+    namespace: {{ env "STACK_MONITORING_NAMESPACE" | default "monitoring" }}
+  values:
+  - project:
+      team: "operations"
+      target: {{ env "TARGET" | default "cicd" }}
+      client: "mcd"
+      workload: "grafana"
+      engine: "monitoring"
+    ingressInternalClass: {{ env "STACK_INGRESS_INT_CLASS" | default "internal" }}
+    ingress:
+      enabled: true
+      hosts:
+      - name: grafana.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+        config:
+          http:
+            paths:
+            - path: "/"
+              backend:
+                serviceName: kube-prometheus-grafana
+                servicePort: 80

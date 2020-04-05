@@ -1,0 +1,408 @@
+helmDefaults:
+  tillerless: true
+  tillerNamespace: platform
+  atomic: false
+  verify: false
+  wait: false
+  timeout: 900
+  recreatePods: false
+  force: false
+
+repositories:
+- name: confluentinc
+  url: "https://confluentinc.github.io/cp-helm-charts/"
+
+### Helm Releases
+releases:
+{{- if eq (env "HELM_VERSION" | default "2") "3" }}
+- name: namespace-database
+  # Helm 3 needs to put deployment info into a namespace. As this creates a namespace it will not exist yet so we use 'kube-system' 
+  #  which should exist in all clusters.
+  chart: ../charts/namespace/chart/namespace
+  namespace: kube-system
+  labels:
+    chart: namespace-database
+    component: "database"
+    namespace: "database"
+  wait: true
+  installed: true
+  values:
+  - namespaces:
+    - database
+    helmResourcePolicy: keep
+    labels:
+      {{ env "CLOUD" | default "local" }}-key-vault-env-injection: enabled
+    annotations:
+      certmanager.k8s.io/disable-validation: "true"
+{{- end }}
+## Kafka
+- name: confluent-kafka
+  namespace: database
+  chart: "confluentinc/cp-helm-charts"
+  version: 0.1.0
+  labels:
+    chart: confluent-kafka
+    component: kafka
+    namespace: database
+  hooks:
+    # This hook adds the keyvault injection annotation
+    - events: ["presync"]
+      showlogs: true
+      command: "/bin/sh"
+      args:
+      - "-c"
+      - >-
+        kubectl get namespace "{{`{{ .Release.Namespace }}`}}" >/dev/null 2>&1 || kubectl create namespace "{{`{{ .Release.Namespace }}`}}";
+        kubectl label --overwrite namespace "{{`{{ .Release.Namespace }}`}}" "{{ env "CLOUD" | default "local" }}-key-vault-env-injection=enabled" ;
+{{- if eq (env "HELM_VERSION" | default "2") "3" }}
+  needs:
+    - kube-system/namespace-database
+{{- end }}
+  values:
+  - cp-zookeeper:
+{{- if env "AKS_RESERVED_NODESELECTOR" | default "" }}
+      nodeSelector:
+        agentpool: {{ env "AKS_RESERVED_NODESELECTOR" | default "agentpool" }}
+{{- end }}
+      enabled: true
+      servers: {{ env "STACK_ZOOKEEPER_NODE_COUNT" | default "3" }}
+      image: confluentinc/cp-zookeeper
+      imageTag: {{ env "STACK_KAFKA_VERSION" | default "5.3.1" }}
+      heapOptions: "-Xms512M -Xmx512M"
+      persistence:
+        enabled: true
+        dataDirSize: {{ env "STACK_ZOOKEEPER_DISK_SIZE" | default "100Gi" }}
+        dataDirStorageClass: {{ env "STACK_ZOOKEEPER_STORAGECLASS" | default "default" }}
+        dataLogDirSize: {{ env "STACK_ZOOKEEPER_LOG_DISK_SIZE" | default "50Gi" }}
+        dataLogDirStorageClass: {{ env "STACK_ZOOKEEPER_STORAGECLASS" | default "default" }}
+{{- if env "AKS_RESERVED_NODESELECTOR" | default "" }}
+    nodeSelector:
+      agentpool: {{ env "AKS_RESERVED_NODESELECTOR" | default "agentpool" }}
+{{- end }}
+    cp-kafka:
+{{- if env "AKS_RESERVED_NODESELECTOR" | default "" }}
+      nodeSelector:
+        agentpool: {{ env "AKS_RESERVED_NODESELECTOR" | default "agentpool" }}
+{{- end }}
+      image: confluentinc/cp-kafka
+      imageTag: {{ env "STACK_KAFKA_VERSION" | default "5.3.1" }}
+      brokers: {{ env "STACK_KAFKA_BROKER_COUNT" | default 4 }}
+{{- if eq (env "CICD" | default "false") "true" }}
+      resources:
+        limits:
+          cpu: 100m
+          memory: 128Mi
+        requests:
+          cpu: 100m
+          memory: 128Mi
+{{- end }}
+      persistence:
+        enabled: true
+        storageClass: {{ env "STACK_KAFKA_STORAGECLASS" | default "default" }}
+        size: {{ env "STACK_KAFKA_DISK_SIZE" | default "100Gi" }}
+        disksPerBroker: 1
+      configurationOverrides:
+        "auto.create.topics.enable": {{ env "STACK_KAFKA_TOPIC_AUTOCREATE" | default "false" }}
+        "default.replication.factor": {{ env "STACK_KAFKA_DEFAULT_REPLICA_COUNT" | default "1" }}
+        "offsets.topic.replication.factor": {{ env "STACK_KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR" | default "3" }}
+    cp-kafka-connect:
+{{- if env "AKS_RESERVED_NODESELECTOR" | default "" }}
+      nodeSelector:
+        agentpool: {{ env "AKS_RESERVED_NODESELECTOR" | default "agentpool" }}
+{{- end }}
+      enabled: true
+      image: confluentinc/cp-kafka-connect
+      imageTag: {{ env "STACK_KAFKA_VERSION" | default "5.3.1" }}
+{{- if eq (env "CICD" | default "false") "true" }}
+      resources:
+        limits:
+          cpu: 100m
+          memory: 128Mi
+        requests:
+          cpu: 100m
+          memory: 128Mi
+{{- end }}
+
+      customEnv:
+        CONNECT_PLUGIN_PATH: "/usr/share/java"
+        CONNECT_VALUE_CONVERTER_SCHEMAS_ENABLE: "false"
+        CONNECT_KEY_CONVERTER_SCHEMAS_ENABLE: "false"
+        CONNECT_INTERNAL_VALUE_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
+        CONNECT_INTERNAL_KEY_CONVERTER: "org.apache.kafka.connect.storage.StringConverter"
+    cp-schema-registry:
+      enabled: true
+      image: confluentinc/cp-schema-registry
+      imageTag: {{ env "STACK_KAFKA_VERSION" | default "5.3.1" }}
+{{- if eq (env "CICD" | default "false") "true" }}
+      resources:
+        limits:
+          cpu: 100m
+          memory: 128Mi
+        requests:
+          cpu: 100m
+          memory: 128Mi
+{{- end }}
+
+    cp-kafka-rest:
+      enabled: true
+      image: confluentinc/cp-kafka-rest
+      imageTag: {{ env "STACK_KAFKA_VERSION" | default "5.3.1" }}
+{{- if eq (env "CICD" | default "false") "true" }}
+      resources:
+        limits:
+          cpu: 100m
+          memory: 128Mi
+        requests:
+          cpu: 100m
+          memory: 128Mi
+{{- end }}
+
+    cp-ksql-server:
+      enabled: true
+      image: confluentinc/cp-ksql-server
+      imageTag: {{ env "STACK_KAFKA_VERSION" | default "5.3.1" }}
+{{- if eq (env "CICD" | default "false") "true" }}
+      resources:
+        limits:
+          cpu: 100m
+          memory: 128Mi
+        requests:
+          cpu: 100m
+          memory: 128Mi
+{{- end }}
+
+    # cp-control-center:
+    #   enabled: true
+    #   image: confluentinc/cp-enterprise-control-center
+    #   imageTag: 5.2.0
+
+## Zookeepercluster loadbalanced IP
+{{- if eq (env "CICD" | default "false") "false" }}
+- name: loadbalancer-zookeeper
+  namespace: "database"
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  labels:
+    chart: "loadbalancer-zookeeper"
+    component: "loadbalancer"
+    namespace: "database"
+{{- if eq (env "HELM_VERSION" | default "2") "3" }}
+  needs:
+    - kube-system/namespace-database
+{{- end }}
+  values:
+  - fullnameOverride: "zookeepercluster"
+    project:
+      team: "operations"
+      target: {{ env "TARGET" | default "cicd" }}
+      client: {{ env "CLIENT" | default "client1" }}
+      workload: "zookeeper"
+      engine: "database"
+    service:
+      enabled: true
+      type: "LoadBalancer"
+      loadBalancerIP: {{ requiredEnv "IP_ZOOKEEPER_LB_INT" }}
+      annotations:
+        service.beta.kubernetes.io/{{ env "CLOUD" | default "local" }}-load-balancer-internal: "true"
+      selector:
+        app: cp-zookeeper
+        release: {{ requiredEnv "STACK_KAFKA_CHART_RELEASE" }}
+      ports:
+        www:
+          port: 2181
+          protocol: "TCP"
+          targetPort: 2181
+{{- end }}
+
+## Kafka loadbalanced IP
+{{- if eq (env "CICD" | default "false") "false" }}
+- name: loadbalancer-kafkacluster
+  namespace: "database"
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  labels:
+    chart: "loadbalancer-kafkacluster"
+    component: "loadbalancer"
+    namespace: "database"
+{{- if eq (env "HELM_VERSION" | default "2") "3" }}
+  needs:
+    - kube-system/namespace-database
+{{- end }}
+  values:
+  - fullnameOverride: "kafkacluster"
+    nameOverride: "kafkacluster"
+    project:
+      team: operations
+      target: {{ env "TARGET" | default "cicd" }}
+      client: havi
+      workload: kafkacluster
+      engine: database
+    service:
+      enabled: true
+      type: LoadBalancer
+      loadBalancerIP: {{ env "IP_KAFKA_LB_INT" }}
+      annotations:
+        service.beta.kubernetes.io/{{ env "CLOUD" | default "local" }}-load-balancer-internal: "true"
+      selector:
+        app: cp-kafka
+        release: {{ env "STACK_KAFKA_CHART_RELEASE" }}
+      ports:
+        kafka:
+          port: 9092
+          protocol: TCP
+          targetPort: 9092
+{{- end }}
+  
+
+- name: ingress-kafka
+  namespace: "database"
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  labels:
+    chart: "ingress-kafka"
+    component: "ingress"
+    namespace: "database"
+{{- if eq (env "HELM_VERSION" | default "2") "3" }}
+  needs:
+    - kube-system/namespace-database
+{{- end }}
+  values:
+  - project:
+      team: "operations"
+      target: {{ env "TARGET" | default "cicd" }}
+      client: {{ env "CLIENT" | default "client1" }}
+      workload: "kafka"
+      engine: "database"
+    ingressInternalClass: {{ env "STACK_INGRESS_INT_CLASS" | default "internal" }}
+    ingress:
+      enabled: true
+      hosts:
+      - name: kafka.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+        config:
+          http:
+            paths:
+            - path: "/"
+              backend:
+                serviceName: {{ requiredEnv "STACK_KAFKA_CHART_RELEASE" }}-cp-kafka
+                servicePort: 9092
+
+- name: ingress-kafkaconnect
+  namespace: "database"
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  labels:
+    chart: "ingress-kafkaconnect"
+    component: "ingress"
+    namespace: "database"
+{{- if eq (env "HELM_VERSION" | default "2") "3" }}
+  needs:
+    - kube-system/namespace-database
+{{- end }}
+  values:
+  - project:
+      team: "operations"
+      target: {{ env "TARGET" | default "cicd" }}
+      client: {{ env "CLIENT" | default "client1" }}
+      workload: "kafkaconnect"
+      engine: "database"
+    ingressInternalClass: {{ env "STACK_INGRESS_INT_CLASS" | default "internal" }}
+    ingress:
+      enabled: true
+      hosts:
+      - name: kafkaconnect.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+        config:
+          http:
+            paths:
+            - path: "/"
+              backend:
+                serviceName: {{ requiredEnv "STACK_KAFKA_CHART_RELEASE" }}-cp-kafka-connect
+                servicePort: 8083
+
+- name: ingress-kafkarest
+  namespace: "database"
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  labels:
+    chart: "ingress-kafkarest"
+    component: "ingress"
+    namespace: "database"
+{{- if eq (env "HELM_VERSION" | default "2") "3" }}
+  needs:
+    - kube-system/namespace-database
+{{- end }}
+  values:
+  - project:
+      team: "operations"
+      target: {{ env "TARGET" | default "cicd" }}
+      client: {{ env "CLIENT" | default "client1" }}
+      workload: "kafkarest"
+      engine: "database"
+    ingressInternalClass: {{ env "STACK_INGRESS_INT_CLASS" | default "internal" }}
+    ingress:
+      enabled: true
+      hosts:
+      - name: kafkarest.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+        config:
+          http:
+            paths:
+            - path: "/"
+              backend:
+                serviceName: {{ requiredEnv "STACK_KAFKA_CHART_RELEASE" }}-cp-kafka-rest
+                servicePort: 8082
+
+- name: ingress-schemaregistry
+  namespace: "database"
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  labels:
+    chart: "ingress-schemaregistry"
+    component: "ingress"
+    namespace: "database"
+{{- if eq (env "HELM_VERSION" | default "2") "3" }}
+  needs:
+    - kube-system/namespace-database
+{{- end }}
+  values:
+  - project:
+      team: "operations"
+      target: {{ env "TARGET" | default "cicd" }}
+      client: "mcd"
+      workload: "kafka"
+      engine: "database"
+    ingressInternalClass: {{ env "STACK_INGRESS_INT_CLASS" | default "internal" }}
+    ingress:
+      enabled: true
+      hosts:
+      - name: schemaregistry.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+        config:
+          http:
+            paths:
+            - path: "/"
+              backend:
+                serviceName: {{ requiredEnv "STACK_KAFKA_CHART_RELEASE" }}-cp-schema-registry
+                servicePort: 8081
+
+- name: ingress-ksqlserver
+  namespace: "database"
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  labels:
+    chart: "ingress-ksqlserver"
+    component: "ingress"
+    namespace: "database"
+{{- if eq (env "HELM_VERSION" | default "2") "3" }}
+  needs:
+    - kube-system/namespace-database
+{{- end }}
+  values:
+  - project:
+      team: "operations"
+      target: {{ env "TARGET" | default "cicd" }}
+      client: {{ env "CLIENT" | default "client1" }}
+      workload: "ksqlserver"
+      engine: "database"
+    ingressInternalClass: {{ env "STACK_INGRESS_INT_CLASS" | default "internal" }}
+    ingress:
+      enabled: true
+      hosts:
+      - name: ksqlserver.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+        config:
+          http:
+            paths:
+            - path: "/"
+              backend:
+                serviceName: {{ requiredEnv "STACK_KAFKA_CHART_RELEASE" }}-cp-ksql-server
+                servicePort: 8088

@@ -1,0 +1,21 @@
+name: $(BuildDefinitionName).$(DayOfYear)$(Rev:.r)
+trigger:
+  batch: true
+  paths:
+    include:
+      - 'charts/spark-history-server'
+
+resources:
+  repositories:
+    - repository: platform
+      type: git
+      name: Pipelines
+
+stages:
+- template: publish/helm-chart.yml@platform
+  parameters:
+    name: spark-history-server
+    chartPath: 'charts/spark-history-server'
+    repo: 'mycontainerrepo'
+    stage: 'preprod'
+    team: 'inv'

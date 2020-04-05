@@ -1,0 +1,55 @@
+helmDefaults:
+  tillerless: true
+  tillerNamespace: platform
+  atomic: false
+  verify: false
+  wait: false
+  timeout: 600
+  recreatePods: false
+  force: true
+
+repositories:
+- name: "stable"
+  url: "https://kubernetes-charts.storage.googleapis.com/"
+
+releases:
+- name: cerebro
+  chart: "stable/cerebro"
+  version: 1.2.0
+  namespace: "logging"
+  labels:
+    chart: "cerebro"
+    component: "cerebro"
+    namespace: "logging"
+  values:
+  - nodeSelector:
+      agentpool: {{ env "AKS_RESERVED_NODESELECTOR" | default "agentpool" }}
+
+- name: ingress-cerebro
+  namespace: "logging"
+  version: 0.0.1
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  labels:
+    chart: "ingress-cerebro"
+    component: "ingress"
+    namespace: "logging"
+  values:
+  - project:
+      team: "operations"
+      target: {{ env "TARGET" | default "cicd" }}
+      client: {{ env "CLIENT" | default "client1" }}
+      workload: "cerebro"
+      engine: "logging"
+    ingressInternalClass: {{ env "STACK_INGRESS_INT_CLASS" | default "internal" }}
+    ingress:
+      enabled: true
+      hosts:
+      - name: cerebro.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+        config:
+          http:
+            paths:
+            - path: "/"
+              backend:
+                serviceName: cerebro
+                servicePort: 80
+

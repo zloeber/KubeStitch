@@ -1,0 +1,3 @@
+creation_rules:
+- path_regex: \.yaml\.dec$
+  pgp: 'B2D59E738329A28F802D4EC7DE53A1725CF01ADC'

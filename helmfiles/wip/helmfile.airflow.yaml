@@ -1,0 +1,334 @@
+## Airflow with ChaosKube to occasionally restart the scheduler.
+# AIRFLOW_BASE_REPO = nextgen-inv-airflow
+# AIRFLOW_RELEASE_VERSION = pinned version for deployment
+# GIT_REPO = dev.azure.com/adodevopsorg/NextGen/_git/Nextgen-Inventory-Airflow
+# AIRFLOW_PIPELINE_RELEASE = latest
+
+helmDefaults:
+  tillerless: true
+  tillerNamespace: platform
+  atomic: false
+  verify: false
+  wait: true
+  timeout: 900
+  recreatePods: false
+  force: true
+
+repositories:
+- name: stable
+  url: https://kubernetes-charts.storage.googleapis.com/
+- name: incubator
+  url: https://kubernetes-charts-incubator.storage.googleapis.com
+# - name: archtype
+#   url: git+ssh://ssh.dev.azure.com/v3/adodevopsorg/NextGen/CICD@charts/archtype?ref=master
+# - name: airflow
+#   url: git+ssh://ssh.dev.azure.com/v3/adodevopsorg/NextGen/CICD@charts/airflow-chart?ref=master
+
+releases:
+- name: airflow-storage
+  chart: incubator/raw
+  namespace: airflow
+  values:
+  - resources:
+    - kind: PersistentVolumeClaim
+      apiVersion: v1
+      metadata:
+        name: airflow-dag-vol-claim
+        namespace: airflow
+      spec:
+        accessModes:
+          - ReadWriteMany
+        resources:
+          requests:
+            storage: 50Gi
+        storageClassName: azurefile
+        # volumeName: airflow-dag-vol
+        # selector:
+        #   matchLabels:
+        #     name: airflow-dag-vol
+
+    - kind: PersistentVolumeClaim
+      apiVersion: v1
+      metadata:
+        name: airflow-log-vol-claim
+        namespace: airflow
+      spec:
+        accessModes:
+          - ReadWriteMany
+        resources:
+          requests:
+            storage: 50Gi
+        storageClassName: azurefile
+        # volumeName: airflow-log-vol
+        # selector:
+        #   matchLabels:
+        #     name: airflow-log-vol
+
+- name: airflow-kv-injection
+  namespace: airflow
+  chart: ../charts/archtype
+  labels:
+    name: airflow-kv-injection
+    namespace: airflow
+  hooks:
+    # This hook adds the keyvault injection annotation
+    - events: ["presync"]
+      showlogs: true
+      command: "/bin/sh"
+      args:
+      - "-c"
+      - >-
+        kubectl get namespace "{{`{{ .Release.Namespace }}`}}" >/dev/null 2>&1 || kubectl create namespace "{{`{{ .Release.Namespace }}`}}";
+        kubectl label --overwrite namespace "{{`{{ .Release.Namespace }}`}}" "{{ env "CLOUD" | default "local" }}-key-vault-env-injection=enabled" ;
+  values:
+  - project:
+      team: {{ env "TEAM" | default "team1" }}
+      stage: {{ env "STAGE" | default "dev" }}
+      target: {{ env "TARGET" | default "cicd" }}
+      client: {{ env "CLIENT" | default "client1" }}
+      app: airflow
+    keyvaultName: {{ requiredEnv "KEYVAULTNAME" }}
+    keyvaultSecrets: 
+      enabled: true
+      vaultName: {{ requiredEnv "KEYVAULTNAME" }}
+      type: secret
+      secrets:
+      - secretKey: STORAGEACCOUNTNAME
+      - secretKey: STORAGEACCOUNTKEY
+      - secretKey: STORAGEPATH
+      - secretKey: CHECKPOINTACCOUNTNAME
+      - secretKey: CHECKPOINTACCOUNTKEY
+      - secretKey: JDBCDATABASE
+      - secretKey: JDBCHOSTNAME
+      - secretKey: JDBCPASSWORD
+      - secretKey: JDBCPORT
+      - secretKey: JDBCSCHEMA
+      - secretKey: JDBCSERVER
+      - secretKey: JDBCSSL
+      - secretKey: JDBCURL
+      - secretKey: JDBCUSERNAME
+      - secretKey: AIRFLOWFERNETKEY
+      - secretKey: K8SSERVER
+      - secretKey: K8SCACERT
+      - secretKey: K8SPASSWORD
+      - secretKey: K8SCONFIG
+      - secretKey: KAFKABOOTSTRAPSERVERS
+
+- name: airflow
+  namespace: airflow
+  chart: ../charts/airflow-chart
+  labels:
+    chart: airflow
+    component: airflow
+    namespace: airflow
+  values:
+  - airflow:
+      image:
+        repository: {{ requiredEnv "CONTAINERREGISTRY" }}/{{ env "AIRFLOW_BASE_REPO" | default "nextgen-inv-airflow" }}
+        tag: '0.0.1'
+        # repository: {{ requiredEnv "CONTAINERREGISTRY" }}/{{ env "AIRFLOW_BASE_REPO" | default "nextgen-inv-airflow" }}
+        # tag: '0.0.1'
+        # repository: puckel/docker-airflow
+        # tag: latest
+      extraEnv:
+      - name: POSTGRES_USER
+        value: postgres
+      - name: POSTGRES_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: airflow-postgresql
+            key: postgres-password
+      - name: REDIS_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: airflow-redis
+            key: redis-password
+      - name: AIRFLOW__CORE__FERNET_KEY
+        valueFrom:
+          secretKeyRef:
+            name: airflowfernetkey
+            key: AIRFLOWFERNETKEY
+    dags:
+      path: /usr/local/airflow/dags
+      doNotPickle: false
+      git:
+        url: '{{ env "AIRFLOWREPO" | default "git@ssh.dev.azure.com:v3/adodevopsorg/NextGen/Nextgen-Inventory-Airflow" }}'
+        ref: '{{ env "AIRFLOWBRANCH" | default "develop" }}'
+        buildid: "{{ env "BUILDID" | default "0.0.1" }}"
+        secret: cicd
+      initContainer:
+        enabled: true
+        destinationDagPath: /dags
+        image:
+          repository: alpine/git
+          tag: 1.0.7
+          pullPolicy: IfNotPresent
+        installRequirements: true
+    rbac:
+      create: true
+    serviceAccount:
+      create: true
+      name: airflow
+    persistence:
+      enabled: true
+      existingClaim: airflow-dag-vol-claim
+      storageClass: azurefile
+      accessMode: ReadWriteMany
+      size: 50Gb
+    logsPersistence:
+      enabled: true
+      existingClaim: airflow-log-vol-claim
+      storageClass: azurefile
+      accessMode: ReadWriteMany
+      size: 50Gi
+    logs:
+      path: /usr/local/airflow/logs
+      persistence:
+        enabled: true
+        size: 50Gi
+        storageClass: azurefile
+        accessMode: ReadWriteMany
+    web:
+      enabled: true
+      initialStartupDelay: 60
+      initialDelaySeconds: 360
+      image:
+        repository: {{ requiredEnv "CONTAINERREGISTRY" }}/{{ env "AIRFLOW_BASE_REPO" | default "airflow-base" }}
+        tag: '{{ env "VERSION" | default "0.0.1" }}'
+        pullPolicy: Always
+    serviceMonitor:
+      enabled: true
+      interval: 30s
+      path: /admin/metrics
+      namespace: monitoring
+      selector:
+        prometheus: kube-prometheus
+    postgresql:
+      enabled: true
+      service:
+        port: 5432
+      postgresUser: postgres
+      postgresPassword: airflow
+      postgresDatabase: airflow
+      persistence:
+        enabled: true
+        storageClass: default
+        accessMode: ReadWriteOnce
+    redis:
+      enabled: true
+      password: airflow
+      existingSecret:
+      master:
+        persistence:
+          enabled: false
+          accessMode: ReadWriteOnce
+      cluster:
+        enabled: false
+
+- name: airflow-rbac
+  chart: incubator/raw
+  namespace: airflow
+  wait: true
+  force: true
+  recreatePods: false
+  values:
+  - resources:
+    - kind: ClusterRole
+      apiVersion: rbac.authorization.k8s.io/v1
+      metadata:
+        name: airflow-cluster-role
+        labels:
+          app.kubernetes.io/name: airflow
+      rules:
+      - apiGroups: [""]
+        resources: ["pods", "pods/log", pods/exec]
+        verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+      - apiGroups: [""]
+        resources: ["configmaps"]
+        verbs: ["get", "watch", "list"]
+      - apiGroups: [""]
+        resources: ["secrets"]
+        verbs: ["get", "watch", "list"]
+    - kind: ClusterRoleBinding
+      apiVersion: rbac.authorization.k8s.io/v1
+      metadata:
+        name: airflow-role-binding
+        labels:
+          app.kubernetes.io/name: airflow
+      roleRef:
+        apiGroup: rbac.authorization.k8s.io
+        kind: ClusterRole
+        name: airflow-cluster-role
+      subjects:
+      - name: airflow
+        namespace: airflow
+        kind: ServiceAccount
+
+- name: ingress-airflow-web
+  namespace: airflow
+  chart: ../charts/archtype
+  labels:
+    chart: ingress-airflow-web
+    component: ingress
+    namespace: airflow
+  values:
+  - project:
+      team: {{ env "TEAM" | default "team1" }}
+      target: {{ env "TARGET" | default "cicd" }}
+      stage: {{ env "STAGE" | default "dev" }}
+      client: {{ env "CLIENT" | default "client1" }}
+      workload: "airflow"
+      engine: "nextgen"
+    ingress:
+      enabled: true
+      hosts:
+      - name: airflow.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+        config:
+          http:
+            paths:
+            - path: "/"
+              backend:
+                serviceName: airflow-web
+                servicePort: 8080
+
+- name: ingress-airflow-flower
+  namespace: airflow
+  chart: ../charts/archtype
+  labels:
+    chart: "ingress-airflow-flower"
+    component: "ingress"
+    namespace: airflow
+  values:
+  - project:
+      team: {{ env "TEAM" | default "team1" }}
+      target: {{ env "TARGET" | default "cicd" }}
+      stage: {{ env "STAGE" | default "dev" }}
+      client: {{ env "CLIENT" | default "client1" }}
+      workload: "airflow"
+      engine: "nextgen"
+    ingress:
+      enabled: true
+      hosts:
+      - name: flower.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+        config:
+          http:
+            paths:
+            - path: "/"
+              backend:
+                serviceName: airflow-flower
+                servicePort: 5555
+
+- name: chaoskube
+  namespace: airflow
+  chart: stable/chaoskube
+  labels:
+    chart: "chaoskube"
+    component: "chaoskube"
+    namespace: airflow
+  values:
+  - interval: 10m
+    rbac.create: true
+    dryRun: false
+    namespaces: airflow
+    labels: app=airflow-scheduler
+

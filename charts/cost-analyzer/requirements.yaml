@@ -1,0 +1,13 @@
+dependencies:
+  - name: prometheus
+    repository: file://./subcharts/prometheus
+    version: "8.15.X"
+    condition: global.prometheus.enabled
+  - name: grafana
+    repository: file://./subcharts/grafana
+    version: "1.X.X"
+    condition: global.grafana.enabled
+  - name: thanos
+    repository: file://./subcharts/thanos
+    version: "0.X.X"
+    condition: global.thanos.enabled

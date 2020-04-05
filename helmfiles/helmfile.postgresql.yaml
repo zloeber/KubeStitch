@@ -1,0 +1,29 @@
+helmDefaults:
+  tillerless: true
+  tillerNamespace: platform
+  atomic: false
+  verify: false
+  wait: false
+  timeout: 1200
+  recreatePods: true
+  force: true
+
+repositories:
+- name: "stable"
+  url: "https://kubernetes-charts.storage.googleapis.com/"
+
+releases:
+- name: "postgresql"
+  namespace: "postgresql"
+  labels:
+    chart: "postgresql"
+    repo: "stable"
+    namespace: "postgresql"
+  installed: {{ env "POSTGRESQL_INSTALLED" | default "true" }}
+  chart: "stable/postgresql"
+  values:
+  - persistence:
+      enabled: true
+      storageClass: {{ env "DB_STORAGE_CLASS" | default "standard" }}
+      size: {{ env "POSTGRES_DISK_SIZE" | default "8Gi" }}
+

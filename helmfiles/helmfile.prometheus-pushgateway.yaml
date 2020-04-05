@@ -1,0 +1,57 @@
+helmDefaults:
+  tillerless: true
+  tillerNamespace: platform
+  atomic: false
+  verify: false
+  wait: false
+  timeout: 600
+  recreatePods: false
+  force: false
+
+repositories:
+  - name: stable
+    url: https://kubernetes-charts.storage.googleapis.com/
+
+releases:
+  - name: prometheus-pushgateway
+    namespace: {{ env "STACK_MONITORING_NAMESPACE" | default "monitoring" }}
+    labels:
+      chart: "prometheus-pushgateway"
+      component: "prometheus-pushgateway"
+      namespace: {{ env "STACK_MONITORING_NAMESPACE" | default "monitoring" }}
+      vendor: "kubernetes"
+    chart: stable/prometheus-pushgateway
+    values:
+    - serviceAccount:
+        create: true
+      replicaCount: 1
+      serviceMonitor:
+        enabled: {{ env "STACK_MONITORING" | default "true" }}
+        namespace: {{ env "STACK_MONITORING_NAMESPACE" | default "monitoring" }}
+  - name: ingress-pushgateway
+    namespace: {{ env "STACK_MONITORING_NAMESPACE" | default "monitoring" }}
+    installed: {{ env "STACK_MONITORING" | default "true" }}
+    chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+    labels:
+      chart: "ingress-pushgateway"
+      component: "ingress"
+      namespace: {{ env "STACK_MONITORING_NAMESPACE" | default "monitoring" }}
+    values:
+    - project:
+        team: {{ env "TEAM" | default "team1" }}
+        target: {{ env "TARGET" | default "cicd" }}
+        client: {{ env "CLIENT" | default "client1" }}
+        workload: {{ env "WORKLOAD" | default "monitoring" }}
+        engine: {{ env "ENGINE" | default "nextgen" }}
+      ingressInternalClass: {{ env "STACK_INGRESS_INT_CLASS" | default "internal" }}
+      ingress:
+        enabled: true
+        hosts:
+        - name: prometheuspushgateway.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+          config:
+            http:
+              paths:
+              - path: "/"
+                backend:
+                  serviceName: prometheus-pushgateway
+                  servicePort: 9091

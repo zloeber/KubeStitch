@@ -1,0 +1,108 @@
+helmDefaults:
+  tillerless: true
+  tillerNamespace: platform
+  atomic: true
+  verify: false
+  wait: true
+  timeout: 900
+  recreatePods: true
+  force: true
+
+repositories:
+- name: incubator
+  url: "https://kubernetes-charts-incubator.storage.googleapis.com"
+
+releases:
+- name: database-kv-injection
+  namespace: database
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  installed: {{ env "KEYVAULT_INJECTION_INSTALLED" | default "true" }}
+  labels:
+    name: database-kv-injection
+    namespace: database
+  values:
+  - project:
+      team: {{ env "TEAM" | default "team1" }}
+      stage: {{ env "STAGE" | default "dev" }}
+      target: {{ env "TARGET" | default "cicd" }}
+      client: nextgen
+      workload: database
+      engine: nextgen
+      app: database
+    keyvaultName: {{ requiredEnv "KEYVAULTNAME" }}
+    keyvaultSecrets:
+      enabled: true
+      vaultName: {{ requiredEnv "KEYVAULTNAME" }}
+      type: secret
+      secrets:
+      - secretKey: STORAGEACCOUNTNAME
+      - secretKey: STORAGEACCOUNTKEY
+      - secretKey: JDBCDATABASE
+      - secretKey: JDBCHOSTNAME
+      - secretKey: JDBCPASSWORD
+      - secretKey: JDBCPORT
+      - secretKey: JDBCSCHEMA
+      - secretKey: JDBCSERVER
+      - secretKey: JDBCSSL
+      - secretKey: JDBCURL
+      - secretKey: JDBCUSERNAME
+
+- name: kafka-init
+  chart: incubator/raw
+  namespace: database
+  values:
+  - resources:
+    - kind: Pod
+      apiVersion: v1
+      metadata:
+        name: kafka-init
+      spec:
+        restartPolicy: Never
+        containers:
+        - name: kafka-init
+          image: {{ requiredEnv "CONTAINERREPOSITORY" }}/{{ requiredEnv "STACK_KAFKA_INIT_IMAGE" }}:{{ requiredEnv "STACK_KAFKA_INIT_IMAGE_TAG" }}
+          # command:
+          # - /usr/bin/init_connectors.sh"
+          imagePullPolicy: Always
+          env:
+          - name: 'JDBCPASSWORD'
+            value: '{{ env "JDBCPASSWORD" | default "secretjdbcpassword@azurekeyvault" }}'
+          - name: 'JDBCURL'
+            value: '{{ env "JDBCURL" | default "secretjdbcurl@azurekeyvault" }}'
+          - name: 'STORAGEACCOUNTNAME'
+            value: '{{ env "STORAGEACCOUNTNAME" }}'
+          - name: 'STORAGEACCOUNTKEY'
+            value: '{{ env "STORAGEACCOUNTKEY" | default "secretstorageaccountkey@azurekeyvault" }}'
+          - name: 'JDBCDATABASE'
+            value: '{{ env "JDBCDATABASE" }}'
+          - name: 'JDBCUSER'
+            value: '{{ env "JDBCUSER" }}'
+          - name: 'JDBCSERVER'
+            value: '{{ env "JDBCSERVER" }}'
+          - name: 'JDBCSCHEMA'
+            value: '{{ env "JDBCSCHEMA" }}'
+          - name: SCHEMAREGISTRYHOST
+            value: '{{ env "STACK_KAFKA_SCHEMA_REGISTRY" }}'
+          - name: 'KAFKACONNECTHOST'
+            value: 'confluent-kafka-cp-kafka-connect.database.svc'
+          - name: 'ZOOKEEPERHOST'
+            value: 'STACK_ZOOKEEPER_HOST'
+          - name: 'CONNECT_PLUGIN_PATH'
+            value: '/usr/share/java'
+          - name: 'CONNECT_VALUE_CONVERTER_SCHEMAS_ENABLE'
+            value: 'false'
+          - name: 'CONNECT_KEY_CONVERTER_SCHEMAS_ENABLE'
+            value: 'false'
+          - name: 'CONNECT_INTERNAL_VALUE_CONVERTER'
+            value: 'org.apache.kafka.connect.json.JsonConverter'
+          - name: 'CONNECT_INTERNAL_KEY_CONVERTER'
+            value: 'org.apache.kafka.connect.storage.StringConverter'
+          - name: 'KAFKA_BOOTSTRAP_SERVERS'
+            value: '{{ env "STACK_KAFKA_BOOTSTRAP_SERVERS" }}'
+          - name: 'KAFKA_BROKERS'
+            value: '{{ env "STACK_KAFKA_DEFAULT_REPLICA_COUNT" | default "3" }}'
+
+{{- if eq (env "CICD" | default "false") "true" }}
+        imagePullSecrets:
+          - name: regcred
+{{- end }}

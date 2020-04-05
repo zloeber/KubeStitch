@@ -1,0 +1,23 @@
+releases:
+- name: nextgen-ui-demo
+  namespace: "nextgen-ui-demo"
+  chart: "../charts/nextgen-ui-demo"
+  version: 0.0.1
+  labels:
+    chart: "nextgen-ui-demo"
+    component: "demo"
+    namespace: "nextgen-ui-demo"
+  values:
+  - global:
+      repository: "hmdacr.azurecr.io"
+      image: "nextgen"
+      app: "nextgen-ui-demo"
+      buildid: "0.0.4"
+      target: {{ env "TARGET" | default "cicd" }}
+    ingress:
+      path: /
+      service: "nextgen-ui-demo"
+      port: 9000
+      hosts:
+      - demo.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+

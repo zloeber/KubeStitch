@@ -1,0 +1,80 @@
+helmDefaults:
+  tillerless: true
+  tillerNamespace: platform
+  atomic: false
+  verify: false
+  wait: false
+  timeout: 600
+  recreatePods: false
+  force: false
+
+repositories:
+- name: stable
+  url: "https://kubernetes-charts.storage.googleapis.com/"
+
+releases:
+- name: kibana
+  chart: stable/kibana
+  #version: 3.2.4
+  namespace: "logging"
+  labels:
+    chart: "kibana"
+    component: "logging"
+    namespace: "logging"
+  installed: 
+  values:
+  - files:
+      kibana.yml:
+        server.name: kibana.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+        # The Elasticsearch instance to use for all your queries.
+        elasticsearch.hosts:
+        - "http://elasticsearch-client:9200"
+      elasticsearch.yml:
+        cluster.name: "elasticsearch-client"
+        network.host: localhost
+        http.port: 9200
+
+        # by default transport.host refers to network.host
+        transport.host: "elasticsearch-client"
+        transport.tcp.port: 9200
+    service:
+      type: ClusterIP
+      externalPort: 80
+      internalPort: 5601
+    plugins:
+      enabled: false
+    serviceAccount:
+      create: true
+    elasticsearch:
+      hosts:
+        - elasticsearch-client
+    env:
+      ELASTICSEARCH_URL: http://elasticsearch-client.logging.svc:9200
+
+- name: ingress-kibana
+  namespace: "logging"
+  version: 0.0.1
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  labels:
+    chart: "ingress-kibana"
+    component: "ingress"
+    namespace: "logging"
+  values:
+  - project:
+      team: "operations"
+      target: {{ env "TARGET" | default "cicd" }}
+      client: {{ env "CLIENT" | default "client1" }}
+      workload: "kibana"
+      engine: "logging"
+    ingressInternalClass: {{ env "STACK_INGRESS_INT_CLASS" | default "internal" }}
+    ingress:
+      enabled: true
+      hosts:
+      - name: kibana.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+        config:
+          http:
+            paths:
+            - path: "/"
+              backend:
+                serviceName: kibana
+                servicePort: 80

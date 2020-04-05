@@ -1,0 +1,91 @@
+helmDefaults:
+  tillerless: true
+  tillerNamespace: platform
+  atomic: true
+  verify: false
+  wait: false
+  timeout: 900
+  recreatePods: true
+  force: true
+
+repositories:
+- name: "stable"
+  url: "https://kubernetes-charts.storage.googleapis.com/"
+
+releases:
+- name: sonarqube
+  namespace: sonarqube
+  chart: "stable/sonarqube"
+  #version: 1.0.4
+  labels:
+    chart: "sonarqube"
+    component: "sonarqube"
+    namespace: "sonarqube"
+  values:
+  - service:
+      name: sonarqube
+      type: ClusterIP
+    persistence:
+      storageClass: "standard"
+      size: 50Gi
+      accessModes: "ReadWriteOnce"
+    plugins:
+      install:
+      - "https://github.com/hkamel/sonar-auth-aad/releases/download/1.1-RC2/sonar-auth-aad-plugin-1.1-RC2.jar"
+
+- name: ingress-sonarqube
+  namespace: "sonarqube"
+  #version: 0.0.1
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  labels:
+    chart: "ingress-sonarqube"
+    component: "ingress"
+    namespace: "sonarqube"
+  values:
+  - project:
+      team: "operations"
+      target: {{ env "TARGET" | default "cicd" }}
+      client: {{ env "CLIENT" | default "client1" }}
+      workload: "sonarqube"
+      engine: "nextgen"
+      app: "sonarqube"
+    ingress:
+      enabled: true
+      hosts:
+      - name: sonarqube.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+        config:
+          http:
+            paths:
+            - path: "/"
+              backend:
+                serviceName: sonarqube-sonarqube
+                servicePort: 9000
+
+- name: ext-ingress-sonarqube
+  namespace: "sonarqube"
+  #version: 0.0.1
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  labels:
+    chart: "ext-ingress-sonarqube"
+    component: "ingress"
+    namespace: "sonarqube"
+  values:
+  - project:
+      team: "operations"
+      target: {{ env "TARGET" | default "cicd" }}
+      client: {{ env "CLIENT" | default "client1" }}
+      workload: "sonarqube"
+      engine: "nextgen"
+      app: "sonarqube"
+    ingress:
+      enabled: true
+      internal: false
+      hosts:
+      - name: "sonarqube.loeber.live"
+        config:
+          http:
+            paths:
+            - path: "/"
+              backend:
+                serviceName: sonarqube-sonarqube
+                servicePort: 9000

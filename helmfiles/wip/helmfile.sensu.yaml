@@ -1,0 +1,54 @@
+helmDefaults:
+  tillerless: true
+  tillerNamespace: platform
+  atomic: false
+  verify: false
+  wait: false
+  timeout: 600
+  recreatePods: false
+  force: true
+
+repositories:
+- name: sensu
+  url: https://kubernetes-charts.storage.googleapis.com/
+
+releases:
+- name: sensu
+  namespace: platform
+  chart: "stable/sensu"
+  labels:
+    chart: "sensu"
+    component: "monitoring"
+    namespace: "sensu"
+
+# - name: uchiwa
+#   namespace: platform
+#   chart: "stable/uchiwa"
+#   labels:
+#     chart: "uchiwa"
+#     component: "monitoring"
+#     namespace: "sensu"
+
+- name: ingress-sensu
+  namespace: "sensu"
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  labels:
+    chart: "ingress-sensu"
+    component: "monitoring"
+    namespace: "sensu"
+  values:
+  - project:
+      team: {{ env "TEAM" | default "team1" }}
+      target: {{ env "TARGET" | default "cicd" }}
+      client: {{ env "CLIENT" | default "client1" }}
+    ingress:
+      enabled: true
+      hosts:
+      - name: sensu.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+        config:
+          http:
+            paths:
+            - path: "/"
+              backend:
+                serviceName: sensu
+                servicePort: 3000

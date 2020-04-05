@@ -1,0 +1,62 @@
+helmDefaults:
+  tillerless: true
+  tillerNamespace: platform
+  atomic: false
+  verify: false
+  wait: false
+  timeout: 600
+  recreatePods: true
+  force: true
+
+repositories:
+- name: "stable"
+  url: "https://kubernetes-charts.storage.googleapis.com/"
+
+releases:
+## Deploy kafka-manager using archtype
+- name: kafka-manager
+  namespace: database
+  chart: stable/kafka-manager
+  #version: 2.1.5
+  labels:
+    chart: "kafkamanager"
+    component: "kafkamanager"
+    namespace: "database"
+  values:
+  - zkHosts: "zookeepercluster:2181"
+    service:
+      port: 8080
+    clusters:
+    - name: local
+      kafkaVersion: 2.0.0
+      zkHosts: confluent-kafka-cp-zookeeper:2181
+      jmxEnabled: "true"
+      pollConsumers: "true"
+      displaySizeEnabled: "true"
+      tuning:
+        offsetCacheThreadPoolSize: 16
+
+- name: ingress-kafkamanager
+  namespace: "database"
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  labels:
+    chart: "ingress-kafkamanager"
+    component: "ingress"
+    namespace: "database"
+  values:
+  - project:
+      team: {{ env "TEAM" | default "ops" }}
+      target: {{ env "TARGET" | default "cicd" }}
+      client: {{ env "CLIENT" | default "client1" }}
+    ingressInternalClass: {{ env "STACK_INGRESS_INT_CLASS" | default "internal" }}
+    ingress:
+      enabled: true
+      hosts:
+      - name: kafkamanager.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+        config:
+          http:
+            paths:
+            - path: "/"
+              backend:
+                serviceName: kafka-manager
+                servicePort: 8080

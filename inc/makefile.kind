@@ -1,0 +1,49 @@
+ROOT_PATH?=$(abspath $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST))))))
+BIN_PATH ?= $(ROOT_PATH)/.local/bin
+
+kind ?= $(BIN_PATH)/kind
+kubectl ?= $(BIN_PATH)/kubectl
+
+kind/start/cluster: ## Create kind cluster
+	@echo "Starting local kind cluster then waiting a minute for things to warm up..."
+	$(kind) create cluster \
+		--name cicd \
+		--config $(ROOT_PATH)/deploy/cicd/kind-cluster.yaml \
+		--image=kindest/node:${KUBE_VERSION} \
+		--wait 60s
+
+kind/stop/cluster: ## Delete local 3-node cicd cluster
+	$(kind) delete cluster --name cicd
+
+kind/start: kind/start/cluster context ## Start the cicd cluster
+	@echo "Cluster created ($(TARGET))!"
+	@echo "Next logical steps:"
+	@echo "  make kind/metallb sync cicd/dnsforward/start"
+
+kind/config: metallb/install sync  ## Configure the cicd cluster
+
+kind/expose: cicd/dnsforward/start kind/ingress/start ## Expose the kind cluster
+
+kind/stop: cicd/dnsforward/stop kind/stop/cluster ## Remove local cicd environment
+
+kind/ingress/start: ## Start proxy to ingress IPs
+	./scripts/cicd-ingress.sh
+
+kind/dashboard/proxy: ## Starts a proxy to the local dashboard if it exists
+	PODNAME=$$($(kubectl) get pods -n kube-system -l "app=kubernetes-dashboard,release=kubernetes-dashboard" -o jsonpath="{.items[0].metadata.name}"); \
+	$(kubectl) -n kube-system port-forward $${PODNAME} 9090:9090
+
+kind/az/acr: az/set/acr/sub ## Prepare local auth for Azure acr registry
+	DOCKER_PASSWORD=$$(az acr credential show -n $(CONTAINERREGISTRY) --query "passwords[0].value" | tr -d '"'); \
+		$(docker) login -u $(CONTAINERREGISTRY) -p "$$(DOCKER_PASSWORD)" $(CONTAINERREGISTRY)
+	$(kubectl) create secret generic regcred \
+		--from-file=.dockerconfigjson="$${HOME}/.docker/config.json" \
+		--type=kubernetes.io/dockerconfigjson -n kube-system
+	# kubectl -n kube-system create secret docker-registry regcred \
+	# 	--docker-server=$(CONTAINERREGISTRY).azurecr.io \
+	# 	--docker-username=$(CONTAINERREGISTRY) \
+	# 	--docker-password=$${DOCKER_PASSWORD} \
+	# 	--docker-email=localuser@localhost
+
+#cicd: kind/start context kind/metallb sync ## Bring up a full cicd environment
+#	@echo 'Cluster is up, to remove it entirely: make kind/stop'

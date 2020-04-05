@@ -1,0 +1,68 @@
+helmDefaults:
+  tillerless: true
+  tillerNamespace: platform
+  atomic: true
+  verify: false
+  wait: false
+  timeout: 900
+  recreatePods: false
+  force: false
+
+###############
+## dataflow-monitor-rules
+releases:
+- name: dataflow-monitors
+  namespace: monitoring
+  chart: ../charts/archtype
+  labels:
+    chart: dataflow-monitors
+    component: monitoring
+    namespace: monitoring
+  values:
+    - project:
+        app: monitoring
+        team: inv
+        target: {{ env "TARGET" | default "cicd" }}
+        client: {{ env "CLIENT" | default "client1" }}
+      prometheus:
+        instance: kube-prometheus
+        enabled: true
+        customRules:
+          enabled: true
+          rules:
+            dataflow.cassandra.rules:
+            - alert: dataflow.CassandraDown
+              expr: up{app="cassandra"} == 0
+              for: 3m
+              labels:
+                severity: critical
+              annotations:
+                title: Cassandra is down
+                description: Cassandra is down on {{` {{ $labels.instance }} `}}.
+            dataflow.kafka.rules:
+            - alert: dataflow.KafkaDown
+              expr: up{app="cp-kafka"} == 0
+              for: 3m
+              labels:
+                severity: critical
+              annotations:
+                title: Kafka is down
+                description: Kafka broker is down on {{` {{ $labels.instance }} `}}. Could not scrape jmx-exporter for 3m.
+            - alert: dataflow.KafkaNoController
+              expr: sum(cp_kafka_controller_kafkacontroller_activecontrollercount) < 1
+              for: 3m
+              labels:
+                severity: critical
+              annotations:
+                title: Kafka cluster has no controller
+                description: Kafka controller count < 1, cluster is probably broken.
+
+            # dataflow.coredns.rules:
+            # - alert: dataflow.CorednsPanicCount
+            #   expr: increase(coredns_panic_count_total[10m]) > 0
+            #   for: 5m
+            #   labels:
+            #     severity: error
+            #   annotations:
+            #     summary: "CoreDNS Panic Count (instance {{` {{ $labels.instance }} `}})"
+            #     description: "Number of CoreDNS panics encountered\n  VALUE = {{` {{ $value }} `}}\n  LABELS: {{` {{ $labels }} `}}"

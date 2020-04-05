@@ -1,0 +1,50 @@
+helmDefaults:
+  tillerless: true
+  tillerNamespace: platform
+  atomic: true
+  verify: false
+  wait: false
+  timeout: 900
+  recreatePods: false
+  force: false
+
+repositories:
+- name: fairwinds
+  url: https://charts.fairwinds.com/stable
+
+###############
+## Template App
+## Description
+releases:
+{{- if eq (env "HELM_VERSION" | default "2") "3" }}
+- name: namespace-astro
+  chart: ../charts/custom/namespace/chart/namespace
+  namespace: kube-system
+  labels:
+    chart: namespace-astro
+    component: "astro"
+    namespace: kube-system
+  wait: true
+  installed: true
+  values:
+  - namespaces:
+    - {{ env "STACK_ASTRO_NAMESPACE" | default "astro" }}
+{{- end }}
+
+- name: astro
+  namespace: {{ env "STACK_ASTRO_NAMESPACE" | default "astro" }}
+  installed: {{ env "STACK_ASTRO" | default "true" }}
+  chart: astro/astro
+  labels:
+    chart: astro
+    component: astro
+    namespace: {{ env "STACK_ASTRO_NAMESPACE" | default "astro" }}
+{{- if eq (env "HELM_VERSION" | default "2") "3" }}
+  needs:
+    - kube-system/namespace-astro
+{{- end }}
+  values:
+  - datadog:
+      apiKey: {{ env "STACK_ASTRO_NAMESPACE" | default "" }}
+      appKey: {{ env "STACK_ASTRO_APPKEY" | default "" }}
+    owner: "{{ env "TARGET" | default "cicd" }}"

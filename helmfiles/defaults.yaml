@@ -1,0 +1,11 @@
+helmDefaults:
+{{- if eq (env "HELM_VERSION" | default "3") "2" }}
+  tillerless: true
+  tillerNamespace: {{ env "TILLER_NAMESPACE" | default "platform" }}
+{{- end }}
+  atomic: true
+  verify: false
+  wait: false
+  timeout: 600
+  recreatePods: false
+  force: false

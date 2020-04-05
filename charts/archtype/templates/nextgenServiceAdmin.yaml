@@ -1,0 +1,35 @@
+{{- $root := . -}}
+{{- $common := dict "Values" .Values.common -}}
+{{- $project := .Values.project -}}
+{{- $noCommon := omit .Values "common" -}}
+{{- $overrides := dict "Values" $noCommon -}}
+{{- $noValues := omit . "Values" -}}
+
+{{- with merge $noValues $overrides $common -}}
+{{- $nextgenServiceAdmin := .Values.nextgenServiceAdmin -}}
+{{- if $nextgenServiceAdmin.enabled }}
+apiVersion: rbacmanager.reactiveops.io/v1beta1
+kind: RBACDefinition
+metadata:
+  name: rbac-{{ $nextgenServiceAdmin.name | default .Release.Namespace }}-{{ $project.team }}-{{ $project.workload }}
+rbacBindings:
+- name: rbac-{{ $nextgenServiceAdmin.name | default .Release.Namespace }}-{{ $project.team }}-{{ $project.workload }}
+  subjects:
+    - kind: ServiceAccount
+      name: {{ $nextgenServiceAdmin.serviceAccount }}
+  roleBindings:
+    - clusterRole: admin
+      namespaceSelector:
+        matchExpressions:
+          - key: ns
+            operator: In
+            values:
+              - {{ .Release.Namespace }}
+              # - {{ $project.team }}-test-{{ $project.workload }}
+              # - {{ $project.team }}-dev-{{ $project.workload }}
+              # - {{ $project.team }}-qa-{{ $project.workload }}
+              # - {{ $project.team }}-preprod-{{ $project.workload }}
+              # - {{ $project.team }}-prod-{{ $project.workload }}
+{{- end }}
+
+{{- end -}}

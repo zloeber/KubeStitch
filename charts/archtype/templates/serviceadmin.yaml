@@ -1,0 +1,35 @@
+{{- $root := . -}}
+{{- $common := dict "Values" .Values.common -}}
+{{- $project := .Values.project -}}
+{{- $noCommon := omit .Values "common" -}}
+{{- $overrides := dict "Values" $noCommon -}}
+{{- $noValues := omit . "Values" -}}
+
+{{- with merge $noValues $overrides $common -}}
+{{- $serviceAdmin := .Values.serviceAdmin -}}
+{{- if $serviceAdmin.enabled }}
+apiVersion: rbacmanager.reactiveops.io/v1beta1
+kind: RBACDefinition
+metadata:
+  name: rbac-{{ .Release.Namespace }}-{{ $serviceAdmin.serviceAccount }}
+rbacBindings:
+- name: rbac-{{ .Release.Namespace }}-{{ $serviceAdmin.serviceAccount }}
+  subjects:
+    - kind: ServiceAccount
+      name: {{ $serviceAdmin.serviceAccount }}
+  roleBindings:
+    - clusterRole: {{ $serviceAdmin.clusterRole | default "admin" }}
+      namespaceSelector:
+        matchExpressions:
+          - key: ns
+            operator: In
+            values:
+              - {{ .Release.Namespace }}
+              # - {{ $project.team }}-test-{{ $project.workload }}
+              # - {{ $project.team }}-dev-{{ $project.workload }}
+              # - {{ $project.team }}-qa-{{ $project.workload }}
+              # - {{ $project.team }}-preprod-{{ $project.workload }}
+              # - {{ $project.team }}-prod-{{ $project.workload }}
+{{- end }}
+
+{{- end -}}

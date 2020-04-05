@@ -1,0 +1,3 @@
+
+go/project/%: ## Create a new golang cookiecutter project
+	cookiecutter https://github.com/lacion/cookiecutter-golang.git

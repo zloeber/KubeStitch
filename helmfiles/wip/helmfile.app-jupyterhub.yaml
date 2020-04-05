@@ -1,0 +1,61 @@
+repositories:
+- name: "jupyterhub"
+  url: "https://jupyterhub.github.io/helm-chart/"
+- name: "stable"
+  url: "https://kubernetes-charts.storage.googleapis.com/"
+
+releases:
+- name: etcd-operator
+  namespace: "app-jupyterhub"
+  chart: "stable/etcd-operator"
+  version: 0.8.3
+  labels:
+    chart: "etcd-operator"
+    component: "jupyterhub"
+    namespace: "app-jupyterhub"
+
+- name: jupyterhub
+  namespace: "app-jupyterhub"
+  chart: "jupyterhub/jupyterhub"
+  #chart: "../charts/incubator/jupyterhub"
+  #version: 0.9-fbabecf
+  labels:
+    chart: "jupyterhub"
+    component: "jupyterhub"
+    namespace: "app-jupyterhub"
+  values:
+  - hub:
+      cookieSecret: "3937deeee0f615b7cc9d927d568f9013f150f4328555875c7eab9bac6b97da49"
+      publicURL: jupyterhub.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+    proxy:
+      secretToken: "2395293e2984ddf63c7c9045e8d920641c57a1cdeeed6654ede7454800c0b2e9"
+    ingress:
+      hosts:
+      - jupyterhub.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+
+- name: ingress-jupyterhub
+  namespace: "app-jupyterhub"
+  version: 0.0.1
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  labels:
+    chart: "ingress-jupyterhub"
+    component: "ingress"
+    namespace: "app-jupyterhub"
+  values:
+  - project:
+      team: "operations"
+      target: {{ env "TARGET" | default "cicd" }}
+      client: {{ env "CLIENT" | default "client1" }}
+      workload: "jupyterhub"
+      engine: "app-jupyterhub"
+    ingress:
+      enabled: true
+      hosts:
+      - name: jupyterhub.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+        config:
+          http:
+            paths:
+            - path: "/"
+              backend:
+                serviceName: hub
+                servicePort: 8081

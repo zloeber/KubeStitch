@@ -1,0 +1,87 @@
+{{- $root := . -}}
+{{- $common := dict "Values" .Values.common -}}
+{{- $noCommon := omit .Values "common" -}}
+{{- $overrides := dict "Values" $noCommon -}}
+{{- $noValues := omit . "Values" -}}
+{{- $streaming := .Values.sparkStreams -}}
+
+{{- with merge $noValues $overrides $common -}}
+{{- if $streaming.enabled }}
+{{- range $name, $job := $streaming.jobs }}
+---
+apiVersion: "sparkoperator.k8s.io/v1beta1"
+kind: SparkApplication
+metadata:
+  name: "{{ $name }}"
+{{- with $streaming.annotations }}
+  annotations:
+{{ toYaml . | indent 4 }}
+{{- end }}
+  labels:
+    component: stream
+{{ include "common.labels" $root | indent 4 }}
+  spec:
+    mainClass: {{ $job.class }}
+    mainApplicationFile: "{{ $streaming.jarpath }}/{{ $job.jar }}"
+    type: {{ $job.type | default $streaming.type }}
+    mode: {{ $job.mode | default $streaming.mode }}
+    image: "{{ $job.repository | default $streaming.repository }}/{{ $streaming.image }}:v{{ $streaming.version }}"
+    imagePullPolicy: "Always"
+    restartPolicy:
+      type: OnFailure
+      onFailureRetries: 3
+      onFailureRetryInterval: 10
+      onSubmissionFailureRetries: 5
+      onSubmissionFailureRetryInterval: 20
+    deps:
+      jars:
+        - "{{ $streaming.jarpath }}/{{ $job.jar }}"
+
+{{- with $job.args }}
+    arguments:
+{{ toYaml . | indent 4 }}
+{{- end }}
+    volumes:
+    - name: config-vol
+      configMap:
+        name: {{ include "spark.configmap.name" $root }}
+
+    driver:
+{{- if $job.driver }}
+{{- with $job.driver }}
+{{ toYaml . | indent 6 }}
+{{- end }}
+{{- else }}
+{{- with $streaming.spec.driver }}
+{{ toYaml . | indent 6 }}
+{{- end }}
+{{- end }}
+{{ include "nextgen.spark.secretmap" $root | indent 6 }}
+{{ include "spark.configmap" $root | indent 6 }}
+
+    executor:
+{{- if $job.executor }}
+{{- with $job.executor }}
+{{ toYaml . | indent 6 }}
+{{- end }}
+{{- else }}
+{{- with $streaming.spec.executor }}
+{{ toYaml . | indent 6 }}
+{{- end }}
+{{- end }}
+{{ include "nextgen.spark.secretmap" $root | indent 6 }}
+{{ include "spark.configmap" $root | indent 6 }}
+
+    monitoring:
+{{- if $job.monitoring }}
+{{- with $job.monitoring }}
+{{ toYaml . | indent 6 }}
+{{- end }}
+{{- else }}
+{{ include "spark.jmxmonitoring" $root | indent 6 }}
+{{- end }}
+{{- end }}
+
+
+{{- end -}}
+{{- end -}}

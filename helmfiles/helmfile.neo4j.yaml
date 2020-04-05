@@ -1,0 +1,119 @@
+helmDefaults:
+  tillerless: true
+  tillerNamespace: platform
+  atomic: false
+  verify: false
+  wait: false
+  timeout: 600
+  recreatePods: true
+  force: true
+
+repositories:
+- name: stable
+  url: https://kubernetes-charts.storage.googleapis.com/
+
+releases:
+{{- if eq (env "HELM_VERSION" | default "2") "3" }}
+- name: namespace-neo4j
+  # Helm 3 needs to put deployment info into a namespace. As this creates a namespace it will not exist yet so we use 'kube-system' 
+  #  which should exist in all clusters.
+  chart: ../charts/namespace/chart/namespace
+  namespace: kube-system
+  labels:
+    chart: namespace-neo4j
+    component: "neo4j"
+    namespace: "{{ env "STACK_NEO4J_NAMESPACE" | default "neo4j" }}"
+  wait: true
+  installed: {{ env "STACK_NEO4J" | default "true" }}
+  values:
+  - namespaces:
+    - "{{ env "STACK_NEO4J_NAMESPACE" | default "neo4j" }}"
+{{- end }}
+
+- name: neo4j
+  namespace: "{{ env "STACK_NEO4J_NAMESPACE" | default "neo4j" }}"
+  chart: stable/neo4j
+  labels:
+    chart: "neo4j"
+    component: "neo4j"
+    namespace: "{{ env "STACK_NEO4J_NAMESPACE" | default "neo4j" }}"
+  installed: {{ env "STACK_NEO4J" | default "true" }}
+{{- if eq (env "HELM_VERSION" | default "2") "3" }}
+  needs:
+    - kube-system/namespace-neo4j
+{{- end }}
+  values:
+  - acceptLicenseAgreement: "yes"
+{{- if eq (env "CICD" | default "false") "false" }}
+    nodeSelector:
+      agentpool: {{ env "AKS_RESERVED_NODESELECTOR" | default "agentpool" }}
+{{- end }}
+    neo4jPassword: {{ env "STACK_NEO4J_PASSWORD" | default "AlexHasGraph4U" }}
+    core:
+      storageClass: "default"
+
+- name: ingress-neo4j
+  namespace: "{{ env "STACK_NEO4J_NAMESPACE" | default "neo4j" }}"
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  labels:
+    chart: ingress-neo4j
+    component: neo4j
+    namespace: "{{ env "STACK_NEO4J_NAMESPACE" | default "neo4j" }}"
+  installed: {{ env "STACK_NEO4J" | default "true" }}
+{{- if eq (env "HELM_VERSION" | default "2") "3" }}
+  needs:
+    - kube-system/namespace-neo4j
+{{- end }}
+  values:
+  - project:
+      team: {{ env "TEAM" | default "team1" }}
+      target: {{ env "TARGET" | default "cicd" }}
+      client: {{ env "CLIENT" | default "client1" }}
+    ingressInternalClass: {{ env "STACK_INGRESS_INT_CLASS" | default "internal" }}
+    ingress:
+      enabled: true
+      hosts:
+      - name: neo4j.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+        config:
+          http:
+            paths:
+            - path: "/"
+              backend:
+                serviceName: neo4j-neo4j
+                servicePort: 7474
+
+- name: loadbalancer-neo4j
+  namespace: "{{ env "STACK_NEO4J_NAMESPACE" | default "neo4j" }}"
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  labels:
+    chart: "loadbalancer-neo4j"
+    component: "neo4j"
+    namespace: "{{ env "STACK_NEO4J_NAMESPACE" | default "neo4j" }}"
+  installed: {{ env "STACK_NEO4J" | default "true" }}
+{{- if eq (env "HELM_VERSION" | default "2") "3" }}
+  needs:
+    - kube-system/namespace-neo4j
+{{- end }}
+  values:
+  - fullnameOverride: "neo4j"
+    nameOverride: "neo4j"
+    project:
+      app: neo4j
+      team: {{ env "TEAM" | default "team1" }}
+      target: {{ env "TARGET" | default "cicd" }}
+      client: {{ env "CLIENT" | default "client1" }}
+    service:
+      enabled: true
+      type: LoadBalancer
+      loadBalancerIP: "{{ env "IP_NEO4J_LB_INT" | default "127.0.0.1" }}"
+      annotations:
+        service.beta.kubernetes.io/{{ env "CLOUD" | default "local" }}-load-balancer-internal: "true"
+      selector:
+        app: neo4j
+        component: core
+        release: neo4j
+      ports:
+        bolt:
+          port: 7687
+          protocol: TCP
+          targetPort: 7687

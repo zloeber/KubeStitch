@@ -1,0 +1,86 @@
+helmDefaults:
+  tillerless: true
+  tillerNamespace: platform
+  atomic: false
+  verify: false
+  wait: false
+  timeout: 600
+  recreatePods: false
+  force: true
+
+
+releases:
+- name: devops-exporter
+  namespace: devopsexporter
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  labels:
+    chart: devops-exporter
+    component: devopsexporter
+    namespace: devopsexporter
+    {{ env "CLOUD" | default "local" }}-key-vault-env-injection: enabled
+  values:
+  - keyvaultInjection: true
+    project:
+      target: {{ env "TARGET" | default "cicd" }}
+      stage: {{ env "STAGE" | default "dev" }}
+      team: inv
+      client: mcd
+      workload: monitoring
+      engine: nextgen
+      app: devopsexporter
+    keyvaultSecrets:
+      enabled: true
+      vaultName: ng{{ requiredEnv "TEAM" }}kv{{ env "TARGET" | default "cicd" }}
+      secretMap: '{{ env "TEAM" | default "team1" }}-{{ env "STAGE" | default "dev" }}-stream-secrets'
+      type: secret
+      secrets:
+      - secretKey: DevopsAccessToken
+    enablePrometheusScrape: true
+    deployment:
+      enabled: true
+    ports:
+      default:
+        internal: 8080
+        external: 8080
+        prometheus: 8080
+    image:
+      repository: nextgen{{ env "TARGET" | default "cicd" }}.azurecr.io/devops-exporter
+      tag: {{ env "STAGE" | default "dev" }}
+    env:
+      "AZURE_DEVOPS_ORGANISATION": "{{ env "DEVOPS_ORG" | default "adodevopsorg" }}"
+      "AZURE_DEVOPS_ACCESS_TOKEN": "kv-DevopsAccessToken@azurekeyvault"
+      "REQUEST_CONCURRENCY": 1
+      "REQUEST_RETRIES": 3
+      # SCRAPE_TIME: 30m # 	Interval (time.Duration) between API calls
+      # SCRAPE_TIME_PROJECTS #	not set, default see SCRAPE_TIME 	Interval for project metrics (list of projects for all scrapers)
+      # SCRAPE_TIME_REPOSITORY #	not set, default see SCRAPE_TIME 	Interval for repository metrics
+      # SCRAPE_TIME_BUILD 	#not set, default see SCRAPE_TIME 	Interval for build metrics
+      # SCRAPE_TIME_RELEASE 	#not set, default see SCRAPE_TIME 	Interval for release metrics
+      # SCRAPE_TIME_DEPLOYMENT 	#not set, default see SCRAPE_TIME 	Interval for deployment metrics
+      # SCRAPE_TIME_PULLREQUEST 	#not set, default see SCRAPE_TIME 	Interval for pullrequest metrics
+      # SCRAPE_TIME_STATS 	#not set, default see SCRAPE_TIME 	Interval for stats metrics
+      # SCRAPE_TIME_LIVE 	30s #	Time (time.Duration) between API calls
+      # SERVER_BIND 	:8080 #	IP/Port binding
+      # AZURE_DEVOPS_URL 	none #	Azure DevOps url (only if on-prem)
+      # AZURE_DEVOPS_FILTER_PROJECT 	none #	Whitelist project uuids
+      # AZURE_DEVOPS_BLACKLIST_PROJECT 	none #	Blacklist project uuids
+      # AZURE_DEVOPS_FILTER_AGENTPOOL 	none #	Whitelist for agentpool metrics
+      # AZURE_DEVOPS_APIVERSION 	fixed version #	API version used to query for Azure DevOps
+      # REQUEST_CONCURRENCY 	1 #	API request concurrency (number of calls at the same time)
+      # REQUEST_RETRIES 	1 #	API request retries in case of failure
+      # LIMIT_BUILDS_PER_DEFINITION 	10 #	Fetched builds per definition
+      # LIMIT_RELEASES_PER_DEFINITION 	100 #	Fetched releases per definition
+      # LIMIT_DEPLOYMENTS_PER_DEFINITION 	100 #	Fetched deployments per definition
+      # LIMIT_RELEASEDEFINITION_PER_PROJECT 	100 #	Fetched builds per definition
+    service:
+      enabled: true
+    ingress:
+      enabled: true
+      hosts:
+      - name: devopsexporter.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+    serviceMonitor:
+      enabled: true
+      name: devops-exporter-metrics
+      endpoints:
+        - port: "8080"
+        - targetPort: "8080"

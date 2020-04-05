@@ -1,0 +1,288 @@
+bases:
+- "../helmfiles/defaults.yaml"
+
+helmfiles:
+  - ../helmfiles/helmfile.confluent-operator.yaml
+
+releases:
+- name: "kafkahq"
+  namespace: "database"
+  chart: "../charts/kafkahq"
+  labels:
+    chart: "kafkahq"
+    component: "config"
+    namespace: "database"
+  values:
+  - Target: '{{ env "TARGET" | default "cicd" }}'
+
+## Zookeepercluster loadbalanced IP
+- name: loadbalancer-zookeeper
+  namespace: "database"
+  chart: "../charts/archtype/"
+  labels:
+    chart: "loadbalancer-zookeeper"
+    component: "loadbalancer"
+    namespace: "database"
+  values:
+  - fullnameOverride: "zookeepercluster"
+    project:
+      team: {{ env "TEAM" | default "team1" }}
+      target: {{ env "TARGET" | default "cicd" }}
+      client: mcd
+      workload: "zookeeper"
+      engine: nextgen
+    service:
+      enabled: true
+      type: "LoadBalancer"
+      loadBalancerIP: {{ requiredEnv "IP_ZOOKEEPER_LB_INT" }}
+      annotations:
+        service.beta.kubernetes.io/{{ env "CLOUD" | default "local" }}-load-balancer-internal: "true"
+      selector:
+        app: zookeeper
+        release: {{ requiredEnv "KAFKA_CHART_RELEASE" }}
+      ports:
+        www:
+          port: 2181
+          protocol: "TCP"
+          targetPort: 2181
+
+## Kafka loadbalanced IP
+- name: loadbalancer-kafkacluster
+  namespace: "database"
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  labels:
+    chart: "loadbalancer-kafkacluster"
+    component: "loadbalancer"
+    namespace: "database"
+  values:
+  - fullnameOverride: "kafkacluster"
+    nameOverride: "kafkacluster"
+    project:
+      team: operations
+      target: {{ env "TARGET" | default "cicd" }}
+      client: havi
+      workload: kafkacluster
+      engine: database
+    service:
+      enabled: true
+      type: LoadBalancer
+      loadBalancerIP: {{ requiredEnv "IP_KAFKA_LB_INT" }}
+      annotations:
+        service.beta.kubernetes.io/{{ env "CLOUD" | default "local" }}-load-balancer-internal: "true"
+      selector:
+        app: kafka
+        release: {{ requiredEnv "KAFKA_CHART_RELEASE" }}
+      ports:
+        kafka:
+          port: 9092
+          protocol: TCP
+          targetPort: 9092
+
+- name: ingress-kafkahq
+  namespace: "database"
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  labels:
+    chart: "ingress-kafkahq"
+    component: "ingress"
+    namespace: "database"
+  values:
+  - project:
+      team: {{ env "TEAM" | default "team1" }}
+      target: {{ env "TARGET" | default "cicd" }}
+      client: mcd
+      workload: "kafkahq"
+      engine: nextgen
+    ingress:
+      enabled: true
+      hosts:
+      - name: kafkahq.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+        config:
+          http:
+            paths:
+            - path: "/"
+              backend:
+                serviceName: kafkahq-svc
+                servicePort: 8080
+
+- name: ingress-kafka
+  namespace: "database"
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  labels:
+    chart: "ingress-kafka"
+    component: "ingress"
+    namespace: "database"
+  values:
+  - project:
+      team: operations
+      target: {{ env "TARGET" | default "cicd" }}
+      client: havi
+      workload: kafka
+      engine: database
+    ingress:
+      enabled: true
+      hosts:
+      - name: kafka.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+        config:
+          http:
+            paths:
+            - path: "/"
+              backend:
+                serviceName: kafka
+                servicePort: 9092
+
+- name: ingress-kafkaconnect
+  namespace: "database"
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  labels:
+    chart: "ingress-kafkaconnect"
+    component: "ingress"
+    namespace: "database"
+  values:
+  - project:
+      team: {{ env "TEAM" | default "team1" }}
+      target: {{ env "TARGET" | default "cicd" }}
+      client: mcd
+      workload: "kafkaconnect"
+      engine: nextgen
+    ingress:
+      enabled: true
+      hosts:
+      - name: kafkaconnect.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+        config:
+          http:
+            paths:
+            - path: "/"
+              backend:
+                serviceName: connectors
+                servicePort: 8083
+
+# - name: ingress-kafkarest
+#   namespace: "database"
+#   chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+#   labels:
+#     chart: "ingress-kafkarest"
+#     component: "ingress"
+#     namespace: "database"
+#   values:
+#   - project:
+#       team: {{ env "TEAM" | default "team1" }}
+#       target: {{ env "TARGET" | default "cicd" }}
+#       client: mcd
+#       workload: "kafkarest"
+#       engine: nextgen
+#     ingress:
+#       enabled: true
+#       hosts:
+#       - name: kafkarest.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+#         config:
+#           http:
+#             paths:
+#             - path: "/"
+#               backend:
+#                 serviceName: {{ requiredEnv "KAFKA_CHART_RELEASE" }}-kafka-rest
+#                 servicePort: 8082
+
+- name: ingress-schemaregistry
+  namespace: "database"
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  labels:
+    chart: "ingress-schemaregistry"
+    component: "ingress"
+    namespace: "database"
+  values:
+  - project:
+      team: {{ env "TEAM" | default "team1" }}
+      target: {{ env "TARGET" | default "cicd" }}
+      client: mcd
+      workload: kafka
+      engine: nextgen
+    ingress:
+      enabled: true
+      hosts:
+      - name: schemaregistry.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+        config:
+          http:
+            paths:
+            - path: "/"
+              backend:
+                serviceName: schemaregistry
+                servicePort: 8081
+
+- name: ingress-replicator
+  namespace: "database"
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  labels:
+    chart: "ingress-replicator"
+    component: "ingress"
+    namespace: "database"
+  values:
+  - project:
+      team: {{ env "TEAM" | default "team1" }}
+      target: {{ env "TARGET" | default "cicd" }}
+      client: mcd
+      workload: kafka
+      engine: nextgen
+    ingress:
+      enabled: true
+      hosts:
+      - name: replicator.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+        config:
+          http:
+            paths:
+            - path: "/"
+              backend:
+                serviceName: replicator
+                servicePort: 8083
+
+- name: ingress-ksqlserver
+  namespace: "database"
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  labels:
+    chart: "ingress-ksqlserver"
+    component: "ingress"
+    namespace: "database"
+  values:
+  - project:
+      team: {{ env "TEAM" | default "team1" }}
+      target: {{ env "TARGET" | default "cicd" }}
+      client: mcd
+      workload: "ksqlserver"
+      engine: nextgen
+    ingress:
+      enabled: true
+      hosts:
+      - name: ksqlserver.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+        config:
+          http:
+            paths:
+            - path: "/"
+              backend:
+                serviceName: ksql
+                servicePort: 8088
+
+- name: ingress-kafka-controlcenter
+  namespace: "database"
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  labels:
+    chart: ingress-kafka-controlcenter
+    component: "ingress"
+    namespace: "database"
+  values:
+  - project:
+      team: inv
+      target: {{ env "TARGET" | default "cicd" }}
+      client: mcd
+      workload: kafka
+      engine: database
+    ingress:
+      enabled: true
+      hosts:
+      - name: controlcenter.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+        config:
+          http:
+            paths:
+            - path: "/"
+              backend:
+                serviceName: controlcenter
+                servicePort: 9021
+

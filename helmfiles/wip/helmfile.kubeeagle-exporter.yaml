@@ -1,0 +1,24 @@
+helmDefaults:
+  tillerless: true
+  tillerNamespace: platform
+  atomic: false
+  verify: false
+  wait: false
+  timeout: 600
+  recreatePods: false
+  force: true
+
+repositories:
+- name: "kube-eagle"
+  url: "https://raw.githubusercontent.com/cloudworkz/kube-eagle-helm-chart/master"
+
+- name: "kubeeagle-exporter"
+  namespace: {{ env "STACK_MONITORING_NAMESPACE" | default "monitoring" }}
+  labels:
+    chart: "kube-eagle"
+    component: "kubeeagle-exporter"
+    namespace: {{ env "STACK_MONITORING_NAMESPACE" | default "monitoring" }}
+  chart: "kube-eagle/kube-eagle"
+  wait: true
+  values:
+  - metricsNamespace: monitoring

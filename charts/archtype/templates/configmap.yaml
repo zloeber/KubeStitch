@@ -1,0 +1,64 @@
+{{- $root := . -}}
+{{- $common := dict "Values" .Values.common -}}
+{{- $noCommon := omit .Values "common" -}}
+{{- $overrides := dict "Values" $noCommon -}}
+{{- $noValues := omit . "Values" -}}
+{{- $configmap := .Values.configMaps -}}
+
+{{- with merge $noValues $overrides $common -}}
+{{- if $configmap.enabled }}
+
+{{- $fileglob := $configmap.fileglob | default false -}}
+{{- if $configmap.env }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "configmap.name" $root }}
+{{- with $configmap.annotations }}
+  annotations:
+{{- toYaml . | nindent 4 }}
+{{- end }}
+  labels:
+    component: env
+{{ include "common.labels" $root | indent 4 }}
+data:
+{{- with $configmap.env }}
+{{- toYaml . | nindent 2 }}
+{{- end }}
+{{- end }}
+
+{{- if $configmap.files }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "configmap.name" $root }}-files
+{{- with $configmap.annotations }}
+  annotations:
+    {{ toYaml . | nindent 4 }}
+{{- end }}
+  labels:
+    component: files
+    {{ include "common.labels" $root | nindent 4 }}
+data:
+{{- if $fileglob }}
+{{- range $key, $value := $configmap.files }}
+  {{ $key }}: |
+{{ (.Files.Glob $value).AsConfig | indent 4 }}
+{{- end }}
+{{- else }}
+{{- range $key, $value := $configmap.files }}
+  {{ $key }}: |
+{{- if kindIs "map" $value }}
+{{ regexReplaceAll "(\\s+\\w+:\\s+)\\\\(\\!\\w+)" ( toYaml $value ) "${1}${2}" | indent 4 }}
+{{- else }}
+{{ $value | indent 4 }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+
+{{- end }}
+
+{{- end -}}

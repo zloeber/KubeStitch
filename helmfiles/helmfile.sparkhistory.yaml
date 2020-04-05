@@ -1,0 +1,84 @@
+helmDefaults:
+  tillerless: true
+  tillerNamespace: platform
+  atomic: false
+  verify: false
+  wait: true
+  timeout: 900
+  recreatePods: false
+  force: true
+
+repositories:
+- name: incubator
+  url: https://kubernetes-charts-incubator.storage.googleapis.com
+
+releases:
+## Precrete a spark history server shared claim
+- name: sparkhistory-storage
+  chart: incubator/raw
+  namespace: {{ env "SPARK_HISTORY_NAMESPACE" | default "sparkhistory" }}
+  values:
+  - resources:
+    - kind: PersistentVolumeClaim
+      apiVersion: v1
+      metadata:
+        name: spark-history-claim
+        namespace: {{ env "SPARK_HISTORY_NAMESPACE" | default "sparkhistory" }}
+      spec:
+        accessModes:
+          - ReadWriteMany
+        resources:
+          requests:
+            storage: 100Gi
+        storageClassName: azurefile
+
+- name: spark-history
+  chart: "../charts/spark-history-server"
+  namespace: {{ env "SPARK_HISTORY_NAMESPACE" | default "sparkhistory" }}
+  version: 1.1.1
+  labels:
+    chart: "spark-history"
+    component: "spark"
+    namespace: {{ env "SPARK_HISTORY_NAMESPACE" | default "sparkhistory" }}
+  values:
+  - image:
+      repository: mycontainerrepo.azurecr.io/spark-history-server
+      tag: v2.4.4
+    pvc:
+      enablePVC: true
+      existingClaimName: spark-history-claim
+    nfs:
+      enableExampleNFS: false
+    logging:
+      enableLogRotation: true
+    service:
+      type: ClusterIP
+
+- name: ingress-spark-history
+  namespace: {{ env "SPARK_HISTORY_NAMESPACE" | default "sparkhistory" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  labels:
+    chart: ingress-spark-history
+    component: ingress
+    namespace: {{ env "SPARK_HISTORY_NAMESPACE" | default "sparkhistory" }}
+  values:
+  - project:
+      target: {{ env "TARGET" | default "cicd" }}
+      stage: {{ env "STAGE" | default "dev" }}
+      team: {{ env "TEAM" | default "team1" }}
+      client: {{ env "CLIENT" | default "client1" }}
+      workload: spark-history
+      engine: nextgen
+      app: sparkhistory
+    ingressInternalClass: {{ env "STACK_INGRESS_INT_CLASS" | default "internal" }}
+    ingress:
+      enabled: true
+      hosts:
+      - name: sparkhistory.{{ env "ZONE" | default "" }}{{ env "TARGET" | default "cicd" }}.{{ env "DOMAIN" | default "micro.svc" }}
+        config:
+          http:
+            paths:
+            - path: "/"
+              backend:
+                serviceName: spark-history-spark-history-server
+                servicePort: 18080

@@ -1,0 +1,60 @@
+helmDefaults:
+  tillerless: true
+  tillerNamespace: platform
+  atomic: false
+  verify: false
+  wait: false
+  timeout: 600
+  recreatePods: false
+  force: true
+
+releases:
+- name: deployment-elastichq
+  namespace: "logging"
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  version: 0.0.1
+  labels:
+    chart: "deployment-elastichq"
+    component: "logging"
+    namespace: "logging"
+  values:
+  - fullnameOverride: "elastichq"
+    nameOverride: "elastichq"
+    project:
+      buildid: "latest"
+      team: "inventory"
+      target: {{ env "TARGET" | default "cicd" }}
+      client: "internal"
+      workload: "elastichq"
+      engine: "nextgen"
+    image:
+      repository: elastichq/elasticsearch-hq
+      tag: latest
+      pullPolicy: IfNotPresent
+    deployment:
+      enabled: true
+      # pod:
+      #   env:
+      #     CONNECT_URL: http://kafkaconnect.a1d.{{ env "DOMAIN" | default "micro.svc"}};a1d,http://kafkaconnect.a2d.{{ env "DOMAIN" | default "micro.svc"}};a2d,http://kafkaconnect.a3d.{{ env "DOMAIN" | default "micro.svc"}};a3d
+      ports:
+        www: 5000
+    service:
+      enabled: true
+      type: ClusterIP
+      ports:
+        http:
+          port: 5000
+          protocol: TCP
+          targetPort: 5000
+    ingressInternalClass: {{ env "STACK_INGRESS_INT_CLASS" | default "internal" }}
+    ingress:
+      enabled: true
+      hosts:
+      - name: elastichq.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+        config:
+          http:
+            paths:
+            - path: "/"
+              backend:
+                serviceName: elastichq
+                servicePort: 5000

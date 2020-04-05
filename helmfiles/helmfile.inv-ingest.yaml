@@ -1,0 +1,325 @@
+helmDefaults:
+  tillerless: true
+  tillerNamespace: platform
+  atomic: true
+  verify: false
+  wait: false
+  timeout: 900
+  recreatePods: false
+  force: true
+
+repositories:
+- name: stable
+  url: https://kubernetes-charts.storage.googleapis.com/
+- name: incubator
+  url: https://kubernetes-charts-incubator.storage.googleapis.com
+
+releases:
+{{- if eq (env "HELM_VERSION" | default "2") "3" }}
+- name: namespace-inv-ingest
+  # Helm 3 needs to put deployment info into a namespace. As this creates a namespace it will not exist yet so we use 'kube-system' 
+  #  which should exist in all clusters.
+  chart: ../charts/namespace/chart/namespace
+  namespace: kube-system
+  labels:
+    chart: namespace-inv-ingest
+    component: "inv-ingest"
+    namespace: "inv-ingest"
+  wait: true
+  installed: true
+  values:
+  - namespaces:
+    - inv-ingest
+    helmResourcePolicy: keep
+    labels:
+      {{ env "CLOUD" | default "local" }}-key-vault-env-injection: enabled
+    annotations:
+      certmanager.k8s.io/disable-validation: "true"
+{{- end }}
+## Set default service account with correct permissions to manage spark jobs
+- name: inv-ingest-rbac
+  chart: incubator/raw
+  namespace: inv-ingest
+{{- if eq (env "HELM_VERSION" | default "2") "3" }}
+  needs:
+  - kube-system/namespace-inv-ingest
+{{- end }}
+  values:
+  - resources:
+    - kind: ClusterRole
+      apiVersion: rbac.authorization.k8s.io/v1
+      metadata:
+        name: inv-ingest-cluster-role
+        labels:
+          app.kubernetes.io/name: inv-ingest
+      rules:
+      - apiGroups: [""]
+        resources: ["pods", "services", "configmaps"]
+        verbs: ["get", "list", "watch", "create", "delete", "update", "patch"]
+      - apiGroups: [""]
+        resources: ["secrets"]
+        verbs: ["get", "watch", "list"]
+    - kind: ClusterRoleBinding
+      apiVersion: rbac.authorization.k8s.io/v1
+      metadata:
+        name: inv-ingest-role-binding
+        labels:
+          app.kubernetes.io/name: inv-ingest
+      roleRef:
+        apiGroup: rbac.authorization.k8s.io
+        kind: ClusterRole
+        name: inv-ingest-cluster-role
+      subjects:
+      - name: default
+        namespace: inv-ingest
+        kind: ServiceAccount
+
+## Inject secrets and enable injection on the namespace
+- name: inv-ingest-kv-inject
+  force: true
+  namespace: inv-ingest
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  labels:
+    name: inv-ingest-kv-inject
+    namespace: inv-ingest
+  hooks:
+    # This hook adds the keyvault injection annotation
+    - events: ["presync"]
+      showlogs: true
+      command: "/bin/sh"
+      args:
+      - "-c"
+      - >-
+        kubectl get namespace "{{`{{ .Release.Namespace }}`}}" >/dev/null 2>&1 || kubectl create namespace "{{`{{ .Release.Namespace }}`}}";
+        kubectl label --overwrite namespace "{{`{{ .Release.Namespace }}`}}" "{{ env "CLOUD" | default "local" }}-key-vault-env-injection=enabled";
+{{- if eq (env "HELM_VERSION" | default "2") "3" }}
+  needs:
+  - kube-system/namespace-inv-ingest
+{{- end }}
+  values:
+  - project:
+      team: {{ env "TEAM" | default "team1" }}
+      stage: {{ env "STAGE" | default "dev" }}
+      target: {{ env "TARGET" | default "cicd" }}
+      client: {{ env "CLIENT" | default "client1" }}
+      engine: nextgen
+      app: inv-ingest
+    keyvaultName: {{ requiredEnv "KEYVAULTNAME" }}
+    keyvaultSecrets: 
+      enabled: true
+      vaultName: {{ requiredEnv "KEYVAULTNAME" }}
+      type: secret
+      secrets:
+      - secretKey: STORAGEACCOUNTNAME
+      - secretKey: STORAGEACCOUNTKEY
+      - secretKey: STORAGEPATH
+      - secretKey: CHECKPOINTACCOUNTNAME
+      - secretKey: CHECKPOINTACCOUNTKEY
+      - secretKey: CHECKPOINTPATH
+      - secretKey: JDBCDRIVER
+      - secretKey: JDBCDATABASE
+      - secretKey: JDBCHOSTNAME
+      - secretKey: JDBCPASSWORD
+      - secretKey: JDBCPORT
+      - secretKey: JDBCSCHEMA
+      - secretKey: JDBCSERVER
+      - secretKey: JDBCSSL
+      - secretKey: JDBCURL
+      - secretKey: JDBCUSERNAME
+      - secretKey: K8SSERVER
+      - secretKey: K8SCACERT
+      - secretKey: K8SPASSWORD
+      - secretKey: K8SCONFIG
+      - secretKey: KAFKABOOTSTRAPSERVERS
+      - secretKey: CASSANDRAURL
+      - secretKey: CASSANDRAUSERNAME
+      - secretKey: CASSANDRAPASSWORD
+
+## Create a base self-signed cert
+- name: "sparkoperator-certca-sparkstream"
+  namespace: 'inv-ingest'
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  labels:
+    chart: "sparkoperator-certca-sparkstream"
+    component: "certificate"
+    namespace: 'inv-ingest'
+{{- if eq (env "HELM_VERSION" | default "2") "3" }}
+  needs:
+  - kube-system/namespace-inv-ingest
+{{- end }}
+  values:
+  - project:
+      team: {{ env "TEAM" | default "inv" }}
+      target: {{ env "TARGET" | default "cicd" }}
+      stage: {{ env "STAGE" | default "dev" }}
+      client: mcd
+      workload: spark
+      engine: nextgen
+      app: stream
+    certificate:
+      enabled: true
+      name: spark-{{ env "TARGET" | default "cicd" }}-selfsigned-issuer
+      kind: ClusterIssuer
+      isCA: true
+      selfSigned: true
+
+## Create the spark webhook cert from self-signed cert
+- name: sparkoperator-certwebhook-sparkstream
+  namespace: 'inv-ingest'
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  labels:
+    chart: sparkoperator-certwebhook-sparkstream
+    component: "certificate"
+    namespace: 'inv-ingest'
+{{- if eq (env "HELM_VERSION" | default "2") "3" }}
+  needs:
+  - kube-system/namespace-inv-ingest
+{{- end }}
+  values:
+  - project:
+      team: inv
+      target: {{ env "TARGET" | default "cicd" }}
+      client: common
+      workload: sparkoperator
+      engine: nextgen
+      app: inv-ingest-cert
+    certificate:
+      enabled: true
+      name: spark-webhook-certs
+      commonName: 'webhook.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}'
+      kind: Certificate
+      isCA: false
+      selfSigned: false
+      issuer: spark-{{ env "TARGET" | default "cicd" }}-selfsigned-issuer
+
+## Precrete a spark history server shared claim
+- name: sparkhistory-storage
+  chart: incubator/raw
+  namespace: inv-ingest
+  labels:
+    chart: sparkhistory-storage
+{{- if eq (env "HELM_VERSION" | default "2") "3" }}
+  needs:
+  - kube-system/namespace-inv-ingest
+{{- end }}
+  values:
+  - resources:
+    - kind: PersistentVolumeClaim
+      apiVersion: v1
+      metadata:
+        name: spark-history-claim
+        namespace: inv-ingest
+      spec:
+        accessModes:
+          - ReadWriteMany
+        resources:
+          requests:
+            storage: 100Gi
+        storageClassName: azurefile
+
+- name: spark-history
+  chart: "../charts/spark-history-server"
+  namespace: inv-ingest
+  version: 1.1.1
+  labels:
+    chart: "spark-history"
+    component: "spark"
+    namespace: "inv-ingest"
+{{- if eq (env "HELM_VERSION" | default "2") "3" }}
+  needs:
+  - kube-system/namespace-inv-ingest
+{{- end }}
+  values:
+  - image:
+      repository: mycontainerrepo.azurecr.io/spark-history-server
+      tag: v2.4.4
+    pvc:
+      enablePVC: true
+      existingClaimName: spark-history-claim
+    nfs:
+      enableExampleNFS: false
+    logging:
+      enableLogRotation: true
+    service:
+      type: ClusterIP
+
+- name: ingress-spark-history
+  namespace: inv-ingest
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  labels:
+    chart: ingress-spark-history
+    component: ingress
+    namespace: inv-ingest
+{{- if eq (env "HELM_VERSION" | default "2") "3" }}
+  needs:
+  - kube-system/namespace-inv-ingest
+{{- end }}
+  values:
+  - project:
+      team: {{ env "TEAM" | default "team1" }}
+      target: {{ env "TARGET" | default "cicd" }}
+      client: {{ env "CLIENT" | default "client1" }}
+    ingress:
+      enabled: true
+      hosts:
+      - name: sparkhistory.{{ env "ZONE" | default "" }}{{ env "TARGET" | default "cicd" }}.{{ env "DOMAIN" | default "micro.svc" }}
+        config:
+          http:
+            paths:
+            - path: "/"
+              backend:
+                serviceName: spark-history-spark-history-server
+                servicePort: 18080
+# ## Spark Operator
+# - name: sparkoperator-sparkstream
+#   namespace: 'inv-ingest'
+#   chart: "incubator/sparkoperator"
+#   #version: 0.4.4
+#   labels:
+#     chart: sparkoperator-sparkstream
+#     component: sparkoperator
+#     namespace: inv-ingest
+# {{- if eq (env "HELM_VERSION" | default "2") "3" }}
+#   needs:
+#   - kube-system/namespace-inv-ingest
+# {{- end }}
+#   values:
+#   - enableWebhook: true
+#     enableMetrics: true
+#     installCrds: true
+#     sparkJobNamespace: inv-ingest
+#     enableBatchScheduler: true
+#     ingressUrlFormat: '{{ printf "{{$appName}}" }}.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}'
+
+# - name: ingress-spark-inv-ingest
+#   namespace: inv-ingest
+#   chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+#   labels:
+#     chart: ingress-spark-inv-ingest
+#     component: ingress
+#     namespace: inv-ingest
+# {{- if eq (env "HELM_VERSION" | default "2") "3" }}
+#   needs:
+#   - kube-system/namespace-inv-ingest
+# {{- end }}
+#   values:
+#   - project:
+#       target: {{ env "TARGET" | default "cicd" }}
+#       stage: {{ env "STAGE" | default "dev" }}
+#       team: inv
+#       client: mcd
+#       workload: spark
+#       engine: nextgen
+#       app: inv-ingest-ingress
+#     ingress:
+#       enabled: true
+#       hosts:
+#       - name: sparkwebhook.{{ env "ZONE" | default "" }}{{ env "TARGET" | default "cicd" }}.{{ env "DOMAIN" | default "micro.svc" }}
+#         secretName: sparkoperator-webhook-sparkstream-cert
+#         config:
+#           http:
+#             paths:
+#             - path: "/"
+#               backend:
+#                 serviceName: sparkoperator-sparkstream-webhook
+#                 servicePort: 8080

@@ -1,0 +1,116 @@
+helmDefaults:
+  tillerless: true
+  tillerNamespace: platform
+  atomic: true
+  verify: false
+  wait: false
+  timeout: 900
+  recreatePods: false
+  force: false
+
+repositories:
+- name: fairwinds
+  url: https://charts.fairwinds.com/stable
+
+###############
+## Goldilocks
+## https://hub.helm.sh/charts/fairwinds-stable/goldilocks
+releases:
+{{- if eq (env "HELM_VERSION" | default "2") "3" }}
+- name: namespace-goldilocks
+  chart: ../charts/custom/namespace/chart/namespace
+  namespace: kube-system
+  labels:
+    chart: namespace-goldilocks
+    component: "goldilocks"
+    namespace: {{ env "STACK_GOLDILOCKS_NAMESPACE" | default "goldilocks" }}
+  wait: true
+  installed: true
+  values:
+  - namespaces:
+    - {{ env "STACK_GOLDILOCKS_NAMESPACE" | default "goldilocks" }}
+    labels:
+      goldilocks.fairwinds.com/enabled: "true"
+{{- end }}
+- name: goldilocks
+  namespace: {{ env "STACK_GOLDILOCKS_NAMESPACE" | default "goldilocks" }}
+  installed: {{ env "STACK_GOLDILOCKS" | default "true" }}
+  chart: fairwinds/goldilocks
+  labels:
+    chart: goldilocks
+    component: goldilocks
+    namespace: {{ env "STACK_GOLDILOCKS_NAMESPACE" | default "goldilocks" }}
+{{- if eq (env "HELM_VERSION" | default "2") "3" }}
+  needs:
+    - kube-system/namespace-goldilocks
+{{- end }}
+  values:
+  - installVPA: true
+
+- name: ingress-goldilocks
+  namespace: {{ env "STACK_GOLDILOCKS_NAMESPACE" | default "goldilocks" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/custom/archtype" }}
+  installed: {{ env "STACK_GOLDILOCKS" | default "true" }}
+  labels:
+    chart: "ingress-goldilocks"
+    component: "ingress"
+    namespace: {{ env "STACK_GOLDILOCKS_NAMESPACE" | default "goldilocks" }}
+{{- if eq (env "HELM_VERSION" | default "2") "3" }}
+  needs:
+    - kube-system/namespace-goldilocks
+{{- end }}
+  values:
+  - project:
+      team: {{ env "TEAM" | default "team1" }}
+      stage: {{ env "STAGE" | default "dev" }}
+      target: {{ env "TARGET" | default "cicd" }}
+      client: {{ env "CLIENT" | default "client1" }}
+    ingressTests: false
+    ingressInternalClass: {{ env "STACK_INGRESS_INT_CLASS" | default "internal" }}
+    ingress:
+      enabled: true
+      hosts:
+      - name: goldilocks.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+        config:
+          http:
+            paths:
+            - path: "/"
+              backend:
+                serviceName: goldilocks-dashboard
+                servicePort: 80
+
+# - name: goldilocks-servicemonitor
+#   chart: "incubator/raw"
+#   namespace: {{ env "STACK_MONITORING_NAMESPACE" | default "monitoring" }}
+#   labels:
+#     component: "goldilocks"
+#     namespace: {{ env "STACK_MONITORING_NAMESPACE" | default "monitoring" }}
+#     default: "true"
+#   installed: {{ env "STACK_MONITORING" | default "true" }}
+#   values:
+#   - resources:
+#     - apiVersion: monitoring.coreos.com/v1
+#       kind: ServiceMonitor
+#       metadata:
+#         name: goldilocks
+#         namespace: {{ env "STACK_MONITORING_NAMESPACE" | default "monitoring" }}
+#         labels:
+#           app: goldilocks
+#           chart: goldilocks-v0.9.0
+#           release: goldilocks
+#           heritage: Helm
+#           prometheus: {{ env "STACK_MONITORING_PROMETHEUSINSTANCE" | default "kube-prometheus" }}
+#       spec:
+#         jobLabel: goldilocks
+#         namespaceSelector:
+#           matchNames:
+#           - {{ env "STACK_CERTMANAGER_NAMESPACE" | default "goldilocks" }}
+#         selector:
+#           matchLabels:
+#             app: goldilocks
+#             release: goldilocks
+#         endpoints:
+#         - targetPort: 9402
+#           path: /metrics
+#           interval: 60s
+#           scrapeTimeout: 30s

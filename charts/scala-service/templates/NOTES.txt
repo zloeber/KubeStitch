@@ -1,0 +1,12 @@
+Scala service deployed - 
+  App: {{ .Values.archtype.project.app | default "" | quote }}
+  Team: {{ .Values.archtype.project.team | default "" | quote }}
+  Stage: {{ .Values.archtype.project.stage | default "" | quote }}
+  Target: {{ .Values.archtype.project.target | default "" | quote }}
+  Client: {{ .Values.archtype.project.client | default "" | quote }}
+
+Liveliness Probe Enabled: {{ .Values.archtype.deployment.livelinessProbe.enabled | default "false" | quote }}
+Readiness Probe Enabled: {{ .Values.archtype.deployment.readinessProbe.enabled | default "false" | quote }}
+Affinity Enabled: {{ .Values.archtype.affinity.enabled | default "false" | quote }}
+Prometheus Service Monitor Enabled: {{ .Values.archtype.prometheus.serviceMonitor.enabled | default "false" | quote }}
+Prometheus Alert Enabled: {{ .Values.archtype.prometheus.alerts.enabled | default "false" | quote }}

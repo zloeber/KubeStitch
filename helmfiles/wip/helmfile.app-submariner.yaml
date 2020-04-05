@@ -1,0 +1,25 @@
+repositories:
+- name: "submariner-latest"
+  url: "https://releases.rancher.com/submariner-charts/latest"
+
+releases:
+- name: submariner
+  namespace: "app-submariner"
+  chart: "submariner-latest/submariner"
+  labels:
+    chart: "submariner"
+    component: "submariner"
+    namespace: "app-submariner"
+  values:
+  - ipsec:
+        psk: "{{ requiredEnv "SUBMARINER_PSK" }}"
+    broker:
+        server: "{{ requiredEnv "SUBMARINER_BROKER_URL" }}"
+        token: "{{ requiredEnv "SUBMARINER_BROKER_TOKEN" }}"
+        namespace: "app-submariner"
+        ca: "{{ requiredEnv "SUBMARINER_BROKER_CA" }}"
+    submariner:
+        clusterId: "{{ requiredEnv "SUBMARINER_CLUSTER_NAME" }}"
+        ClusterCidr: "{{ requiredEnv "SUBMARINER_CLUSTER_RANGE" }}"
+        serviceCidr: "{{ requiredEnv "SUBMARINER_SERVICE_RANGE" }}"
+        natEnabled: "false"

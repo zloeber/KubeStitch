@@ -1,0 +1,120 @@
+bases:
+- "../helmfiles/defaults.yaml"
+
+releases:
+- name: spark-pi
+  namespace: "sparkoperator"
+  version: 0.0.1
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  labels:
+    chart: "spark-pi"
+    component: "test"
+    namespace: "sparkoperator"
+  values:
+  - project:
+      app: "sparkpi"
+      buildid: "latest"
+      team: inventory
+      target: {{ env "TARGET" | default "cicd" }}
+      client: mcd
+      workload: dev
+      engine: nextgen
+    sparkApplications:
+      sparkpi:
+        enabled: true
+        repository: "gcr.io"
+        image: "spark-operator/spark"
+        version: "v2.4.4"
+        spec:
+          type: Scala
+          mode: cluster
+          mainClass: org.apache.spark.examples.SparkPi
+          mainApplicationFile: "local:///opt/spark/examples/jars/spark-examples_2.11-2.4.0.jar"
+          sparkVersion: "2.4.4"
+          arguments:
+            - "100000"
+        driver:
+          cores: 0.1
+          coreLimit: "200m"
+          memory: "512m"
+        executor:
+          cores: 0.1
+          instances: 1
+          memory: "512m"
+    # nextgensecrets:
+    #   enabled: true
+    #   jdbc:
+    #     password: "SimplePassword"
+    #   storageaccount:
+    #     key: "your_key"
+    #   checkpoint:
+    #     account:
+    #       key: "some_random_key"
+    #     container:
+    #       name: "checkpoints"
+    nextgenconfigmaps:
+      enabled: false
+
+# # - name: inv-dev-spark-hs
+#   namespace: "sparkoperator"
+#   version: 0.5.0
+#   chart: "../charts/spark-history-server"
+#   labels:
+#     chart: "spark-history-server"
+#     component: "spark"
+#     namespace: "sparkoperator"
+#   values:
+#   - wasbs:
+#       enableWASBS: true
+#       sasKeyMode: false
+#       ## Storage account key auth instead
+#       storageAccountNameKeyName: {{ env "CLOUD" | default "local" }}-storage-account
+#       storageAccountKeyName: {{ env "CLOUD" | default "local" }}-storage-account-key
+#       containerKeyName: {{ env "CLOUD" | default "local" }}-blob-container-name
+#       logDirectory: wasbs:///spark-hs
+#     #metricsPrefix: "nextgenstream"
+#     nodeSelector:
+#       agentpool: {{ env "AKS_RESERVED_NODESELECTOR" | default "agentpool" }}
+
+# - name: inv-dev-spark-stream
+#   namespace: "sparkoperator"
+#   version: 0.0.1
+#   chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+#   labels:
+#     chart: "spark-stream"
+#     component: "nextgen-stream"
+#     namespace: "sparkoperator"
+#   values:
+#   - project:
+#       buildid: "15429"
+#       team: inventory
+#       target: {{ env "TARGET" | default "cicd" }}
+#       client: mcd
+#       workload: dev
+#       engine: nextgen
+#     sparkapplications:
+#     - FileToKafkaLoaderItem:
+#         enabled: true
+#         repository: "hmdacr.azurecr.io"
+#         image: "alpine/nextgen-spark"
+#         version: "v2.4.0"
+#         annotations:
+#           app: "spark"
+#         spec:
+#           type: "Scala"
+#           mode: "cluster"
+#           mainClass: com.havi.nextgen.job.file.FileToKafkaLoader
+#           mainApplicationFile: "local:///opt/spark/jars/nextgen-spark-jobs-assembly-1.0.jar"
+#           arguments: 
+#           - Item
+#           deps:
+#             jars:
+#               - local:///opt/spark/jars/nextgen-spark-jobs-assembly-1.0.jar
+#         driver:
+#           cores: 0.1
+#           coreLimit: "200m"
+#           memory: "512m"
+#         executor:
+#           cores: 0.1
+#           instances: 1
+#           memory: "512m"

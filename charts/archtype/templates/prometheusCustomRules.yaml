@@ -1,0 +1,40 @@
+{{- if and .Values.prometheus.enabled .Values.prometheus.customRules.enabled }}
+
+{{- $root := . -}}
+{{- $common := dict "Values" .Values.common -}}
+{{- $noCommon := omit .Values "common" -}}
+{{- $overrides := dict "Values" $noCommon -}}
+{{- $noValues := omit . "Values" -}}
+
+{{- with merge $noValues $overrides $common -}}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ include "common.shortname" . }}-custom-rules
+  namespace: {{ .Values.prometheus.namespace | default "monitoring" | quote }}
+  labels:
+    role: alert-rules
+    prometheus: {{ .Values.prometheus.instance | default "kube-prometheus" | quote }}
+    {{- include "common.labels" $root | nindent 4 }}
+spec:
+  groups:
+  {{- range $name, $ruleset := .Values.prometheus.customRules.rules }}
+  - name: "{{ $name }}"
+    rules:
+    {{- range $alertnumber, $alert := $ruleset }}
+    - alert: "{{ $alert.alert }}"
+      expr: {{ $alert.expr }}
+      for: {{ $alert.for }}
+      labels:
+      {{- with $alert.labels }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+        {{- include "common.labels" $root | nindent 8 }}
+      {{- with $alert.annotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+{{- end }}
+{{- end -}}

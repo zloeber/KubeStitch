@@ -1,0 +1,24 @@
+helmDefaults:
+  tillerless: true
+  tillerNamespace: platform
+  atomic: false
+  verify: false
+  wait: false
+  timeout: 600
+  recreatePods: true
+  force: true
+
+repositories:
+- name: incubator
+  url: https://kubernetes-charts-incubator.storage.googleapis.com/
+
+releases:
+## Kube-Janitor
+- name: kube-janitor
+  namespace: platform
+  chart: "incubator/kube-janitor"
+  #version: 0.1.0
+  labels:
+    chart: "kube-janitor"
+    component: "platform"
+    namespace: "platform"

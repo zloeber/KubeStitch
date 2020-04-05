@@ -1,0 +1,58 @@
+dependencies:
+  - name: alertmanager
+    version: 0.1.7
+    repository: file://subcharts/alertmanager
+    condition: deployAlertManager
+
+  - name: prometheus
+    version: 0.0.51
+    repository: file://subcharts/prometheus
+
+  - name: exporter-coredns
+    version: 0.0.3
+    repository: file://subcharts/exporter-coredns
+    condition: deployCoreDNS
+
+  - name: exporter-kube-controller-manager
+    version: 0.1.10
+    repository: file://subcharts/exporter-kube-controller-manager
+    condition: deployKubeControllerManager
+
+  - name: exporter-kube-dns
+    version: 0.1.7
+    repository: file://subcharts/exporter-kube-dns
+    condition: deployKubeDNS
+
+  - name: exporter-kube-etcd
+    version: 0.1.15
+    repository: file://subcharts/exporter-kube-etcd
+    condition: deployKubeEtcd
+
+  - name: exporter-kube-scheduler
+    version: 0.1.9
+    repository: file://subcharts/exporter-kube-scheduler
+    condition: deployKubeScheduler
+
+  - name: exporter-kube-state
+    version: 0.2.6
+    repository: file://subcharts/exporter-kube-state
+    condition: deployKubeState
+
+  - name: exporter-kubelets
+    version: 0.2.11
+    repository: file://subcharts/exporter-kubelets
+    condition: deployKubelets
+
+  - name: exporter-kubernetes
+    version: 0.1.10
+    repository: file://subcharts/exporter-kubernetes
+
+  - name: exporter-node
+    version: 0.4.6
+    repository: file://subcharts/exporter-node
+    condition: deployExporterNode
+
+  - name: grafana
+    version: 0.0.37
+    repository: file://subcharts/grafana
+    condition: deployGrafana

@@ -1,0 +1,95 @@
+bases:
+- ./defaults.yaml
+- ../environment/values.{{ .Environment.Name | default "default" }}.yaml
+
+repositories:
+- name: stable
+  url: https://kubernetes-charts.storage.googleapis.com
+
+releases:
+- name: "kubernetes-dashboard"
+  namespace: '{{- env "STACK_DASHBOARD_NAMESPACE" | default "kube-system" -}}'
+  labels:
+    chart: "kubernetes-dashboard"
+    repo: "stable"
+    component: "monitoring"
+    namespace: "{{- env "STACK_DASHBOARD_NAMESPACE" | default "kube-system" -}}"
+    vendor: "kubernetes"
+    default: "true"
+  chart: "stable/kubernetes-dashboard"
+  version: "1.10.1"
+  wait: true
+  installed: {{ env "STACK_DASHBOARD" | default "true" }}
+  values:
+  - image:
+      repository: "k8s.gcr.io/kubernetes-dashboard-amd64"
+      tag: '{{ env "STACK_DASHBOARD_IMAGE_TAG" | default "v1.10.1" }}'
+      pullPolicy: "IfNotPresent"
+    enableInsecureLogin: {{ env "STACK_DASHBOARD_ENABLE_INSECURE_LOGIN" | default "true"}}
+{{- if eq (env "STACK_DASHBOARD_ENABLE_INSECURE_LOGIN" | default "true") "true" }}
+    service:
+      externalPort: 80
+{{- end }}
+{{- if eq (env "STACK_DASHBOARD_SKIP_LOGIN" | default "true") "true" }}
+    extraArgs:
+      - --enable-skip-login
+{{- end }}
+    replicaCount: '{{ env "STACK_DASHBOARD_REPLICA_COUNT" | default 1 }}'
+    resources:
+      limits:
+        cpu: '{{ env "STACK_DASHBOARD_LIMIT_CPU" | default "100m" }}'
+        memory: '{{ env "STACK_DASHBOARD_LIMIT_MEMORY" | default "100Mi" }}'
+      requests:
+        cpu: '{{ env "STACK_DASHBOARD_REQUEST_CPU" | default "50m" }}'
+        memory: '{{ env "STACK_DASHBOARD_REQUEST_MEMORY" | default "50Mi" }}'
+    rbac:
+      create: {{ env "KUBE_RBAC_ENABLED" | default "true" }}
+    serviceAccount:
+      create: {{ env "KUBE_RBAC_ENABLED" | default "true" }}
+      name: '{{ env "STACK_DASHBOARD_SERVICE_ACCOUNT_NAME" | default "" }}'
+    ingress:
+      enabled: false
+
+- name: ingress-dashboard
+  namespace: '{{ env "STACK_DASHBOARD_NAMESPACE" | default "kube-system" }}'
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  installed: {{ env "STACK_DASHBOARD_INSTALLED" | default "true" }}
+  labels:
+    chart: ingress-dashboard
+    component: ingress
+    namespace: '{{ env "STACK_DASHBOARD_NAMESPACE" | default "kube-system" }}'
+  values:
+  - project:
+      team: {{ env "TEAM" | default "cicd" }}
+      target: {{ env "TARGET" | default "cicd" }}
+      client: {{ env "CLIENT" | default "client1" }}
+    ingressInternalClass: {{ env "STACK_INGRESS_INT_CLASS" | default "internal" }}
+    ingress:
+      enabled: true
+      hosts:
+      - name: dashboard.{{ env "ZONE" | default "" }}{{ env "TEAM" | default "team1" }}.{{ env "TARGET" | default "cicd" }}.{{ env "DNS_DOMAIN" | default "micro.svc" }}
+        config:
+          http:
+            paths:
+            - path: "/"
+              backend:
+                serviceName: kubernetes-dashboard
+                servicePort: 80
+
+- name: rbac-dashboard-service
+  chart: incubator/raw
+  namespace: '{{ env "STACK_DASHBOARD_NAMESPACE" | default "kube-system" }}'
+  values:
+  - resources:
+    - kind: RBACDefinition
+      apiVersion: rbacmanager.reactiveops.io/v1beta1
+      metadata:
+        name: rbac-dashboard-service
+      rbacBindings:
+        - name: cluster-admins
+          subjects:
+            - kind: ServiceAccount
+              name: kubernetes-dashboard
+              namespace: '{{ env "STACK_DASHBOARD_NAMESPACE" | default "kube-system" }}'
+          clusterRoleBindings:
+            - clusterRole: cluster-admin

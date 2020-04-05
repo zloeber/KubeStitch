@@ -1,0 +1,84 @@
+repositories:
+- name: "weaveworks"
+  url: "https://weaveworks.github.io/flux"
+
+helmfiles:
+  path: https://raw.githubusercontent.com/weaveworks/flux/master/deploy-helm/flux-helm-release-crd.yaml
+
+releases:
+- name: flux
+  namespace: flux
+  chart: "stable/flux"
+  version: 2.3.1
+  labels:
+    chart: "flux"
+    component: "flux"
+    namespace: "flux"
+  values:
+  - selector:
+      nodeSelector:
+        agentpool: {{ env "AKS_RESERVED_NODESELECTOR" | default "agentpool" }}
+    persistence:
+      enabled: true
+      storageClass: "standard"
+    service:
+      servicename: "flux-svc"
+
+- name: ingress-flux
+  namespace: "flux"
+  version: 0.0.1
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  labels:
+    chart: "ingress-flux"
+    component: "ingress"
+    namespace: "flux"
+  values:
+  - project:
+      team: "operations"
+      target: {{ env "TARGET" | default "cicd" }}
+      client: {{ env "CLIENT" | default "client1" }}
+      workload: "flux"
+      engine: "flux"
+    ingress:
+      enabled: true
+      hosts:
+      - name: flux.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+        config:
+          http:
+            paths:
+            - path: "/"
+              backend:
+                serviceName: "flux-svc"
+                servicePort: 8080
+
+# - name: loadbalancer-flux
+#   namespace: "flux"
+#   version: 0.0.1
+#   chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+#   labels:
+#     chart: "loadbalancer-flux"
+#     component: "loadbalancer"
+#     namespace: "flux"
+#   values:
+#   - fullnameOverride: "fluxcluster"
+#     nameOverride: "fluxcluster"
+#     project:
+#       team: operations
+#       target: {{ env "TARGET" | default "cicd" }}
+#       client: havi
+#       workload: flux
+#       engine: flux
+#     service:
+#       enabled: true
+#       type: LoadBalancer
+#       loadBalancerIP: {{ requiredEnv "IP_CASSANDRA_LB_INT" }}
+#       annotations:
+#         service.beta.kubernetes.io/{{ env "CLOUD" | default "local" }}-load-balancer-internal: "true"
+#       selector:
+#         app: flux
+#         release: flux
+#       ports:
+#         flux:
+#           port: 9042
+#           protocol: TCP
+#           targetPort: 9042

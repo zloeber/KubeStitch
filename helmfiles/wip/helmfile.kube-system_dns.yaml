@@ -1,0 +1,76 @@
+bases:
+- "../helmfiles/defaults.yaml"
+
+releases:
+- name: loadbalancer-coredns
+  namespace: "kube-system"
+  #version: 0.0.1
+  chart: "../charts/archtype/"
+  labels:
+    chart: "loadbalancer-coredns"
+    component: "loadbalancer"
+    namespace: "database"
+  values:
+  - project:
+      team: inv
+      target: {{ env "TARGET" | default "cicd" }}
+      client: common
+      workload: platform
+      engine: platform
+      app: coredns
+    service:
+      enabled: true
+      type: "LoadBalancer"
+      loadBalancerIP: "{{ requiredEnv "IP_COREDNS_LB_INT" }}"
+      annotations:
+        service.beta.kubernetes.io/{{ env "CLOUD" | default "local" }}-load-balancer-internal: "true"
+      selector:
+        app: "kube-dns"
+      ports:
+        dns:
+          port: 53
+          protocol: "TCP"
+          targetPort: 53
+
+- name: "config-havi-coredns"
+  namespace: "kube-system"
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  #version: 0.0.1
+  labels:
+    chart: "config-coredns"
+    component: "coredns"
+    namespace: "kube-system"
+  values:
+  - project:
+      team: inv
+      target: {{ env "TARGET" | default "cicd" }}
+      client: common
+      workload: platform
+      engine: platform
+      app: coredns
+    configmaps:
+      coredns-havi-custom:
+        enabled: true
+        labels:
+          k8s-app: "kube-dns"
+          kubernetes.io/cluster-service: "true"
+        files:
+          perseco.server: |
+            perseco.com:53 {
+              errors
+              cache 30
+              proxy . 10.10.36.34 10.10.36.35
+            }
+          {{ env "TARGET" | default "cicd" }}_mda.server: |
+            {{ env "TARGET" | default "cicd" }}.{{ env "DOMAIN" | default "micro.svc" }}:53 {
+              errors
+              cache 30
+              proxy . {{ requiredEnv "DNS_IP_1" }} {{ requiredEnv "DNS_IP_2" }}
+            }
+          external_{{ env "TARGET" | default "cicd" }}.server: |
+            {{ env "ZONE" | default "" }}{{ env "TARGET" | default "cicd" }}.ext.{{ env "DOMAIN" | default "micro.svc" }}:53 {
+              forward . tls://1.1.1.1 tls://1.0.0.1 {
+                tls_servername cloudflare-dns.com
+                health_check 5s
+              }
+            }

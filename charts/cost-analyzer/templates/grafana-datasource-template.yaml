@@ -1,0 +1,31 @@
+{{- if .Values.grafana -}}
+{{- if .Values.grafana.sidecar -}}
+{{- if .Values.grafana.sidecar.datasources -}}
+{{- if .Values.grafana.sidecar.datasources.enabled -}}
+{{- if .Values.grafana.sidecar.datasources.defaultDatasourceEnabled -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-datasource
+  labels:
+    {{ include "cost-analyzer.commonLabels" . | nindent 4 }}
+    grafana_datasource: "1"
+data:
+  datasource.yaml: |-
+    # config file version
+    apiVersion: 1
+    datasources:
+    - access: proxy
+      isDefault: true
+      name: Prometheus
+      type: prometheus
+{{- if .Values.global.prometheus.enabled }}
+      url: http://{{ .Release.Name }}-prometheus-server.{{ .Release.Namespace  }}.svc.cluster.local
+{{ else }}
+      url: {{ .Values.global.prometheus.fqdn }}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}

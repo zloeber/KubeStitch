@@ -1,0 +1,69 @@
+helmDefaults:
+  tillerless: true
+  tillerNamespace: platform
+  atomic: false
+  verify: false
+  wait: false
+  timeout: 600
+  recreatePods: false
+  force: true
+
+
+repositories:
+- name: "stable"
+  url: "https://kubernetes-charts.storage.googleapis.com/"
+
+releases:
+- name: chartmuseum
+  namespace: chartmuseum
+  chart: "stable/chartmuseum"
+  # version: 2.3.1
+  labels:
+    chart: "chartmuseum"
+    component: "chartmuseum"
+    namespace: "chartmuseum"
+  values:
+  - selector:
+      nodeSelector:
+        agentpool: {{ env "AKS_RESERVED_NODESELECTOR" | default "agentpool" }}
+    persistence:
+      enabled: true
+      storageClass: "standard"
+    service:
+      servicename: "chartmuseum-svc"
+    env:
+      open:
+        AUTH_ANONYMOUS_GET: true
+        ALLOW_OVERWRITE: true
+        DISABLE_API: false
+        DISABLE_METRICS: false
+      secret:
+        BASIC_AUTH_USER: nextgencmuser
+        BASIC_AUTH_PASS: nextgencmpass
+
+- name: ingress-chartmuseum
+  namespace: "chartmuseum"
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  labels:
+    chart: "ingress-chartmuseum"
+    component: "ingress"
+    namespace: "chartmuseum"
+  values:
+  - project:
+      team: "operations"
+      target: {{ env "TARGET" | default "cicd" }}
+      client: {{ env "CLIENT" | default "client1" }}
+      workload: "chartmuseum"
+      engine: "chartmuseum"
+    ingress:
+      enabled: true
+      hosts:
+      - name: chartmuseum.{{ env "ZONE" | default "" }}{{ env "TARGET" | default "cicd" }}.{{ env "DOMAIN" | default "micro.svc" }}
+        config:
+          http:
+            paths:
+            - path: "/"
+              backend:
+                serviceName: "chartmuseum-svc"
+                servicePort: 8080
+

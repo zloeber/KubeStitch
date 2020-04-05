@@ -1,0 +1,27 @@
+{{- $root := . -}}
+{{- $common := dict "Values" .Values.common -}}
+{{- $noCommon := omit .Values "common" -}}
+{{- $overrides := dict "Values" $noCommon -}}
+{{- $noValues := omit . "Values" -}}
+{{- with merge $noValues $overrides $common -}}
+{{- $config := .Values.namespace -}}
+
+{{- if $config.enabled }}
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ include "common.fullname" . }}
+  labels:
+    {{- include "common.labels" $root | nindent 4 }}
+{{- with $config.labels }}
+    {{ toYaml . | nindent 4 }}
+{{- end }}
+
+{{- with $config.annotations }}
+  annotations:
+    {{ toYaml . | nindent 4 }}
+{{- end }}
+    
+{{- end -}}
+{{- end -}}

@@ -1,0 +1,31 @@
+helmDefaults:
+  tillerless: true
+  tillerNamespace: platform
+  atomic: false
+  verify: false
+  wait: false
+  timeout: 600
+  recreatePods: false
+  force: true
+
+
+repositories:
+- name: "azure"
+  url: "https://kubernetescharts.blob.core.windows.net/azure"
+
+## Cluster security elements
+releases:
+- name: "open-service-broker-azure"
+  namespace: "platform-osba"
+  chart: "azure/open-service-broker-azure"
+  #version: 1.5.0
+  labels:
+    chart: "open-service-broker-azure"
+    component: "osba"
+    namespace: "platform-osba"
+  values:
+  - azure:
+      subscriptionId: "{{ requiredEnv "AZ_AKS_SUB_ID" }}"
+      tenantId: "{{ requiredEnv "AZ_AKS_TENANT_ID" }}"
+      clientId: "{{ requiredEnv "AZ_AKS_CLIENT_ID" }}"
+      clientSecret: "{{ requiredEnv "AZ_AKS_CLIENT_SECRET" }}"

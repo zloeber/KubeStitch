@@ -1,0 +1,60 @@
+{{- $root := . -}}
+{{- $common := dict "Values" .Values.common -}}
+{{- $noCommon := omit .Values "common" -}}
+{{- $overrides := dict "Values" $noCommon -}}
+{{- $noValues := omit . "Values" -}}
+{{- with merge $noValues $overrides $common -}}
+
+{{- range $name, $cron := .Values.cronjob -}}
+{{- if $cron.enabled }}
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: {{ $name | replace "_" "-"  }}
+  {{- with $cron.annotations }}
+  annotations:
+    {{ toYaml . | nindent 4 }}
+  {{- end }}
+  labels:
+    {{ include "common.labels" $root | nindent 4 }}
+  {{- with $cron.labels }}
+    {{ toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  schedule: "{{ required "Schedule required!" $cron.schedule }}"
+  concurrencyPolicy: {{ default "Forbid" $cron.concurrencyPolicy }}
+  suspend: {{ default "false" $cron.suspend }}
+  successfulJobsHistoryLimit: {{ default 1 $cron.successfulJobsHistoryLimit }}
+  failedJobsHistoryLimit: {{ default 1 $cron.failedJobsHistoryLimit }}
+  jobTemplate:
+    spec:
+      ttlSecondsAfterFinished: {{ default 300 $cron.ttlSecondsAfterFinished }}
+      activeDeadlineSeconds: {{ default 300 $cron.activeDeadlineSeconds }}
+      backoffLimit: {{ default 1 $cron.backoffLimit }}
+      completions: {{ default 1 $cron.completions }}
+      parallelism: {{ default 1 $cron.parallelism }}
+      template:
+        metadata:
+          name: {{ $name | replace "_" "-" }}
+          {{- with $cron.annotations }}
+          annotations:
+            {{ toYaml . | nindent 12 }}
+          {{- end }}
+          labels:
+            {{ include "common.labels" $root | nindent 12 }}
+        spec:
+          restartPolicy: "{{ default "Never" $cron.restartPolicy }}"
+          serviceAccountName: "{{ default "default" $cron.serviceAccountName }}"
+          serviceAccount: "{{ default "default" $cron.serviceAccount }}"
+          terminationGracePeriodSeconds: {{ default 30 $cron.terminationGracePeriodSeconds }}
+          {{- with $cron.initContainers }}
+          initContainers:
+            {{ toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with $cron.containers }}
+          containers:
+            {{ toYaml . | nindent 12 }}
+          {{- end }}
+{{- end }}
+{{- end -}}
+{{- end -}}

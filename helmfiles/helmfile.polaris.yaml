@@ -1,0 +1,47 @@
+helmDefaults:
+  tillerless: true
+  tillerNamespace: platform
+  atomic: false
+  verify: false
+  wait: false
+  timeout: 600
+  recreatePods: false
+  force: true
+
+releases:
+- name: polaris
+  chart: "../charts/polaris"
+  version: 0.0.2
+  namespace: {{ env "STACK_MONITORING_NAMESPACE" | default "monitoring" }}
+  labels:
+    chart: "polaris"
+    repo: "coreos-stable"
+    component: "operator"
+    namespace: {{ env "STACK_MONITORING_NAMESPACE" | default "monitoring" }}
+
+- name: ingress-polaris
+  namespace: {{ env "STACK_MONITORING_NAMESPACE" | default "monitoring" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  labels:
+    chart: "ingress-polaris"
+    component: "ingress"
+    namespace: {{ env "STACK_MONITORING_NAMESPACE" | default "monitoring" }}
+  values:
+  - project:
+      app: polaris
+      team: {{ env "TEAM" | default "team1" }}
+      target: {{ env "TARGET" | default "cicd" }}
+      client: {{ env "CLIENT" | default "client1" }}
+      release: {{ env "STAGE" | default "dev" }}
+    ingressInternalClass: {{ env "STACK_INGRESS_INT_CLASS" | default "internal" }}
+    ingress:
+      enabled: true
+      hosts:
+      - name: polaris.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+        config:
+          http:
+            paths:
+            - path: "/"
+              backend:
+                serviceName: polaris-dashboard
+                servicePort: 8080

@@ -1,0 +1,55 @@
+helmDefaults:
+  tillerless: true
+  tillerNamespace: platform
+  atomic: false
+  verify: false
+  wait: false
+  timeout: 200
+  recreatePods: true
+  force: false
+
+repositories:
+- name: "bzon"
+  url: "git+https://github.com/bzon/prometheus-msteams@chart"
+
+releases:
+- name: msteams-alerts
+  namespace: {{ env "STACK_MONITORING_NAMESPACE" | default "monitoring" }}
+  chart: "bzon/prometheus-msteams"
+  labels:
+    chart: "prometheus-msteams"
+    component: "monitoring"
+    namespace: {{ env "STACK_MONITORING_NAMESPACE" | default "monitoring" }}
+  values:
+  - connectors:
+    - high_priority_channel: {{ env "STACK_MONITORING_MSTEAMS_HIGH_CHANNEL" }}
+      medium_priority_channel: {{ env "STACK_MONITORING_MSTEAMS_MEDIUM_CHANNEL" }}
+      low_priority_channel: {{ env "STACK_MONITORING_MSTEAMS_LOW_CHANNEL" }}
+  set:
+  - name: customCardTemplate
+    file: {{ env "STACK_MONITORING_MSTEAMS_ACTIONCARD" | default "../deploy/values/msteams-with-silence-action.card" }}
+
+- name: ingress-msteams
+  namespace: {{ env "STACK_MONITORING_NAMESPACE" | default "monitoring" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  labels:
+    chart: ingress-msteams
+    component: ingress
+    namespace: {{ env "STACK_MONITORING_NAMESPACE" | default "monitoring" }}
+  values:
+  - project:
+      team: {{ env "TEAM" | default "team1" }}
+      target: {{ env "TARGET" | default "cicd" }}
+      client: {{ env "CLIENT" | default "client1" }}
+    ingressInternalClass: {{ env "STACK_INGRESS_INT_CLASS" | default "internal" }}
+    ingress:
+      enabled: true
+      hosts:
+      - name: msteams.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+        config:
+          http:
+            paths:
+            - path: "/"
+              backend:
+                serviceName: prometheus-msteams
+                servicePort: 2000

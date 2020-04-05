@@ -1,0 +1,37 @@
+## Sets up a service account for a namespace
+
+helmDefaults:
+  tillerless: true
+  tillerNamespace: platform
+  atomic: false
+  verify: false
+  wait: false
+  timeout: 60
+  recreatePods: false
+  force: false
+
+repositories:
+- name: incubator
+  url: https://kubernetes-charts-incubator.storage.googleapis.com/
+- name: havibase
+  url: https://mycontainerrepo.azurecr.io/helm/v1/repo
+
+releases:
+- name: 'service-namespace-{{ env "TEAM" | default "team1" }}-{{ env "STAGE" | default "dev" }}-{{ env "APP" | default "stream" }}'
+  namespace: '{{ env "TEAM" | default "team1" }}-{{ env "STAGE" | default "dev" }}-{{ env "APP" | default "stream" }}'
+  chart: "havibase/archtype"
+  labels:
+    name: 'service-namespace-{{ env "TEAM" | default "team1" }}-{{ env "STAGE" | default "dev" }}-{{ env "APP" | default "stream" }}'
+    namespace: '{{ env "TEAM" | default "team1" }}-{{ env "STAGE" | default "dev" }}-{{ env "APP" | default "stream" }}'
+  values:
+  - project:
+      team: {{ env "TEAM" | default "team1" }}
+      stage: {{ env "STAGE" | default "dev" }}
+      target: {{ env "TARGET" | default "cicd" }}
+      client: {{ env "TEAM" | default "mcd" }}
+      workload: {{ env "WORKLOAD" | default "platform" }}
+      engine: nextgen
+      app: {{ requiredEnv "APP" }}
+    serviceAdmin:
+      enabled: true
+      serviceAccount: default

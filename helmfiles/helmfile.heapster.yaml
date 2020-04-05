@@ -1,0 +1,28 @@
+helmDefaults:
+  tillerless: true
+  tillerNamespace: platform
+  atomic: false
+  verify: false
+  wait: false
+  timeout: 600
+  recreatePods: true
+  force: true
+
+repositories:
+# Stable repo of official helm charts
+- name: "stable"
+  url: "https://kubernetes-charts.storage.googleapis.com"
+  
+releases:
+- name: "heapster"
+  namespace: '{{- env "HEAPSTER_NAMESPACE" | default "kube-system" -}}'
+  labels:
+    chart: "kubernetes-dashboard"
+    repo: "stable"
+    component: "monitoring"
+    namespace: "{{- env "HEAPSTER_NAMESPACE" | default "kube-system" -}}"
+    vendor: "kubernetes"
+    default: "true"
+  chart: "stable/heapster"
+  wait: true
+  installed: {{ env "HEAPSTER_INSTALLED" | default "true" }}

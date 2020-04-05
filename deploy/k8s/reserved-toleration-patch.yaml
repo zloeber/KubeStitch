@@ -1,0 +1,8 @@
+spec:
+  template:
+    spec:
+      tolerations:
+      - key: "reserved"
+        operator: "Equal"
+        value: "true"
+        effect: "NoSchedule"

@@ -1,0 +1,29 @@
+## katafygio - iscovers Kubernetes objects (deployments, services, ...), 
+##  and continuously save them as yaml files in a git repository. 
+helmDefaults:
+  tillerless: true
+  tillerNamespace: platform
+  atomic: true
+  verify: false
+  wait: false
+  timeout: 600
+  recreatePods: true
+  force: false
+
+repositories:
+- name: stable
+  url: https://kubernetes-charts.storage.googleapis.com/
+
+releases:
+- name: katafygio
+  namespace: "katafygio"
+  chart: "stable/katafygio"
+  labels:
+    chart: "katafygio"
+    component: "database"
+    namespace: "katafygio"
+  values:
+  - persistence:
+      storageClass: "azurefile"
+      enabled: true
+      size: "5Gi"

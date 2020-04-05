@@ -1,0 +1,508 @@
+## These will be used to infer labels and other vital origin information
+project:
+  buildid: cicd
+  team: inv
+  target: a1d
+  client: mcd
+  workload: spark
+  app: stream
+  stage: test
+
+## Globals
+cloud: azure
+dnsZone: "micro.svc"
+replicaCount: 1
+ingressClass: "internal"
+ingressInternalClass: "internal"
+ingressExternalClass: "external"
+certissuer: "local-selfsigned-issuer"
+internalCertIssuer: "default"
+stagingCertIssuer: "letsencrypt-staging"
+externalCertIssuer: "letsencrypt-prod"
+enablePrometheusScrape: false
+enableSSLRedirect: false
+enableInternalIngress: true
+keyvaultInjection: false
+injectionEnabled: false
+serviceTests: false
+ingressTests: false
+#keyvaultName: 
+
+sparkoperator:
+  enabled: false
+sparkApplications:
+  default:
+    enabled: false
+    repository: "nextgena1d.azurecr.io"
+    image: "alpine/nextgen-spark"
+    version: "v2.4.4"
+    spec:
+      type: "Scala"
+      mode: "cluster"
+      mainClass: com.havi.nextgen.job.file.FileToKafkaLoader
+      mainApplicationFile: "local:///opt/spark/jars/nextgen-spark-jobs-assembly-1.0.jar"
+      driver:
+        cores: 0.1
+        coreLimit: "200m"
+        memory: "512m"
+      executor:
+        cores: 0.1
+        instances: 1
+        memory: "512m"
+
+sparkStreams:
+  enabled: false
+  repository: "nextgena1d.azurecr.io"
+  jarpath: "local:///opt/spark/jars"
+  image: "inv-stream"
+  version: "2.4.4"
+  type: scala
+  mode: cluster
+  spec:  
+    driver:
+      cores: 0.1
+      coreLimit: 200m
+      memory: 1024m
+      labels:
+        version: 2.4.0
+    executor:
+      cores: 0.1
+      instances: 1
+      memory: 1024m
+      labels:
+        version: 2.4.0
+  jobs: {}
+
+dockercfg:
+  enabled: false
+  # image:
+  #   pullSecret:
+  #     registry: r.cfcr.io
+  #     username: example
+  #     password: password
+
+image:
+  repository: scratch
+  tag: latest
+  pullPolicy: IfNotPresent
+  ## Additional docker pull secrets
+  # pullSecrets:
+  #   - "docker-secret-1"
+  #   - "docker-secret-2"
+
+## Enable node affinity for a specific node pool.
+affinity:
+  enabled: false
+  nodePoolLabel: agentpool
+  nodePoolTarget: workload
+
+configMaps:
+  enabled: false
+  #   mountPath: /config-default
+  #   annotations:
+  #     name: value
+  #   labels:
+  #     name: value
+  env: {}
+  #     ENV_NAME: ENV_VALUE
+  #   files:
+  #     "test.txt": |-
+  #         ...
+  #     "test.yaml":
+  #         group:
+  #           key: value
+
+serviceAccount:
+  enabled: false
+secrets: {}
+  # default:
+  #   enabled: false
+  #   mountPath: /secret-default
+  #   annotations:
+  #     name: value
+  #   labels:
+  #     name: value
+  #   env:
+  #     ENV_NAME: ENV_VALUE
+  #   files:
+  #     "test.crt": |-
+  #         ...
+  #     "test.yaml":
+  #         group:
+  #           key: value
+
+keyvaultSecrets:
+  enabled: false
+  type: secret
+  #secretMap: local-secret-name
+  #vaultName: "glo-mda-kv-a1d"
+#  secrets: []
+# sourceSecret: SECRETNAME
+# name: secret_name
+# createIfMissing: false
+# secretValue: secret_value
+
+serviceAdmin:
+  enabled: false
+  serviceAccount: default
+
+nextgenServiceAdmin:
+  enabled: false
+  name: default
+  serviceAccount: default
+  roleBindings:
+    - clusterRole: admin
+      namespaceSelector:
+        matchExpressions:
+          - key: ns
+            operator: In
+            values:
+              - inv-stream
+              - inv-test-stream
+              - inv-dev-stream
+              - inv-qa-stream
+              - inv-preprod-stream
+              - inv-prod-stream
+  
+# Inline environment
+env: {}
+  # ENV_NAME: ENV_VALUE
+service:
+  enabled: false
+  type: ClusterIP
+  # ports:
+  #   www:
+  #     port: 80
+  #     targetPort: 8080
+  #     protocol: TCP
+  # labels:
+  #   name: value
+  # annotations:
+  #   name: value
+
+# nextgenDeployment:
+#   enabled: false
+#   ## Pods replace strategy
+#   ## ref: https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy
+#   # strategy: {}
+#   revisionHistoryLimit: 10
+#   # annotations:
+#   #   name: value
+#   # labels:
+#   #   name: value
+#   pod:
+#     # securityContext: {}
+#     annotations: {}
+#     ## https://github.com/uswitch/kiam
+#     ## https://github.com/jtblin/kube2iam
+#     #  iam.amazonaws.com/role: role-arn
+#     labels: {}
+#     # command:
+#     args: []
+namespace:
+  enabled: false
+
+deployment:
+  enabled: false
+  readinessProbe:
+    enabled: false
+    probe:
+      httpGet:
+        path: /
+        port: http
+  livelinessProbe:
+    enabled: false
+    probe:
+      httpGet:
+        path: /
+        port: http
+  ## Pods replace strategy
+  ## ref: https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy
+  # strategy: {}
+  revisionHistoryLimit: 10
+  # annotations:
+  #   name: value
+  # labels:
+  #   name: value
+  pod: {}
+    # securityContext: {}
+    # annotations: {}
+    ## https://github.com/uswitch/kiam
+    ## https://github.com/jtblin/kube2iam
+    #  iam.amazonaws.com/role: role-arn
+    #labels: {}
+    # command:
+    #args: []
+    #env: {}
+    #vaultenv: {}
+
+statefulset:
+  enabled: false
+  ## Pods replace strategy
+  ## ref: https://v1-10.docs.kubernetes.io/docs/reference/generated/kubernetes-api/v1.10/#statefulsetupdatestrategy-v1-apps
+  # strategy: {}
+  revisionHistoryLimit: 10
+  # annotations:
+  #   name: value
+  # labels:
+  #   name: value
+  pod:
+    # securityContext: {}
+    annotations: {}
+    ## Read more about kube2iam to provide access to s3 https://github.com/jtblin/kube2iam
+    #  iam.amazonaws.com/role: role-arn
+    labels: {}
+    # command:
+    # args:
+  ## Configure volumeClaimTemplate block
+  persistence:
+    useVolumeClaimTemplates: true
+    accessMode: ReadWriteOnce
+    size: 8Gi
+    mountPath: /data
+    storageClass: default
+  #   annotations:
+  #     name: value
+  #   labels:
+  #     name: value
+
+daemonset:
+  enabled: false
+  ## Pods replace strategy
+  ## ref: https://v1-10.docs.kubernetes.io/docs/reference/generated/kubernetes-api/v1.10/#daemonsetupdatestrategy-v1-apps
+  # strategy: {}
+  revisionHistoryLimit: 10
+  # annotations:
+  #   name: value
+  # labels:
+  #   name: value
+  pod:
+    # securityContext: {}
+    annotations: {}
+    ## https://github.com/uswitch/kiam
+    ## https://github.com/jtblin/kube2iam
+    #  iam.amazonaws.com/role: role-arn
+    labels: {}
+    # command:
+    args: []
+
+job:
+  default:
+    enabled: false
+    # labels:
+    #   name: value
+    # annotations:
+    #   name: value
+    restartPolicy: Never
+    pod:
+      # securityContext: {}
+      annotations: {}
+      ## https://github.com/uswitch/kiam
+      ## https://github.com/jtblin/kube2iam
+      #  iam.amazonaws.com/role: role-arn
+      labels: {}
+      # command:
+      args: []
+
+cronjob:
+  default:
+    enabled: false
+    # labels:
+    #   name: value
+    # annotations:
+    #   name: value
+    successfulJobsHistoryLimit: 1
+    failedJobsHistoryLimit: 1
+    concurrencyPolicy: Forbid
+    schedule: "* * */15 * *"
+    activeDeadlineSeconds: 300
+    restartPolicy: Never
+    pod:
+      # securityContext: {}
+      annotations: {}
+      ## https://github.com/uswitch/kiam
+      ## https://github.com/jtblin/kube2iam
+      #  iam.amazonaws.com/role: role-arn
+      labels: {}
+      # command:
+      args: []
+
+ports:
+  default:
+    internal: 8080
+    external: 80
+    tls_internal: 4443
+    tls_external: 443
+    prometheus: 5555
+    jmx: 8090
+    readiness: 8081
+    liveleness: 8081
+
+certificate:
+  enabled: false
+  name: localhost
+  commonName: "localhost"
+  kind: Certificate
+  isCA: false
+  selfSigned: false
+  dnsNames: []
+
+## ServiceMonitor CRDs to create & be scraped by the Prometheus instance.
+## Ref: https://github.com/coreos/prometheus-operator/blob/master/Documentation/service-monitor.md
+## Ref: https://github.com/coreos/prometheus-operator/blob/master/Documentation/api.md#servicemonitorspec
+##
+prometheus:
+  enabled: true
+  prefix: ''
+  namespace: monitoring
+  instance: kube-prometheus
+  customRules:
+    enabled: false
+    rules: []
+  alerts:
+    enabled: false
+  serviceMonitor:
+    enabled: false
+    targetPort: 9402
+    path: /metrics
+    interval: 60s
+    scrapeTimeout: 30s
+    labels: {}
+
+prometheusDefaultRuleGroup:
+  enabled: false
+
+prometheusRules:
+  enabled: false
+#  name:
+#    labels:
+#      prometheus: kube-prometheus
+#    groups:
+#    - name: prometheus.rules
+#      rules:
+#      - alert: PrometheusConfigReloadFailed
+#        expr: prometheus_config_last_reload_successful == 0
+#        for: 10m
+#        labels:
+#          severity: warning
+#        annotations:
+#          description: Reloading Prometheus' configuration has failed for {{$labels.namespace}}/{{$labels.pod}}
+#          summary: Reloading Promehteus' configuration failed
+
+probes:
+#  livenessProbe:
+#    httpGet:
+#      path: /
+#      port: http
+#  readinessProbe:
+#    httpGet:
+#      path: /
+#      port: http
+
+resources: {}
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 80m
+  #   memory: 64Mi
+
+persistence:
+  enabled: false
+  storageName: storage
+  mountPath: /data
+  accessMode: ReadWriteOnce
+  size: 8Gi
+  # annotations:
+  #   name: value
+  # labels:
+  #   name: value
+
+  ## A manually managed Persistent Volume and Claim
+  ## Requires Persistence.Enabled: true
+  ## If defined, PVC must be created manually before volume will be bound
+  # existingClaim:
+
+  ## Data Persistent Volume Storage Class
+  ## If defined, storageClassName: <storageClass>
+  ## If set to "-", storageClassName: "", which disables dynamic provisioning
+  ## If undefined (the default) or set to null, no storageClassName spec is
+  ## set, choosing the default provisioner.  (gp2 on AWS, standard on
+  ## GKE, AWS & OpenStack)
+  ##
+  # storageClass: "-"
+
+clusterRole:
+  enabled: false
+  name: namespace-admin
+
+clusterRoleBinding:
+  enabled: false
+  name: platform-admin-default
+  roleName: cluster-admin
+  serviceAccountName: default
+  serviceAccountNamespace: monitoring
+
+# Custom ingress
+ingress:
+  enabled: false
+  internal: true
+  external: false
+  forecastle: false
+  prometheusScraped: false
+  prometheusPort: 5555
+  tlsEnabled: false
+  rewrite: false
+  rewriteTarget: "/"
+  ## Additional annotations are appended to automatic annotations
+  additionalAnnotations: {}
+  ## Defining annotations directly takes precedence over any automatic annotations (which will not be rendered)
+  ## Define an empty annotations to have no annotations at all for ingress created (as an example)
+  # annotations: {}
+  labels: {}
+
+  # annotations:
+  #   # kubernetes.io/ingress.class: nginx
+  #   # kubernetes.io/tls-acme: "true"
+  hosts:
+  # - name: kubeops.{{ requiredEnv "TARGET" }}.micro.svc
+  #   config:
+  #     http:
+  #       paths:
+  #       - path: "/"
+  #         backend:
+  #           serviceName: kube-resource-report
+  #           servicePort: 80
+  #tls:
+#    - secretName: server-tls
+#      hosts:
+#      - domain.com
+
+# configmaps:
+#   coredns-custom:
+#     enabled: false
+  #   mountPath: /coredns-custom
+  #   labels:
+  #     addonmanager.kubernetes.io/mode: EnsureExists
+  #     k8s-app: kube-dns
+  #     kubernetes.io/cluster-service: "true"
+  #   env:
+  #   files:
+  #     otherzones.server: |-
+  #       perseco.com:53 {
+  #         errors
+  #         cache 30
+  #         proxy . 10.10.36.34 10.10.36.35
+  #       }
+  #       a2d.micro.svc:53 {
+  #         errors
+  #         cache 30
+  #         proxy . 10.13.80.254 10.13.80.253
+  #       }
+  #       .:53 {
+  #         forward . tls://1.1.1.1 tls://1.0.0.1 {
+  #           tls_servername cloudflare-dns.com
+  #           health_check 5s
+  #         }
+  #       }
+

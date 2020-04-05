@@ -1,0 +1,95 @@
+helmDefaults:
+  tillerless: true
+  tillerNamespace: platform
+  atomic: true
+  verify: false
+  wait: false
+  timeout: 600
+  recreatePods: false
+  force: true
+
+releases:
+- name: postgres-jobs
+  namespace: "platform"
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  version: 0.0.1
+  labels:
+    chart: "postgres-jobs"
+  values:
+  - project:
+      team: {{ env "TEAM" | default "team1" }}
+      stage: {{ env "STAGE" | default "dev" }}
+      target: {{ env "TARGET" | default "cicd" }}
+      client: {{ env "CLIENT" | default "client1" }}
+    keyvaultName: {{ requiredEnv "KEYVAULTNAME" }}
+    keyvaultSecrets:
+      enabled: true
+      vaultName: {{ requiredEnv "KEYVAULTNAME" }}
+      type: secret
+      secrets:
+      - secretKey: STORAGEACCOUNTNAME
+      - secretKey: STORAGEACCOUNTKEY
+      - secretKey: JDBCDATABASE
+      - secretKey: JDBCHOSTNAME
+      - secretKey: JDBCPASSWORD
+      - secretKey: JDBCPORT
+      - secretKey: JDBCSCHEMA
+      - secretKey: JDBCSERVER
+      - secretKey: JDBCSSL
+      - secretKey: JDBCURL
+      - secretKey: JDBCUSERNAME
+    
+    image:
+      repository: mycontainerrepo.azurecr.io/postgres-backup
+      tag: {{ env "BUILDID" | default "0.0.1" }}
+    
+    persistence:
+      enabled: true
+      accessMode: ReadWriteMany
+      size: 700Gi
+      storageClass: azurefile
+      mountPath: /backup
+    
+    cronjob:
+      pgdump:
+        enabled: true
+        schedule: "0 23 * * *"
+        concurrencyPolicy: Forbid
+        successfulJobsHistoryLimit: 0
+        failedJobsHistoryLimit: 0
+        activeDeadlineSeconds: 300
+        ttlSecondsAfterFinished: 100
+        completions: 1
+        parallelism: 1
+        backoffLimit: 1
+        restartPolicy: Never
+        serviceAccountName: default
+        pod:
+          env:
+            - name: DUMPPATH
+              value: /backup
+            - name: DATABASEHOST
+              valueFrom:
+                secretKeyRef:
+                  name: jdbchost
+                  key: JDBCHOST
+            - name: DATABASEPORT
+              valueFrom:
+                secretKeyRef:
+                  name: jdbcport
+                  key: JDBCPORT
+            - name: PGDATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: jdbcdatabase
+                  key: JDBCDATABASE
+            - name: PGUSER
+              valueFrom:
+                secretKeyRef:
+                  name: jdbcusername
+                  key: JDBCUSERNAME
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: jdbcpassword
+                  key: JDBCPASSWORD

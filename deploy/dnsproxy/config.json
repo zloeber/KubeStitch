@@ -1,0 +1,33 @@
+{
+	"version": 2,
+	"remoteDnsServers": [
+		"8.8.8.8:53",
+		"4.4.4.4:54"
+	],
+	"envs": [
+		{
+			"name": "{{ env.Getenv "TEAM" "team1" }}_{{ env.Getenv "TARGET" "cicd" }}",
+			"hostnames": [
+				{
+					"id": 2,
+					"hostname": "dashboard.{{ env.Getenv "TEAM" "team1" }}.{{ env.Getenv "TARGET" "cicd" }}.{{ env.Getenv "DOMAIN" "micro.svc" }}",
+					"ip": "{{ env.Getenv "STACK_INGRESS_INTERNALIP" }}",
+					"target": "acme.com",
+					"ttl": 60,
+					"type": "A"
+				}
+			]
+		}
+	],
+	"activeEnv": "{{ env.Getenv "TEAM" "team1" }}_{{ env.Getenv "TARGET" "cicd" }}",
+	"webServerPort": 5380,
+	"dnsServerPort": 53,
+	"defaultDns": true,
+	"logLevel": "DEBUG",
+	"logFile": "/tmp/dnsproxy.log",
+	"registerContainerNames": false,
+	"hostMachineHostname": "",
+	"domain": "",
+	"dpsNetwork": false,
+	"dpsNetworkAutoConnect": false
+}

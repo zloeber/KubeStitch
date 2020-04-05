@@ -1,0 +1,216 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "cost-analyzer.fullname" . }}
+  labels:
+    {{ include "cost-analyzer.commonLabels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+{{ include "cost-analyzer.selectorLabels" . | nindent 8}}
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        {{ include "cost-analyzer.selectorLabels" . | nindent 8 }}
+{{- if .Values.global.podAnnotations}}
+      annotations:
+{{- with .Values.global.podAnnotations }}
+{{ toYaml . | indent 8 }}
+{{- end }}
+{{- end }}
+    spec:
+      securityContext:
+        runAsUser: 1001
+        runAsGroup: 1001
+        fsGroup: 1001
+      restartPolicy: Always
+      serviceAccountName: {{ template "cost-analyzer.fullname" . }}
+      volumes:
+        - name: nginx-conf
+          configMap:
+            name: nginx-conf
+            items:
+              - key: nginx.conf
+                path: default.conf
+        - name: persistent-configs
+{{- if .Values.persistentVolume }}
+{{- if .Values.persistentVolume.enabled }}
+          persistentVolumeClaim: 
+            claimName: {{ template "cost-analyzer.fullname" . }}
+{{- else }}
+          emptyDir: {}
+{{- end -}}
+{{- else }}
+          persistentVolumeClaim: 
+            claimName: {{ template "cost-analyzer.fullname" . }}
+{{- end }}
+      initContainers:
+{{- if .Values.supportNFS }}
+        - name: config-perms-fix
+          image: busybox
+          command: ["/bin/chmod", "-R", "777", "/var/configs"]
+          volumeMounts:
+            - name: persistent-configs
+              mountPath: /var/configs
+          securityContext:
+            runAsUser: 0
+{{ end }}
+        {{- if .Values.kubecostInit }}
+        - image: {{ .Values.kubecostInit.image }}:prod-{{ $.Chart.AppVersion }}
+        {{- else }}
+        - image: ajaytripathy/kubecost-init:prod-{{ $.Chart.AppVersion }}
+        {{- end }}
+          name: cost-analyzer-init
+        {{- if .Values.kubecostInit.imagePullPolicy }}
+          imagePullPolicy: {{ .Values.kubecostInit.imagePullPolicy }}
+        {{- else }}
+          imagePullPolicy: Always
+        {{- end }}
+          env:
+            - name: PROMETHEUS_SERVER_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ template "cost-analyzer.fullname" . }}
+                  key: prometheus-server-endpoint
+      containers:
+        {{- if .Values.kubecostFrontend }}
+        - image: {{ .Values.kubecostFrontend.image }}:prod-{{ $.Chart.AppVersion }}
+        {{- else }}
+        - image: ajaytripathy/kubecost-frontend:prod-{{ $.Chart.AppVersion }}
+        {{ end }}
+          env:
+            - name: GET_HOSTS_FROM
+              value: dns
+          name: cost-analyzer-frontend
+          volumeMounts:
+            - name: nginx-conf
+              mountPath: /etc/nginx/conf.d/
+          resources:
+{{ toYaml .Values.kubecostFrontend.resources | indent 12 }}
+        {{- if .Values.kubecostFrontend.imagePullPolicy }}
+          imagePullPolicy: {{ .Values.kubecostFrontend.imagePullPolicy }}
+        {{- else }}
+          imagePullPolicy: Always
+        {{- end }}
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 9003
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 200
+        {{- if .Values.kubecost }}
+        - image: {{ .Values.kubecost.image }}:prod-{{ $.Chart.AppVersion }}
+        {{- else }}
+        - image: ajaytripathy/kubecost:prod-{{ $.Chart.AppVersion }}
+        {{ end }}
+          resources:
+{{ toYaml .Values.kubecost.resources | indent 12 }}
+          name: cost-analyzer-server
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 9003
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 200
+          volumeMounts:
+            - name: persistent-configs
+              mountPath: /var/configs
+          env:
+            - name: PROMETHEUS_SERVER_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ template "cost-analyzer.fullname" . }}
+                  key: prometheus-server-endpoint
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: /var/configs/key.json
+            - name: KUBECOST_TOKEN
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ template "cost-analyzer.fullname" . }}
+                  key: kubecost-token
+            {{- if eq .Values.global.grafana.proxy false }}
+            - name: GRAFANA_URL
+              valueFrom: 
+                configMapKeyRef: 
+                  name: external-grafana-config-map
+                  key: grafanaURL
+            {{- end }}
+        {{- if .Values.kubecostModel }}
+        - image: {{ .Values.kubecostModel.image }}:prod-{{ $.Chart.AppVersion }}
+        {{- else }}
+        - image: ajaytripathy/kubecost-cost-model:prod-{{ $.Chart.AppVersion }}
+        {{ end }}
+          name: cost-model
+        {{- if .Values.kubecostModel.imagePullPolicy }}
+          imagePullPolicy: {{ .Values.kubecostModel.imagePullPolicy }}
+        {{- else }}
+          imagePullPolicy: Always
+        {{- end }}
+          resources:
+{{ toYaml .Values.kubecostModel.resources | indent 12 }}
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 9003
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 200
+          volumeMounts:
+            - name: persistent-configs
+              mountPath: /var/configs
+          env:
+            - name: PROMETHEUS_SERVER_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ template "cost-analyzer.fullname" . }}
+                  key: prometheus-server-endpoint
+            - name: CLOUD_PROVIDER_API_KEY
+              value: "AIzaSyDXQPG_MHUEy9neR7stolq6l0ujXmjJlvk" # The GCP Pricing API requires a key.
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: /var/configs/key.json
+            - name: CONFIG_PATH
+              value: /var/configs/
+            - name: REMOTE_WRITE_PASSWORD
+              value: {{ .Values.remoteWrite.postgres.auth.password }}
+            {{- if .Values.remoteWrite.postgres.enabled }}
+            - name: REMOTE_WRITE_ENABLED
+              value: "true"
+            {{- end }}
+            {{- if .Values.thanos }}
+            {{- if .Values.thanos.query }}
+            {{- if .Values.thanos.query.enabled }}
+            - name: THANOS_ENABLED
+              value: "true"
+            - name: THANOS_QUERY_URL
+              value: http://{{ .Release.Name }}-thanos-query-http.{{ .Release.Namespace }}:{{ .Values.thanos.query.http.port }}
+            {{- end }}
+            {{- end }}
+            {{- end }}
+            {{- if .Values.prometheus.server.global.external_labels.cluster_id }}
+            - name: CLUSTER_ID
+              value: {{ .Values.prometheus.server.global.external_labels.cluster_id }}
+            {{- end }}
+            {{- if .Values.remoteWrite.postgres.installLocal }}
+            - name: SQL_ADDRESS
+              value: pgprometheus
+            {{- else }}
+            - name: SQL_ADDRESS
+              value: {{ .Values.remoteWrite.postgres.remotePostgresAddress }}
+            {{- end }}
+
+            - name: KUBECOST_TOKEN
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ template "cost-analyzer.fullname" . }}
+                  key: kubecost-token
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

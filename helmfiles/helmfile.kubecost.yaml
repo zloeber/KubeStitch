@@ -1,0 +1,90 @@
+helmDefaults:
+  tillerless: true
+  tillerNamespace: platform
+  atomic: true
+  verify: false
+  wait: true
+  timeout: 600
+  recreatePods: false
+  force: true
+  kubeContext: {{ requiredEnv "CLUSTER" }}
+
+releases:
+  #######################################################################################
+  ## cost-analyzer                                                                     ##
+  ## cost-analyzer is a cost analyzer for kubernetes cloud resources                   ##
+  #######################################################################################
+  - name: kubecost
+    namespace: monitoring
+    labels:
+      chart: cost-analyzer
+      app: cost-analyzer
+      namespace: monitoring
+    chart: "../charts/cost-analyzer"
+    installed: true
+    values:
+      - serviceMonitor:
+          enabled: true
+      - prometheusRule:
+          enabled: true
+      {{- if eq (env "PROMETHEUS_OPERATOR_INSTALLED" | default "true") "true" }}
+      - global:
+          prometheus:
+            enabled: false # If false, Prometheus will not be installed
+            fqdn: '{{- env "PROMETHEUS_PROMETHEUS_SCHEME" | default "http" }}://{{- env "PROMETHEUS_PROMETHEUS_DOMAIN" | default "kube-prometheus.monitoring.svc.cluster.local" }}:{{- env "PROMETHEUS_PROMETHEUS_PORT" | default "9090" }}'
+          grafana:
+            {{ if eq (env "KUBECOST_GRAFANA_ENABLED" | default "false") "false" }}
+            enabled: false
+            domainName: {{ env "PROMETHEUS_GRAFANA_DOMAIN" }}
+            scheme: {{ env "PROMETHEUS_GRAFANA_SCHEME" | default "https" }}
+            proxy: false
+            {{ end }}
+        grafana:
+          sidecar:
+            dashboards:
+              enabled: true
+            datasources:
+              enabled: false
+      {{- else }}
+      - global:
+          prometheus:
+            enabled: true
+          grafana:
+            enabled: true # If false, Grafana will not be installed
+        grafana:
+          sidecar:
+            dashboards:
+              enabled: true
+            datasources:
+              enabled: true
+      {{- end }}
+        notifications:
+          alertmanager:
+            enabled: true
+            fqdn: http://alertmanager-operated.monitoring.svc.cluster.local
+
+  - name: ingress-kubecost
+    namespace: monitoring
+    chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+    labels:
+      chart: ingress-kubecost
+      component: ingress
+      namespace: monitoring
+    values:
+    - project:
+        team: "inv"
+        target: {{ env "TARGET" | default "cicd" }}
+        client: {{ env "CLIENT" | default "client1" }}
+        engine: "nextgen"
+      ingressInternalClass: {{ env "STACK_INGRESS_INT_CLASS" | default "internal" }}
+      ingress:
+        enabled: true
+        hosts:
+        - name: kubecost.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+          config:
+            http:
+              paths:
+              - path: "/"
+                backend:
+                  serviceName: kubecost-cost-analyzer
+                  servicePort: 9090

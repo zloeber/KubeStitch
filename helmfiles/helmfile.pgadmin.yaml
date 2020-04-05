@@ -1,0 +1,53 @@
+helmDefaults:
+  tillerless: true
+  tillerNamespace: platform
+  atomic: false
+  verify: false
+  wait: false
+  timeout: 600
+  recreatePods: true
+  force: true
+
+repositories:
+- name: stable
+  url: https://kubernetes-charts.storage.googleapis.com/
+
+releases:
+- name: pgadmin
+  namespace: "pgadmin"
+  chart: "stable/pgadmin"
+  labels:
+    chart: "pgadmin"
+    component: "database"
+    namespace: "pgadmin"
+  values:
+  - env:
+      email: admin@localhost
+      password: admin
+    persistence:
+      storageClass: {{ env "DB_STORAGE_CLASS" | default "default" }}
+      size: 4Gi
+- name: ingress-pgadmin
+  namespace: "pgadmin"
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  labels:
+    chart: "ingress-pgadmin"
+    component: "database"
+    namespace: "pgadmin"
+  values:
+  - project:
+      team: {{ env "TEAM" | default "team1" }}
+      target: {{ env "TARGET" | default "cicd" }}
+      client: {{ env "CLIENT" | default "client1" }}
+    ingressInternalClass: {{ env "STACK_INGRESS_INT_CLASS" | default "internal" }}
+    ingress:
+      enabled: true
+      hosts:
+      - name: pgadmin.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+        config:
+          http:
+            paths:
+            - path: "/"
+              backend:
+                serviceName: pgadmin
+                servicePort: 80

@@ -1,0 +1,159 @@
+helmDefaults:
+  tillerless: true
+  tillerNamespace: platform
+  atomic: false
+  verify: false
+  wait: false
+  timeout: 900
+  recreatePods: true
+  force: false
+
+# repositories:
+# - name: "bitnami"
+#   url: "https://charts.bitnami.com/bitnami"
+
+releases:
+{{- if eq (env "HELM_VERSION" | default "2") "3" }}
+- name: namespace-cassandra
+  # Helm 3 needs to put deployment info into a namespace. As this creates a namespace it will not exist yet so we use 'kube-system' 
+  #  which should exist in all clusters.
+  chart: ../charts/namespace/chart/namespace
+  namespace: kube-system
+  labels:
+    chart: namespace-cassandra
+    component: "cassandra"
+    namespace: "cassandra"
+  wait: true
+  installed: true
+  values:
+  - namespaces:
+    - cassandra
+    helmResourcePolicy: keep
+    annotations:
+      certmanager.k8s.io/disable-validation: "true"
+{{- end }}
+# Cassandra
+- name: cassandra
+  namespace: cassandra
+  chart: "../charts/cassandra"
+  version: 3.0.1
+  labels:
+    chart: "cassandra"
+    component: "cassandra"
+    namespace: "cassandra"
+{{- if eq (env "HELM_VERSION" | default "2") "3" }}
+  needs:
+  - kube-system/namespace-cassandra
+{{- end }}
+  values:
+  - cluster:
+      replicaCount: 1
+    persistence:
+      enabled: true
+      storageClass: {{ env "STACK_CASSANDRA_STORAGECLASS" | default "default" }}
+      size: {{ env "STACK_CASSANDRA_DISK_SIZE" | default "50Gi" }}
+    dbUser:
+      user: {{ env "STACK_CASSANDRA_USERNAME" | default "50Gi" }}
+      password: {{ env "STACK_CASSANDRA_PASSWORD" | default "50Gi" }}
+      forcePassword: false
+    metrics:
+      enabled: true
+{{- if env "AKS_RESERVED_NODESELECTOR" | default "" }}
+    nodeSelector:
+      agentpool: {{ env "AKS_RESERVED_NODESELECTOR" | default "agentpool" }}
+{{- end }}
+
+- name: ingress-cassandra
+  namespace: "cassandra"
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  labels:
+    chart: "ingress-cassandra"
+    component: "ingress"
+    namespace: "cassandra"
+{{- if eq (env "HELM_VERSION" | default "2") "3" }}
+  needs:
+  - kube-system/namespace-cassandra
+{{- end }}
+  values:
+  - project:
+      team: {{ env "TEAM" | default "team1" }}
+      target: {{ env "TARGET" | default "cicd" }}
+      client: {{ env "CLIENT" | default "client1" }}
+      workload: "cassandra"
+      engine: "nextgen"
+    ingressInternalClass: {{ env "STACK_INGRESS_INT_CLASS" | default "internal" }}
+    ingress:
+      enabled: true
+      hosts:
+      - name: cassandra.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+        config:
+          http:
+            paths:
+            - path: "/"
+              backend:
+                serviceName: cassandra
+                servicePort: 9042
+
+# - name: ingress-cassandra-reaper
+#   namespace: "cassandra"
+#   chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+#   labels:
+#     chart: "ingress-cassandra-reaper"
+#     component: "ingress"
+#     namespace: "cassandra"
+#   values:
+#   - project:
+#       team: "inv"
+#       target: {{ env "TARGET" | default "cicd" }}
+#       client: "mcd"
+#       workload: "cassandra"
+#       engine: "nextgen"
+#     ingressInternalClass: {{ env "STACK_INGRESS_INT_CLASS" | default "internal" }}
+#     ingress:
+#       enabled: true
+#       hosts:
+#       - name: cassandrareaper.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+#         config:
+#           http:
+#             paths:
+#             - path: "/"
+#               backend:
+#                 serviceName: cassandra-reaper
+#                 servicePort: 8081
+
+{{- if eq (env "CICD" | default "false") "false" }}
+- name: loadbalancer-cassandra
+  namespace: "cassandra"
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  labels:
+    chart: "loadbalancer-cassandra"
+    component: "loadbalancer"
+    namespace: "cassandra"
+{{- if eq (env "HELM_VERSION" | default "2") "3" }}
+  needs:
+  - kube-system/namespace-cassandra
+{{- end }}
+  values:
+  - fullnameOverride: "cassandracluster"
+    nameOverride: "cassandracluster"
+    project:
+      team: {{ env "TEAM" | default "team1" }}
+      target: {{ env "TARGET" | default "cicd" }}
+      client: {{ env "CLIENT" | default "client1" }}
+      workload: cassandra
+      engine: database
+    service:
+      enabled: true
+      type: LoadBalancer
+      loadBalancerIP: {{ env "IP_CASSANDRA_LB_INT" | default "127.0.0.1" }}
+      annotations:
+        service.beta.kubernetes.io/{{ env "CLOUD" | default "local" }}-load-balancer-internal: "true"
+      selector:
+        app: cassandra
+      ports:
+        cassandra:
+          port: 9042
+          protocol: TCP
+          targetPort: 9042
+{{- end }}
+  

@@ -1,0 +1,112 @@
+helmDefaults:
+  tillerless: true
+  tillerNamespace: platform
+  atomic: false
+  verify: false
+  wait: false
+  timeout: 900
+  recreatePods: true
+  force: true
+
+releases:
+- name: confluent-operator
+  namespace: database
+  chart: "../charts/confluent-operator"
+  labels:
+    chart: confluent-operator
+    component: database
+    namespace: database
+  values:
+  - "../charts/confluent-operator/providers/azure.yaml"
+  - operator:
+      enabled: true
+  
+
+- name: confluent-zookeeper
+  namespace: database
+  wait: true
+  chart: "../charts/confluent-operator"
+  labels:
+    chart: confluent-zookeeper
+    component: zookeeper
+    namespace: database
+  values:
+  - "../charts/confluent-operator/providers/azure.yaml"
+  - zookeeper:
+      enabled: true
+
+- name: confluent-kafkabroker
+  namespace: database
+  wait: true
+  chart: "../charts/confluent-operator"
+  labels:
+    chart: confluent-kafkabroker
+    component: kafkabroker
+    namespace: database
+  values:
+  - "../charts/confluent-operator/providers/azure.yaml"
+  - kafka:
+      enabled: true
+
+- name: confluent-schemaregistry
+  namespace: database
+  wait: true
+  chart: "../charts/confluent-operator"
+  labels:
+    chart: confluent-schemaregistry
+    component: schemaregistry
+    namespace: database
+  values:
+  - "../charts/confluent-operator/providers/azure.yaml"
+  - schemaregistry:
+      enabled: true
+
+
+- name: confluent-connect
+  namespace: database
+  wait: true
+  chart: "../charts/confluent-operator"
+  labels:
+    chart: confluent-connect
+    component: connect
+    namespace: database
+  values:
+  - "../charts/confluent-operator/providers/azure.yaml"
+  - connect:
+      enabled: true
+
+- name: confluent-replicator
+  namespace: database
+  chart: "../charts/confluent-operator"
+  labels:
+    chart: confluent-replicator
+    component: replicator
+    namespace: database
+  values:
+  - "../charts/confluent-operator/providers/azure.yaml"
+  - replicator:
+      enabled: true
+
+- name: confluent-controlcenter
+  namespace: database
+  chart: "../charts/confluent-operator"
+  labels:
+    chart: confluent-controlcenter
+    component: controlcenter
+    namespace: database
+  values:
+  - "../charts/confluent-operator/providers/azure.yaml"
+  - controlcenter:
+      enabled: true
+
+- name: confluent-ksql
+  namespace: database
+  chart: "../charts/confluent-operator"
+  labels:
+    chart: confluent-ksql
+    component: ksql
+    namespace: database
+  values:
+  - "../charts/confluent-operator/providers/azure.yaml"
+  - ksql:
+      enabled: true

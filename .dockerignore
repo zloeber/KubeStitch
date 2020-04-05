@@ -1,0 +1,7 @@
+.git/
+build-harness/
+bin/
+**/node_modules/
+public/
+test/
+.local/

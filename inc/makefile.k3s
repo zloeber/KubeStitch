@@ -1,0 +1,36 @@
+ROOT_PATH ?= $(abspath $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST))))))
+SCRIPT_PATH ?= ${ROOT_PATH}/scripts
+BIN_PATH ?= $(ROOT_PATH)/.local/bin
+k3d ?= $(BIN_PATH)/k3d
+
+k3s/create/cluster: ## create k3s cluster
+	$(k3d) create \
+		--name $(CLUSTER) \
+		--workers $(K3S_WORKERS) \
+		--wait 0 \
+		--server-arg --no-deploy --server-arg traefik
+	cp $(SCRIPT_PATH)/k3s.envrc $(ROOT_PATH)/.envrc
+
+k3s/start/cluster: k3s/create/cluster k3s/context ## Start cluster
+
+k3s/stop/cluster: ## Stop and delete cluster
+	$(k3d) delete
+
+k3s/context: ## Configure k3s
+	export KUBECONFIG=`echo $$($(k3d) get-kubeconfig --name='$(CLUSTER)')` && \
+	echo $$KUBECONFIG && \
+	$(kubectl) config set-context $(CLUSTER) && \
+	$(kubectl) config use-context $(CLUSTER)
+
+k3s/dnsforward/start: ## Forwards all dns requests to dns-proxy-server
+	tmpdir=$$(mktemp -d) && echo "$${tmpdir}" && \
+	export STACK_INGRESS_INTERNALIP=`kubectl -n kube-system get svc traefik -o jsonpath='{.status.loadBalancer.ingress[0].ip}'` && \
+	$(gomplate) --file $(DEPLOY_PATH)/dnsproxy/config.json --out "$${tmpdir}/config.json" && \
+	$(docker) run --rm -d \
+		--hostname $(DNS_DOMAIN) \
+		--name dns-proxy-server \
+		-p 5380:5380 \
+		-v $${tmpdir}:/app/conf \
+		-v /var/run/docker.sock:/var/run/docker.sock \
+		-v /etc/resolv.conf:/etc/resolv.conf \
+		defreitas/dns-proxy-server

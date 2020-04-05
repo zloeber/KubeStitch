@@ -1,0 +1,33 @@
+{{- $root := . -}}
+{{- $common := dict "Values" .Values.common -}}
+{{- $noCommon := omit .Values "common" -}}
+{{- $overrides := dict "Values" $noCommon -}}
+{{- $noValues := omit . "Values" -}}
+{{- with merge $noValues $overrides $common -}}
+
+{{- $cert := .Values.certificate -}}
+{{- if $cert.enabled }}
+apiVersion: certmanager.k8s.io/v1alpha1
+kind: {{ $cert.kind | default "Certificate" }}
+metadata:
+  name: {{ $cert.name }}
+spec:
+{{- if $cert.selfSigned }}
+  selfSigned: {}
+{{- else }}
+  secretName: {{ $cert.name }}-secret
+  commonName: {{ $cert.commonName | quote }}
+  isCA: {{ $cert.isCA }}
+  issuerRef:
+    name: {{ $cert.issuer | default "security/local-selfsigned-issuer" }}
+    kind: ClusterIssuer
+  dnsNames:
+    - {{ $cert.commonName | quote }}
+{{- with $cert.dnsNames }}
+{{ . | indent 8 }}
+{{- end }}
+{{- end }}
+{{- end }}
+
+{{- end -}}
+

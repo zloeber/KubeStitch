@@ -1,0 +1,15 @@
+apiVersion: v1
+appVersion: 2.4.0
+description: A Helm chart for Spark History Server
+home: https://spark.apache.org
+keywords:
+- spark
+- history-server
+maintainers:
+- email: yuchaoran2011@gmail.com
+  name: yuchaoran2011
+name: spark-history-server
+sources:
+- https://github.com/apache/spark
+- https://github.com/lightbend/spark-history-server-docker
+version: 1.1.1

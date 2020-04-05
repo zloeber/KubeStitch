@@ -1,0 +1,78 @@
+repositories:
+- name: "istio"
+  url: "https://storage.googleapis.com/istio-release/releases/1.1.2/charts/"
+
+releases:
+- name: istio-init
+  namespace: "istio-system"
+  chart: "istio/istio-init"
+  labels:
+    chart: "istio-init"
+    component: "istio-init"
+    namespace: "istio-system"
+
+- name: istio
+  namespace: "istio-system"
+  chart: "istio/istio"
+  labels:
+    chart: "istio"
+    component: "istio"
+    namespace: "istio-system"
+  values:
+  - grafana:
+      enabled: "true"
+  - kiali:
+      enabled: "true"
+  - jaeger:
+      enabled: "true"
+
+
+# - name: istio-kiali-ingress
+#   namespace: "istio-system"
+#   chart: "../charts/nextgen-ingress/"
+#   labels:
+#     chart: "istio-kiali-ingress"
+#     component: "ingress"
+#     namespace: "istio-system"
+#   values:
+#   - global:
+#       team: "operations"
+#       target: {{ env "TARGET" | default "cicd" }}
+#       workload: "istio"
+#     ingress:
+#       enabled: true
+#       annotations: 
+#         ingress.kubernetes.io/rewrite-target: "/"
+#         nginx.ingress.kubernetes.io/ssl-redirect: "false"
+#         kubernetes.io/tls-acme: "false"
+#         kubernetes.io/ingress.class: nginx
+#       path: /
+#       service: "kiali"
+#       port: 20001
+#       hosts:
+#       - kiali.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+
+# - name: istio-jaeger-ingress
+#   namespace: "istio-system"
+#   chart: "../charts/nextgen-ingress/"
+#   labels:
+#     chart: "istio-jaeger-ingress"
+#     component: "ingress"
+#     namespace: "istio-system"
+#   values:
+#   - global:
+#       team: "operations"
+#       target: {{ env "TARGET" | default "cicd" }}
+#       workload: "istio"
+#     ingress:
+#       enabled: true
+#       annotations: 
+#         ingress.kubernetes.io/rewrite-target: "/"
+#         nginx.ingress.kubernetes.io/ssl-redirect: "false"
+#         kubernetes.io/tls-acme: "false"
+#         kubernetes.io/ingress.class: nginx
+#       path: /
+#       service: "jaeger"
+#       port: 16686
+#       hosts:
+#       - jaeger.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}

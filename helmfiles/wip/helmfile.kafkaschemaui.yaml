@@ -1,0 +1,57 @@
+helmDefaults:
+  tillerless: true
+  tillerNamespace: platform
+  atomic: false
+  verify: false
+  wait: false
+  timeout: 900
+  recreatePods: true
+  force: true
+
+repositories:
+- name: stable
+  url: "https://kubernetes-charts.storage.googleapis.com/"
+
+releases:
+- name: kafka-schema-ui
+  namespace: database
+  chart: "stable/schema-registry-ui"
+  labels:
+    chart: kafka-schema-ui
+    component: kafka
+    namespace: database
+  values:
+  - nodeSelector:
+      agentpool: {{ env "AKS_RESERVED_NODESELECTOR" | default "agentpool" }}
+    schemaRegistry:
+      url: "http://confluent-kafka-cp-schema-registry"
+      port: 8081
+      proxy: false
+    service:
+      type: ClusterIP
+      port: 8080
+
+- name: ingress-kafkaschemaui
+  namespace: "database"
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  labels:
+    chart: "ingress-kafkaschemaui"
+    component: "ingress"
+    namespace: "database"
+  values:
+  - project:
+      team: {{ env "TEAM" | default "team1" }}
+      target: {{ env "TARGET" | default "cicd" }}
+      client: {{ env "CLIENT" | default "client1" }}
+    ingress:
+      enabled: true
+      hosts:
+      - name: kafkaschemaui.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+        config:
+          http:
+            paths:
+            - path: "/"
+              backend:
+                serviceName: kafka-schema-ui-schema-registry-ui
+                servicePort: 8080
+

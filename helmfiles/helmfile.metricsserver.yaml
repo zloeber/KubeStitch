@@ -1,0 +1,36 @@
+helmDefaults:
+  tillerless: true
+  tillerNamespace: platform
+  atomic: false
+  verify: false
+  wait: true
+  timeout: 600
+  recreatePods: true
+  force: true
+
+repositories:
+- name: "stable"
+  url: "https://kubernetes-charts.storage.googleapis.com"
+
+releases:
+- name: metrics-server
+  chart: "stable/metrics-server"
+  namespace: "kube-system"
+  installed: {{ env "METRICSSERVER_INSTALLED" | default "true" }}
+  labels:
+    chart: "metrics-server"
+    component: "metrics"
+    namespace: "kube-system"
+  values:
+  - hostNetwork:
+      enabled: true
+{{- if eq (env "CICD" | default "false") "false" }}
+    nodeSelector:
+      agentpool: {{ env "AKS_RESERVED_NODESELECTOR" | default "agentpool" }}
+{{- end }}
+    serviceAccount:
+      name: metricsserver
+    command:
+    - /metrics-server
+    - --kubelet-insecure-tls
+    - --kubelet-preferred-address-types=InternalIP

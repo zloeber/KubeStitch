@@ -1,0 +1,130 @@
+bases:
+- defaults.yaml
+
+repositories:
+- name: reactiveops-stable
+  url: "https://charts.reactiveops.com/stable"
+
+releases:
+{{- if eq (env "HELM_VERSION" | default "2") "3" }}
+- name: namespace-security
+  chart: ../charts/namespace/chart/namespace
+  namespace: kube-system
+  labels:
+    chart: namespace-security
+    component: "security"
+    namespace: "security"
+  wait: true
+  installed: true
+  values:
+  - namespaces:
+    - security
+    helmResourcePolicy: keep
+    annotations:
+      certmanager.k8s.io/disable-validation: "true"
+      {{ env "CLOUD" | default "local" }}-key-vault-env-injection: enabled
+{{- end }}
+
+- name: rbac-manager
+  namespace: "security"
+  labels:
+    chart: "rbac-manager"
+    repo: "stable"
+    component: "security"
+    namespace: "security"
+    vendor: "reactiveops"
+    default: "false"
+    certmanager.k8s.io/disable-validation: "true"
+  version: "1.4.1"
+  installed: true
+  chart: reactiveops-stable/rbac-manager
+{{- if eq (env "HELM_VERSION" | default "2") "3" }}
+  needs:
+  - kube-system/namespace-security
+{{- end }}
+- name: config-security
+  namespace: security
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  labels:
+    chart: config-security
+    component: security
+    namespace: security
+    {{ env "CLOUD" | default "local" }}-key-vault-env-injection: enabled
+  needs:
+  - security/rbac-manager
+  values:
+  - project:
+      team: platform
+      target: {{ env "TARGET" | default "cicd" }}
+      client: mcd
+      workload: rbac
+      engine: nextgen
+      app: security
+    clusterRole:
+      enabled: true
+      name: security-namespace-cluster-admin
+    clusterRoleBinding:
+      enabled: true
+      roleName: security-namespace-cluster-admin
+      serviceAccountNamespace: security
+      serviceAccountName: default
+- name: security-roles
+  chart: incubator/raw
+  namespace: kube-system
+  needs:
+  - security/rbac-manager
+  values:
+  - resources:
+    - kind: ServiceAccount
+      apiVersion: v1
+      metadata:
+        name: platform-admin
+        namespace: kube-system
+    - kind: ClusterRoleBinding
+      apiVersion: rbac.authorization.k8s.io/v1beta1
+      metadata:
+        name: platform-admin
+      roleRef:
+        apiGroup: rbac.authorization.k8s.io
+        kind: ClusterRole
+        name: cluster-admin
+      subjects:
+      - kind: ServiceAccount
+        name: platform-admin
+        namespace: kube-system
+    - kind: ClusterRoleBinding
+      apiVersion: rbac.authorization.k8s.io/v1beta1
+      metadata:
+        name: kubernetes-dashboard
+      roleRef:
+        apiGroup: rbac.authorization.k8s.io
+        kind: ClusterRole
+        name: cluster-admin
+      subjects:
+      - kind: ServiceAccount
+        name: kubernetes-dashboard
+        namespace: kube-system
+    - kind: ClusterRoleBinding
+      apiVersion: rbac.authorization.k8s.io/v1beta1
+      metadata:
+        name: kubernetes-platform-admin
+      roleRef:
+        apiGroup: rbac.authorization.k8s.io
+        kind: ClusterRole
+        name: cluster-admin
+      subjects:
+      - kind: ServiceAccount
+        name: default
+        namespace: platform
+    - kind: ClusterRoleBinding
+      apiVersion: rbac.authorization.k8s.io/v1beta1
+      metadata:
+        name: default
+      roleRef:
+        apiGroup: rbac.authorization.k8s.io
+        kind: ClusterRole
+        name: cluster-admin
+      subjects:
+      - kind: ServiceAccount
+        name: default
+        namespace: monitoring

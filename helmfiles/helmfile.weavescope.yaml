@@ -1,0 +1,80 @@
+helmDefaults:
+  tillerless: true
+  tillerNamespace: platform
+  atomic: false
+  verify: false
+  wait: false
+  timeout: 600
+  recreatePods: true
+  force: true
+
+repositories:
+- name: "stable"
+  url: "https://kubernetes-charts.storage.googleapis.com/"
+
+releases:
+- name: weave-scope
+  namespace: weavescope
+  chart: stable/weave-scope
+  #version: 1.1.2
+  labels:
+    chart: weave-scope
+    component: weavescope
+    namespace: weavescope
+  values:
+  - global:
+      service:
+        name: weave-scope-app
+
+- name: ingress-weavescope
+  namespace: weavescope
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  labels:
+    chart: ingress-weavescope
+    component: ingress
+    namespace: weavescope
+  values:
+  - project:
+      team: "operations"
+      target: {{ env "TARGET" | default "cicd" }}
+      client: {{ env "CLIENT" | default "client1" }}
+      workload: "weavescope"
+      engine: "platform"
+    ingressInternalClass: {{ env "STACK_INGRESS_INT_CLASS" | default "internal" }}
+    ingress:
+      enabled: true
+      hosts:
+      - name: weavescope.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+        config:
+          http:
+            paths:
+            - path: "/"
+              backend:
+                serviceName: weave-scope-app
+                servicePort: 80
+
+- name: weavescope-security
+  namespace: weavescope
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  labels:
+    chart: weavescope-security
+    component: security
+    namespace: weavescope
+    {{ env "CLOUD" | default "local" }}-key-vault-env-injection: enabled
+  values:
+  - project:
+      team: inv
+      target: {{ env "TARGET" | default "cicd" }}
+      client: mcd
+      workload: rbac
+      engine: nextgen
+      app: weavescope
+    clusterRole:
+      enabled: true
+      name: weavescope-cluster-admin
+    clusterRoleBinding:
+      enabled: true
+      name: weavscope-security
+      roleName: weavescope-cluster-admin
+      serviceAccountNamespace: weavescope
+      serviceAccountName: default

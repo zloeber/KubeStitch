@@ -1,0 +1,148 @@
+helmDefaults:
+  tillerless: true
+  tillerNamespace: platform
+  atomic: true
+  verify: false
+  wait: false
+  timeout: 900
+  recreatePods: false
+  force: false
+
+repositories:
+- name: "stable"
+  url: "https://kubernetes-charts.storage.googleapis.com/"
+
+###############
+## traefik
+releases:
+{{- if eq (env "HELM_VERSION" | default "2") "3" }}
+- name: namespace-traefik
+  # Helm 3 needs to put deployment info into a namespace. As this creates a namespace it will not exist yet so we use 'kube-system' 
+  #  which should exist in all clusters.
+  chart: ../charts/namespace/chart/namespace
+  namespace: kube-system
+  labels:
+    chart: namespace-traefik
+    component: "traefik"
+    namespace: "{{ env "STACK_INGRESS_INT_NAMESPACE" | default "ingress-int" }}"
+  wait: true
+  installed: true
+  values:
+  - namespaces:
+    - {{ env "STACK_INGRESS_INT_NAMESPACE" | default "ingress-int" }}
+    helmResourcePolicy: keep
+{{- end }}
+
+## traefik Deployment
+- name: traefik
+  namespace: "{{ env "STACK_INGRESS_INT_NAMESPACE" | default "ingress-int" }}"
+  installed: {{ env "STACK_INGRESS_INT" | default "true" }}
+  chart: stable/traefik
+  labels:
+    chart: traefik
+    component: ingress
+    namespace: "{{ env "STACK_INGRESS_INT_NAMESPACE" | default "ingress-int" }}"
+{{- if eq (env "HELM_VERSION" | default "2") "3" }}
+  needs:
+    - kube-system/namespace-traefik
+{{- end }}
+  values:
+  - externalTrafficPolicy: Cluster
+    replicas: {{ env "STACK_TRAEFIK_REPLICA_COUNT" | default "1" }}
+    serviceType: {{ env "STACK_TRAEFIK_INGESS_SERVICE_TYPE" | default "LoadBalancer" }}
+    loadBalancerIP: "{{ env "INGRESS_INTERNALIP" | default "127.0.0.1" }}"
+    service:
+      annotations:
+        external-dns.alpha.kubernetes.io/hostname: 'traefik.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}'
+        external-dns.alpha.kubernetes.io/ttl: '60'
+        service.beta.kubernetes.io/{{ env "CLOUD" | default "local" }}-load-balancer-internal: "true"
+    dashboard:
+      enabled: true
+      domain: traefik.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+      # service:
+      #   annotations:
+      #     kubernetes.io/ingress.class: "{{ env "STACK_INGRESS_INT_CLASS" | default "internal" }}"
+      #     kubernetes.io/tls-acme": "false"
+      ingress:
+        annotations:
+          kubernetes.io/ingress.class: "{{ env "STACK_INGRESS_INT_CLASS" | default "internal" }}"
+      #     kubernetes.io/tls-acme": "false"
+    kubernetes:
+      ingressClass: "{{ env "STACK_INGRESS_INT_CLASS" | default "internal" }}"
+    rbac:
+      enabled: true
+    metrics:
+      prometheus:
+        enabled: true
+
+# - name: ingress-traefik-dashbaord
+#   namespace: {{ env "STACK_INGRESS_INT_NAMESPACE" | default "ingress-int" }}
+#   chart: "../charts/archtype"
+#   labels:
+#     chart: "ingress-traefik"
+#     component: "ingress"
+#     namespace: {{ env "STACK_INGRESS_INT_NAMESPACE" | default "ingress-int" }}
+# {{- if eq (env "HELM_VERSION" | default "2") "3" }}
+#   needs:
+#   - kube-system/namespace-traefik
+# {{- end }}
+#   values:
+#   - fullnameOverride: "ingress-traefik-dashbaord"
+#     ingressInternalClass: {{ env "STACK_INGRESS_INT_CLASS" | default "internal" }}
+#     ingress:
+#       enabled: true
+#       hosts:
+#       - name: traefik.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+#         config:
+#           http:
+#             paths:
+#             - backend:
+#                 serviceName: traefik
+#                 servicePort: 80
+#               path: /dashboard
+
+# - name: ingressroute-traefik
+#   chart: incubator/raw
+#   namespace: "{{ env "STACK_INGRESS_INT_NAMESPACE" | default "ingress-int" }}"
+#   installed: {{ env "STACK_INGRESS_INT" | default "true" }}
+# {{- if eq (env "HELM_VERSION" | default "2") "3" }}
+#   needs:
+#     - kube-system/namespace-traefik
+# {{- end }}  
+#   labels:
+#     chart: ingress-traefik
+#     component: ingress
+#     namespace:  "{{ env "STACK_INGRESS_INT_NAMESPACE" | default "ingress-int" }}"
+#   values:
+#   - resources:
+#     - apiVersion: traefik.containo.us/v1alpha1
+#       kind: IngressRoute
+#       metadata:
+#         name: ingress-traefik-dashboard
+#         namespace: {{ env "STACK_INGRESS_INT_NAMESPACE" | default "ingress-int" }}
+#       spec:
+#         entryPoints:
+#           - websecure
+#         routes:
+#           - match: Host(`traefik.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}`)
+#             kind: Rule
+#             services:
+#               - name: api@internal
+#                 kind: TraefikService
+#     - apiVersion: traefik.containo.us/v1alpha1
+#       kind: Middleware
+#       metadata:
+#         name: auth
+#         namespace: {{ env "STACK_INGRESS_INT_NAMESPACE" | default "ingress-int" }}
+#       spec:
+#         basicAuth:
+#           users:
+#             secret: authsecret
+#     - apiVersion: v1
+#       kind: Secret
+#       metadata:
+#         name: authsecret
+#         namespace: {{ env "STACK_INGRESS_INT_NAMESPACE" | default "ingress-int" }}
+#       data:
+#         users: |2
+#           YWRtaW46JGFwcjEkN0pZODdyczUkQ2lCWWJuRkdOZjdmbUJhTy93bUNvMAoK

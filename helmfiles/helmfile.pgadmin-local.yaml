@@ -1,0 +1,155 @@
+helmDefaults:
+  tillerless: true
+  tillerNamespace: platform
+  atomic: false
+  verify: false
+  wait: false
+  timeout: 600
+  recreatePods: true
+  force: true
+
+repositories:
+- name: stable
+  url: https://kubernetes-charts.storage.googleapis.com/
+
+releases:
+- name: pgadmin
+  namespace: "pgadmin"
+  chart: "stable/pgadmin"
+  labels:
+    chart: "pgadmin"
+    component: "database"
+    namespace: "pgadmin"
+  values:
+  - env:
+    email: admin@localhost
+    password: admin
+    persistence:
+      storageClass: {{ env "DB_STORAGE_CLASS" | default "default" }}
+      size: 4Gi
+    service:
+      name: pgadmin
+      type: ClusterIP
+    servers:
+      enabled: true
+      config:
+        Servers:
+          1:
+            Name: "glo-mda-psql-a2d"
+            Group: "Development"
+            Port: 5432
+            Username: "psqladmin@glo-mda-psql-a2d"
+            Host: "glo-mda-psql-a2d.postgres.database.azure.com"
+            SSLMode: "require"
+            MaintenanceDB: "postgres"
+          2:
+            Name: "glo-mda-psql-a3d"
+            Group: "QA"
+            Port: 5432
+            Username: "psqladmin@glo-mda-psql-a3d"
+            Host: "glo-mda-psql-a3d.postgres.database.azure.com"
+            SSLMode: "require"
+            MaintenanceDB: "postgres"
+          3:
+            Name: "havi-rtb-db-np01"
+            Group: "PreProduction"
+            Port: 5432
+            Username: "psqladmin@havi-rtb-db-np01"
+            Host: "havi-rtb-db-np01.postgres.database.azure.com"
+            SSLMode: "require"
+            MaintenanceDB: "postgres"
+          4:
+            Name: "havi-rtb-db-np03"
+            Group: "MCD_Russia"
+            Port: 5432
+            Username: "psqladmin@havi-rtb-db-np03"
+            Host: "havi-rtb-db-np03.postgres.database.azure.com"
+            SSLMode: "require"
+            MaintenanceDB: "postgres"
+          5:
+            Name: "glo-mda-psql-a1p"
+            Group: "Promotions"
+            Port: 5432
+            Username: "psqladmin@glo-mda-psql-a1p"
+            Host: "glo-mda-psql-a1p.postgres.database.azure.com"
+            SSLMode: "require"
+            MaintenanceDB: "postgres"
+          6:
+            Name: "glo-mda-psql-a2p"
+            Group: "Promotions"
+            Port: 5432
+            Username: "psqladmin@glo-mda-psql-a2p"
+            Host: "glo-mda-psql-a2p.postgres.database.azure.com"
+            SSLMode: "require"
+            MaintenanceDB: "postgres"
+- name: ingress-pgadmin
+  namespace: "pgadmin"
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  labels:
+    chart: "ingress-pgadmin"
+    component: "database"
+    namespace: "pgadmin"
+  values:
+  - project:
+      team: {{ env "TEAM" | default "team1" }}
+      target: {{ env "TARGET" | default "cicd" }}
+      client: {{ env "CLIENT" | default "client1" }}
+    ingressInternalClass: {{ env "STACK_INGRESS_INT_CLASS" | default "internal" }}
+    ingress:
+      enabled: true
+      hosts:
+      - name: pgadmin.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+        config:
+          http:
+            paths:
+            - path: "/"
+              backend:
+                serviceName: pgadmin
+                servicePort: 80
+
+# - name: deployment-pgadmin
+#   namespace: "pgadmin"
+#   chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+#   labels:
+#     chart: "deployment-pgadmin"
+#     component: "database"
+#     namespace: "pgadmin"
+#   values:
+#   - fullnameOverride: "pgadmin"
+#     nameOverride: "pgadmin"
+#     project:
+#       team: {{ env "TEAM" | default "ops" }}
+#       target: {{ env "TARGET" | default "cicd" }}
+#       client: {{ env "CLIENT" | default "client1" }}
+#     image:
+#       repository: dpage/pgadmin4
+#       tag: latest
+#       pullPolicy: IfNotPresent
+#     deployment:
+#       enabled: true
+#       pod:
+#         env:
+#           PGADMIN_DEFAULT_EMAIL: "admin@localhost"
+#           PGADMIN_DEFAULT_PASSWORD: "admin"
+#           PGADMIN_LISTEN_ADDRESS: "127.0.0.1"
+#       ports:
+#         www: 80
+#     service:
+#       enabled: true
+#       type: ClusterIP
+#       ports:
+#         http:
+#           port: 80
+#           protocol: TCP
+#           targetPort: 80
+#     ingress:
+#       enabled: true
+#       hosts:
+#       - name: pgadmin.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+#         config:
+#           http:
+#             paths:
+#             - path: "/"
+#               backend:
+#                 serviceName: pgadmin
+#                 servicePort: 80

@@ -1,0 +1,73 @@
+{{- $root := . -}}
+{{- $common := dict "Values" .Values.common -}}
+{{- $noCommon := omit .Values "common" -}}
+{{- $overrides := dict "Values" $noCommon -}}
+{{- $noValues := omit . "Values" -}}
+{{- with merge $noValues $overrides $common -}}
+
+{{- $config := .Values.ingress -}}
+
+{{- if $config.enabled }}
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: {{ include "common.shortname" $root }}
+  annotations:
+{{- if hasKey $config "annotations" }}
+    {{- with $config.annotations }}
+    {{ toYaml . | nindent 4 }}
+    {{- end }}
+{{- else }}
+    service.beta.kubernetes.io/{{ .Values.cloud | default "azure" }}-load-balancer-internal: {{ .Values.enableInternalIngress | default "true" | quote }}
+    forecastle.stakater.com/expose: {{ .Values.ingress.forecastle | default "false" | quote }}
+    nginx.ingress.kubernetes.io/ssl-redirect: "{{ .Values.enableSSLRedirect }}"
+{{- if $config.internal }}
+    kubernetes.io/ingress.class: {{ .Values.ingressInternalClass | default "internal" | quote }}
+    certmanager.k8s.io/cluster-issuer: "{{ .Values.internalCertIssuer }}"
+{{- else if $config.external }}
+    kubernetes.io/ingress.class: {{ .Values.ingressExternalClass | default "external" | quote }}
+    certmanager.k8s.io/cluster-issuer: "{{ .Values.externalCertIssuer }}"
+{{- else }}
+    kubernetes.io/ingress.class: {{ .Values.ingressClass | default "nginx" | quote }}
+    certmanager.k8s.io/cluster-issuer: "{{ .Values.certIssuer }}"
+{{- end }}
+    prometheus.io/scrape: {{ $config.prometheusScraped | default "false" | quote }}
+    prometheus.io/port: {{ $config.prometheusPort | default "5555" | quote }}
+{{- if $config.rewrite }}
+    ingress.kubernetes.io/rewrite-target: {{ $config.rewriteTarget | default "/" | quote }}
+    {{- with $config.additionalAnnotations }}
+    {{ toYaml . | nindent 4 }}
+    {{- end }}
+{{- end }}
+{{- end }}
+  labels:
+    ingressName: {{ include "common.shortname" $root }}
+    {{ include "common.labels" $root | nindent 4 }}
+{{- with $config.labels }}
+    {{ toYaml . | nindent 4 }}
+{{- end }}
+spec:
+  rules:
+{{- range $host := $config.hosts }}
+  - host: {{ $host.name | quote }}
+{{- if $host.config }}
+{{ $host.config | toYaml | indent 4 }}
+{{- else }}
+{{ include "common.ingress.service" $root | indent 4 }}
+{{- end }}
+{{- if or $config.tlsEnabled $host.secretName }}
+  tls:
+    - hosts:
+      - {{ $host.name | quote }}
+    {{- range $host.additionalhosts }}
+      - {{ . }}
+    {{- end }}
+    {{- if $host.secretName }}
+      secretName: {{ $host.secretName }}
+    {{- else }}
+      secretName: {{ include "common.shortname" $root }}-cert
+    {{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end -}}

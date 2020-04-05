@@ -1,0 +1,66 @@
+helmDefaults:
+  tillerless: true
+  tillerNamespace: platform
+  atomic: true
+  verify: false
+  wait: false
+  timeout: 900
+  recreatePods: false
+  force: false
+
+###############
+## Operator Lifecycle Manager
+releases:
+{{- if eq (env "HELM_VERSION" | default "2") "3" }}
+- name: namespace-olm
+  # Helm 3 needs to put deployment info into a namespace. As this creates a namespace it will not exist yet so we use 'kube-system' 
+  #  which should exist in all clusters.
+  chart: ../charts/namespace/chart/namespace
+  namespace: kube-system
+  labels:
+    chart: namespace-olm
+    component: "olm"
+    namespace: "olm"
+  wait: true
+  installed: {{ env "PLATFORM_OLM_INSTALLED" | default "true" }}
+  values:
+  - namespaces:
+    - olm
+    helmResourcePolicy: keep
+    labels:
+      {{ env "CLOUD" | default "local" }}-key-vault-env-injection: enabled
+    annotations:
+      certmanager.k8s.io/disable-validation: "true"
+{{- end }}
+## olm Deployment
+- name: olm
+  namespace: olm
+  installed: {{ env "PLATFORM_OLM_INSTALLED" | default "true" }}
+  chart: "../charts/olm"
+  labels:
+    chart: olm
+    component: olm
+    namespace: olm
+{{- if eq (env "HELM_VERSION" | default "2") "3" }}
+  needs:
+    - kube-system/namespace-olm
+{{- end }}
+  values:
+  - olm:
+      replicaCount: 1
+{{- if env "AKS_RESERVED_NODESELECTOR" | default "" }}
+      nodeSelector:
+        agentpool: {{ env "AKS_RESERVED_NODESELECTOR" | default "agentpool" }}
+{{- end }}
+    catalog:
+      replicaCount: 1
+{{- if env "AKS_RESERVED_NODESELECTOR" | default "" }}
+      nodeSelector:
+        agentpool: {{ env "AKS_RESERVED_NODESELECTOR" | default "agentpool" }}
+{{- end }}
+    package:
+      replicaCount: 1
+{{- if env "AKS_RESERVED_NODESELECTOR" | default "" }}
+      nodeSelector:
+        agentpool: {{ env "AKS_RESERVED_NODESELECTOR" | default "agentpool" }}
+{{- end }}

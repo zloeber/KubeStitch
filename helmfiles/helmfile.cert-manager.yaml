@@ -1,0 +1,217 @@
+bases:
+- defaults.yaml
+
+repositories:
+- name: jetstack
+  url: https://charts.jetstack.io
+- name: incubator
+  url: https://kubernetes-charts-incubator.storage.googleapis.com
+
+releases:
+###############################################################################
+## CERT-MANAGER - Automatic Let's Encrypt for Ingress  ########################
+##   Also provides local CA for issuing locally valid TLS certificates  #######
+###############################################################################
+# References:
+# - https://github.com/jetstack/cert-manager/blob/v0.11.0/deploy/charts/cert-manager/values.yaml
+# Instructions for installing and testing correct install are at
+# - https://docs.cert-manager.io/en/release-0.9/getting-started/install/kubernetes.html
+{{- if eq (env "HELM_VERSION" | default "2") "3" }}
+- name: namespace-cert-manager
+  # Helm 3 needs to put deployment info into a namespace. As this creates a namespace it will not exist yet so we use 'kube-system' 
+  #  which should exist in all clusters.
+  chart: ../charts/namespace/chart/namespace
+  namespace: kube-system
+  labels:
+    chart: namespace-cert-manager
+    component: "cert-manager"
+    namespace: {{ env "STACK_CERTMANAGER_NAMESPACE" | default "cert-manager" }}
+  wait: true
+  installed: {{ env "STACK_CERTMANAGER" | default "true" }}
+  values:
+  - namespaces:
+    - {{ env "STACK_CERTMANAGER_NAMESPACE" | default "cert-manager" }}
+    helmResourcePolicy: keep
+    annotations:
+      certmanager.k8s.io/disable-validation: "true"
+{{- end }}
+
+- name: cert-manager
+  namespace: {{ env "STACK_CERTMANAGER_NAMESPACE" | default "cert-manager" }}
+  labels:
+    chart: "cert-manager"
+    repo: "stable"
+    component: "cert-manager"
+    namespace: {{ env "STACK_CERTMANAGER_NAMESPACE" | default "cert-manager" }}
+    vendor: "jetstack"
+    default: "false"
+  chart: jetstack/cert-manager
+  version: "v0.9.0"
+  wait: true
+  installed: {{ env "STACK_CERTMANAGER" | default "true" }}
+{{- if eq (env "HELM_VERSION" | default "2") "3" }}
+  needs:
+    - kube-system/namespace-cert-manager
+{{- end }}
+  hooks:
+    - events: ["presync"]
+      showlogs: true
+      command: "/bin/sh"
+      args: ["-c", "kubectl apply -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.9/deploy/manifests/00-crds.yaml"]
+  values:
+    - fullnameOverride: cert-manager
+      rbac:
+        create: {{ env "KUBE_RBAC_ENABLED" | default "true" }}
+      ingressShim:
+        defaultIssuerName: default
+        defaultIssuerKind: ClusterIssuer
+{{ if env "CERT_MANAGER_IAM_ROLE" | default "" }}
+      podAnnotations:
+        iam.amazonaws.com/role: '{{ env "CERT_MANAGER_IAM_ROLE" }}'
+{{ end }}
+      serviceAccount:
+        create: {{ env "KUBE_RBAC_ENABLED" | default "true" }}
+        name: '{{ env "CERT_MANAGER_SERVICE_ACCOUNT_NAME" | default "" }}'
+      prometheus:
+        enabled: {{ env "STACK_MONITORING" | default "true" }}
+        servicemonitor:
+          enabled: false
+      webhook:
+        enabled: false
+      cainjector:
+        enabled: true
+      resources:
+        limits:
+          cpu: "200m"
+          memory: "256Mi"
+        requests:
+          cpu: "50m"
+          memory: "128Mi"
+
+- name: cert-manager-metricsservice
+  chart: "incubator/raw"
+  namespace: {{ env "STACK_CERTMANAGER_NAMESPACE" | default "cert-manager" }}
+  labels:
+    component: "cert-manager-metricsservice"
+    namespace: {{ env "STACK_CERTMANAGER_NAMESPACE" | default "cert-manager" }}
+    default: "true"
+  installed: {{ env "STACK_MONITORING" | default "true" }}
+{{- if eq (env "HELM_VERSION" | default "2") "3" }}
+  needs:
+    - kube-system/namespace-cert-manager
+{{- end }}
+  values:
+  - resources:
+    - apiVersion: v1
+      kind: Service
+      metadata:
+        name: cert-manager
+        labels:
+          app: cert-manager
+          app.kubernetes.io/name: cert-manager
+          app.kubernetes.io/instance: cert-manager
+          app.kubernetes.io/managed-by: Helm
+      spec:
+        type: ClusterIP
+        ports:
+          - protocol: TCP
+            port: 9402
+            targetPort: 9402
+        selector:
+          app.kubernetes.io/name: cert-manager
+          app.kubernetes.io/instance: cert-manager
+
+- name: cert-manager-servicemonitor
+  chart: "incubator/raw"
+  namespace: {{ env "STACK_MONITORING_NAMESPACE" | default "monitoring" }}
+  labels:
+    component: "cert-manager"
+    namespace: {{ env "STACK_MONITORING_NAMESPACE" | default "monitoring" }}
+    default: "true"
+  installed: {{ env "STACK_MONITORING" | default "true" }}
+  values:
+  - resources:
+    - apiVersion: monitoring.coreos.com/v1
+      kind: ServiceMonitor
+      metadata:
+        name: cert-manager
+        namespace: {{ env "STACK_MONITORING_NAMESPACE" | default "monitoring" }}
+        labels:
+          app: cert-manager
+          chart: cert-manager-v0.9.0
+          release: cert-manager
+          heritage: Helm
+          prometheus: {{ env "PROMETHEUS_INSTANCE" | default "kube-prometheus" }}
+      spec:
+        jobLabel: cert-manager
+        namespaceSelector:
+          matchNames:
+          - {{ env "STACK_CERTMANAGER_NAMESPACE" | default "cert-manager" }}
+        selector:
+          matchLabels:
+            app: cert-manager
+            release: cert-manager
+        endpoints:
+        - targetPort: 9402
+          path: /metrics
+          interval: 60s
+          scrapeTimeout: 30s
+
+- name: cert-manager-issuers
+  chart: "incubator/raw"
+  namespace: {{ env "STACK_CERTMANAGER_NAMESPACE" | default "cert-manager" }}
+  labels:
+    component: "cert-manager"
+    namespace: {{ env "STACK_CERTMANAGER_NAMESPACE" | default "cert-manager" }}
+    default: "true"
+  installed: {{ env "STACK_CERTMANAGER" | default "true" }}
+  needs:
+    - cert-manager/cert-manager
+{{- if eq (env "HELM_VERSION" | default "2") "3" }}
+    - kube-system/namespace-cert-manager
+{{- end }}
+  values:
+  - resources:
+    - apiVersion: certmanager.k8s.io/v1alpha1
+      kind: ClusterIssuer
+      metadata:
+        name: letsencrypt-staging
+      spec:
+        acme:
+          server: https://acme-staging-v02.api.letsencrypt.org/directory
+          email: {{ env "STACK_CERTMANAGER_EMAIL" | default "some.user@yourdomain.com" }}
+          privateKeySecretRef:
+            name: letsencrypt-staging
+          solvers:
+            - http01:
+                ingress:
+                  class: {{ env "STACK_INGRESS_STAGE_CLASS" | default "staging" }}
+{{- if env "CERT_MANAGER_IAM_ROLE" | default "" }}
+            - dns01:
+                route53: {}
+{{- end }}
+    - apiVersion: certmanager.k8s.io/v1alpha1
+      kind: ClusterIssuer
+      metadata:
+        name: letsencrypt-prod
+      spec:
+        acme:
+          server: https://acme-v02.api.letsencrypt.org/directory
+          email: {{ env "STACK_CERTMANAGER_EMAIL" | default "zach.loeber@havi.com" }}
+          privateKeySecretRef:
+            name: letsencrypt-prod
+          solvers:
+            - http01:
+                ingress:
+                  class: {{ env "STACK_INGRESS_EXT_CLASS" | default "external" }}
+{{- if env "CERT_MANAGER_IAM_ROLE" | default "" }}
+            - dns01:
+                route53: {}
+{{- end }}
+    - apiVersion: certmanager.k8s.io/v1alpha1
+      kind: ClusterIssuer
+      metadata:
+        name: default
+      spec:
+        spec:
+          selfSigned: {}
