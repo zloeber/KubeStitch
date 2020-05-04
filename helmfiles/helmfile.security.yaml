@@ -1,32 +1,33 @@
+---
 bases:
-- defaults.yaml
+- ../config/environments.yaml
+- ../config/helmdefaults.yaml
+---
 
 repositories:
 - name: reactiveops-stable
-  url: "https://charts.reactiveops.com/stable"
+  url: https://charts.reactiveops.com/stable
 
 releases:
-{{- if eq (env "HELM_VERSION" | default "2") "3" }}
 - name: namespace-security
   chart: ../charts/namespace/chart/namespace
   namespace: kube-system
   labels:
     chart: namespace-security
-    component: "security"
-    namespace: "security"
+    component: security
+    namespace: kube-system
   wait: true
   installed: true
   values:
   - namespaces:
-    - security
+    - {{ .Values.stacks.security.namespace | default "security" }}
     helmResourcePolicy: keep
     annotations:
       certmanager.k8s.io/disable-validation: "true"
-      {{ env "CLOUD" | default "local" }}-key-vault-env-injection: enabled
-{{- end }}
+      {{ .Values.cloud | default "local" }}-key-vault-env-injection: enabled
 
 - name: rbac-manager
-  namespace: "security"
+  namespace: {{ .Values.stacks.security.namespace | default "security" }}
   labels:
     chart: "rbac-manager"
     repo: "stable"
@@ -38,27 +39,25 @@ releases:
   version: "1.4.1"
   installed: true
   chart: reactiveops-stable/rbac-manager
-{{- if eq (env "HELM_VERSION" | default "2") "3" }}
   needs:
   - kube-system/namespace-security
-{{- end }}
+
 - name: config-security
-  namespace: security
-  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  namespace: {{ .Values.stacks.security.namespace | default "security" }}
+  chart: {{ .Values.archtypeChart | default "../charts/archtype" }}
   labels:
     chart: config-security
     component: security
-    namespace: security
-    {{ env "CLOUD" | default "local" }}-key-vault-env-injection: enabled
+    namespace: {{ .Values.stacks.security.namespace | default "security" }}
+    {{ .Values.cloud | default "local" }}-key-vault-env-injection: enabled
   needs:
   - security/rbac-manager
   values:
   - project:
       team: platform
-      target: {{ env "TARGET" | default "cicd" }}
+      target: {{ .Values.cloud | default "local" }}
       client: mcd
       workload: rbac
-      engine: nextgen
       app: security
     clusterRole:
       enabled: true
@@ -66,8 +65,9 @@ releases:
     clusterRoleBinding:
       enabled: true
       roleName: security-namespace-cluster-admin
-      serviceAccountNamespace: security
+      serviceAccountNamespace: {{ .Values.stacks.security.namespace | default "security" }}
       serviceAccountName: default
+
 - name: security-roles
   chart: incubator/raw
   namespace: kube-system
@@ -116,15 +116,3 @@ releases:
       - kind: ServiceAccount
         name: default
         namespace: platform
-    - kind: ClusterRoleBinding
-      apiVersion: rbac.authorization.k8s.io/v1beta1
-      metadata:
-        name: default
-      roleRef:
-        apiGroup: rbac.authorization.k8s.io
-        kind: ClusterRole
-        name: cluster-admin
-      subjects:
-      - kind: ServiceAccount
-        name: default
-        namespace: monitoring

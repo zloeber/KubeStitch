@@ -1,22 +1,98 @@
 ROOT_PATH ?= $(abspath $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST))))))
+BIN_PATH ?= $(ROOT_PATH)/.local/bin
+
 CHART_PATH ?= $(ROOT_PATH)/charts
-CUSTOM_CHART_PATH ?= $(ROOT_PATH)/charts/custom
+HELMFILE_PATH ?= $(ROOT_PATH)/helmfiles
+STACK ?= cluster.default
+HELMFILE_VERSION ?= 0.109.0
+HELM_VERSION ?= 3.1.2
 
-helm/plugins: ## Installs helm plugins
-	$(helm) plugin install https://github.com/databus23/helm-diff --version master 2> /dev/null || true
-	$(helm) plugin install https://github.com/rimusz/helm-tiller 2>/dev/null || true
-	$(helm) plugin install https://github.com/futuresimple/helm-secrets 2>/dev/null || true
-	$(helm) plugin install https://github.com/mumoshu/helm-x 2>/dev/null || true
-	$(helm) plugin install https://github.com/aslafy-z/helm-git.git 2>/dev/null || true
-	$(helm) plugin install https://github.com/helm/helm-2to3 2>/dev/null || true
-	$(helm) plugin install https://github.com/thomastaylor312/helm-namespace 2>/dev/null || true
-	@echo "Helm plugins: Installed"
+export XDG_CACHE_HOME=$(ROOT_PATH)/.local
+export XDG_CONFIG_HOME=$(ROOT_PATH)/.local
+export XDG_DATA_HOME=$(ROOT_PATH)/.local
 
-helm/2to3/config/dry: context tiller/start ## helm migration, dry run
-	$(BIN_PATH)/helm3 2to3 move config --dry-run
+helmfile_binary ?= $(BIN_PATH)/helmfile
+helmfile ?= $(helmfile_binary) --environment $(ENVIRONMENT)
+helm_binary ?= $(BIN_PATH)/helm
+helm ?= $(helm_binary)
+gomplate := $(BIN_PATH)/gomplate
 
-helm/2to3/config: context tiller/start ## helm migration
-	$(BIN_PATH)/helm3 2to3 move config --dry-run
+.PHONY: .dep/helmfile
+.dep/helmfile: ## Install helmfile
+ifeq (,$(wildcard $(INSTALL_PATH)/helmfile))
+	@$(MAKE) --no-print-directory -C $(APP_PATH)/githubapp reset helmfile INSTALL_PATH=$(INSTALL_PATH)
+	@$(MAKE) --no-print-directory -C $(APP_PATH)/githubapp auto roboll/helmfile INSTALL_PATH=$(INSTALL_PATH)
+	@echo "Installed: $(helmfile_binary)"
+endif
 
-helm/secrets/encrypt: ## Encrypt helm secrets file for target env (if exists)
-	$(helm) secrets enc ${TARGET_CONFIG_PATH}/secrets.yaml.dec
+.PHONY: .dep/gomplate
+.dep/gomplate: ## Install gomplate locally
+ifeq (,$(wildcard $(INSTALL_PATH)/gomplate))
+	@$(MAKE) --no-print-directory -C $(APP_PATH)/githubapp auto hairyhenderson/gomplate INSTALL_PATH=$(INSTALL_PATH)
+	@echo "Installed: $(gomplate)"
+endif
+
+.PHONY: .dep/helm
+.dep/helm: ## Install helm locally
+ifeq (,$(wildcard $(INSTALL_PATH)/helm))
+	@mkdir -p /tmp/helm3
+	@curl --retry 3 --retry-delay 5 --fail -sSL -o - https://get.helm.sh/helm-v$(HELM_VERSION)-linux-amd64.tar.gz | tar -C /tmp/helm3 -zx linux-amd64/helm
+	@mv /tmp/helm3/linux-amd64/helm $(helm_binary)
+	@rm -rf /tmp/helm3
+	@chmod +x $(helm_binary)
+	@echo "Installed: $(helm_binary)"
+endif
+
+.PHONY: .helm/plugins
+.helm/plugins: ## Installs helm plugins
+	@$(helm) plugin install https://github.com/databus23/helm-diff --version master 2> /dev/null || true
+	@$(helm) plugin install https://github.com/futuresimple/helm-secrets 2> /dev/null || true
+#	@$(helm) plugin install https://github.com/mumoshu/helm-x 2> /dev/null || true
+	@$(helm) plugin install https://github.com/aslafy-z/helm-git.git 2> /dev/null || true
+#	@$(helm) plugin install https://github.com/thomastaylor312/helm-namespace 2> /dev/null || true
+
+
+.PHONY: .deps/helm
+.deps/helm: .dep/helm .dep/helmfile .helm/plugins ## Install helm, helmfile, and plugins locally
+
+#.PHONY: .helm/secrets/encrypt
+#.helm/secrets/encrypt: ## Encrypt helm secrets file for target env (if exists)
+#	$(helm) secrets enc ${TARGET_CONFIG_PATH}/secrets.yaml.dec
+
+.PHONY: helmfile/list
+helmfile/list: ## Lists all available helmfiles
+	@ls $(HELMFILE_PATH)/helmfile.*.yaml | cut -d'.' -f 2
+
+.PHONY: helmfile/apply
+helmfile/apply: ## apply all resources from state file only when there are changes
+	$(helmfile) -b $(helm_binary) -f $(HELMFILE_PATH)/helmfile.$(STACK).yaml apply
+
+.PHONY: helmfile/sync
+helmfile/sync: ## Sync STACK with TARGET infrastructure stack
+	$(helmfile) -b $(helm_binary) -f $(HELMFILE_PATH)/helmfile.$(STACK).yaml sync
+
+.PHONY: helmfile/diff
+helmfile/diff: ## diffs STACK to TARGET infrastructure
+	$(helmfile) -b $(helm_binary) -f $(HELMFILE_PATH)/helmfile.$(STACK).yaml diff
+
+.PHONY: helmfile/test
+helmfile/test: ## Tests STACK in TARGET
+	$(helmfile) -b $(helm_binary) -f $(HELMFILE_PATH)/helmfile.$(STACK).yaml test
+
+.PHONY: helmfile/destroy
+helmfile/destroy: prompt/yesno ## Removes STACK from TARGET cluster
+	$(helmfile) -b $(helm_binary) -f $(HELMFILE_PATH)/helmfile.$(STACK).yaml destroy
+
+.PHONY: helmfile/template
+helmfile/template: ## template STACK yaml manifest for TARGET cluster
+	$(helmfile) -b $(helm_binary) -f $(HELMFILE_PATH)/helmfile.$(STACK).yaml template
+
+.PHONY: helmfile/remove
+helmfile/remove: helmfile/destroy ## Removes STACK from TARGET cluster (alias for destroy)
+
+.PHONY: helmfile/reload
+helmfile/reload: helmfile/destroy helmfile/sync ## Removes then adds STACK from TARGET cluster
+
+.PHONY: helmfile/scorch
+helmfile/scorch: helmfile/destroy ## (WARNING!) Removes stack then its namespace if possible
+	$(kubecmd) delete namespace $(STACK)

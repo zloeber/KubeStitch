@@ -3,52 +3,46 @@ helmDefaults:
   tillerNamespace: platform
   atomic: true
   verify: false
-  wait: false
+  wait: true
   timeout: 900
   recreatePods: false
   force: false
 
-repositories:
-- name: stable
-  url: https://kubernetes-charts.storage.googleapis.com
-# - name: "forecastle"
-#   # Cannot use release tags, see https://github.com/aslafy-z/helm-git/issues/9
-#   #url: "git+https://github.com/stakater/Forecastle@deployments/kubernetes/chart?ref=19b369aa684152ad52c33d1935a74b0f425db2cb"
-#   url: "git+https://github.com/stakater/Forecastle@deployments/kubernetes/chart"
-
 ###############
-## Template App
+## Hashicorp's Consul
+## Description: Consul config managment
 releases:
 {{- if eq (env "HELM_VERSION" | default "3") "3" }}
-- name: namespace-template
+- name: namespace-consul
   # Helm 3 needs to put deployment info into a namespace. As this creates a namespace it will not exist yet so we use 'kube-system' 
   #  which should exist in all clusters.
   chart: ../charts/namespace/chart/namespace
   namespace: kube-system
   labels:
-    chart: namespace-template
-    component: "template"
-    namespace: "template"
+    chart: namespace-consul
+    component: "consul"
+    namespace: "consul"
   wait: true
   installed: true
   values:
   - namespaces:
-    - template
-    helmResourcePolicy: keep
+    - consul
+    helmResourcePolicy: discard
     labels:
       {{ env "CLOUD" | default "local" }}-key-vault-env-injection: enabled
     annotations:
       certmanager.k8s.io/disable-validation: "true"
 {{- end }}
-## Template Deployment
-- name: template
-  namespace: template
-  installed: {{ env "PLATFORM_TEMPLATE_INSTALLED" | default "true" }}
-  chart: template/template
+
+## Consul Deployment
+- name: consul
+  namespace: consul
+  installed: {{ env "PLATFORM_CONSUL_INSTALLED" | default "true" }}
+  chart: ../charts/consul
   labels:
-    chart: template
-    component: template
-    namespace: template
+    chart: consul
+    component: consul
+    namespace: consul
   hooks:
     # This hook adds the keyvault injection annotation
     - events: ["presync"]
@@ -61,26 +55,39 @@ releases:
         kubectl label --overwrite namespace "{{`{{ .Release.Namespace }}`}}" "{{ env "CLOUD" | default "local" }}-key-vault-env-injection=enabled" ;
 {{- if eq (env "HELM_VERSION" | default "3") "3" }}
   needs:
-    - kube-system/namespace-template
+    - kube-system/namespace-consul
 {{- end }}
   values:
-  - someElement:
+  - global:
+      domain: consul
+      datacenter: {{ env "TARGET" | default "cicd" }}
+    server:
+      enabled: true
+      storage: 10Gi
+      storageClass: null
 {{- if env "AKS_RESERVED_NODESELECTOR" | default "" }}
-      nodeSelector:
+      nodeSelector: |
         agentpool: {{ env "AKS_RESERVED_NODESELECTOR" | default "agentpool" }}
 {{- end }}
-
-- name: ingress-template
-  namespace: "template"
+    client:
+      enabled: true
+    ui:
+      enabled: true
+    meshGateway:
+      enabled: false
+    
+- name: ingress-consul
+  namespace: "consul"
   chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
-  installed: {{ env "PLATFORM_TEMPLATE_INSTALLED" | default "true" }}
+  installed: {{ env "PLATFORM_CONSUL_INSTALLED" | default "true" }}
   labels:
-    chart: "ingress-template"
+    chart: "ingress-consul"
     component: "ingress"
-    namespace: "template"
-{{- if eq (env "HELM_VERSION" | default "3") "3" }}
+    namespace: "consul"
   needs:
-    - kube-system/namespace-template
+    - consul/consul
+{{- if eq (env "HELM_VERSION" | default "3") "3" }}
+    - kube-system/namespace-consul
 {{- end }}
   values:
   - project:
@@ -88,14 +95,15 @@ releases:
       stage: {{ env "STAGE" | default "dev" }}
       target: {{ env "TARGET" | default "cicd" }}
       client: {{ env "CLIENT" | default "client1" }}
+    ingressInternalClass: {{ env "STACK_INGRESS_INT_CLASS" | default "internal" }}
     ingress:
       enabled: true
       hosts:
-      - name: template.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+      - name: consul.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
         config:
           http:
             paths:
             - path: "/"
               backend:
-                serviceName: template-service
-                servicePort: 9092
+                serviceName: consul-consul-ui
+                servicePort: 80

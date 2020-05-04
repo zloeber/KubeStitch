@@ -1,19 +1,15 @@
-helmDefaults:
-  tillerless: true
-  tillerNamespace: platform
-  atomic: true
-  verify: false
-  wait: false
-  timeout: 900
-  recreatePods: false
-  force: false
+---
+bases:
+- ../config/environments.yaml
+- ../config/helmdefaults.yaml
+---
 
 repositories:
 - name: rancher
   url: https://releases.rancher.com/server-charts/latest
 
 ###############
-## Rancher chart
+## Rancher Deployment
 ## Description: 
 releases:
 - name: namespace-rancher
@@ -22,38 +18,38 @@ releases:
   labels:
     chart: namespace-rancher
     component: "rancher"
-    namespace: {{ env "STACK_RANCHER_NAMESPACE" | default "cattle-system" }}
+    namespace: cattle-system
   wait: true
-  installed: {{ env "STACK_RANCHER" | default "true" }}
+  installed: true
   values:
   - namespaces:
-    - {{ env "STACK_RANCHER_NAMESPACE" | default "cattle-system" }}
+    - cattle-system
 
 ## rancher Deployment
 - name: rancher
-  namespace: {{ env "STACK_RANCHER_NAMESPACE" | default "cattle-system" }}
-  installed: {{ env "STACK_RANCHER" | default "true" }}
+  namespace: cattle-system
+  installed: true
   chart: rancher/rancher
   labels:
     chart: rancher
     component: rancher
-    namespace: {{ env "STACK_RANCHER_NAMESPACE" | default "cattle-system" }}
+    namespace: cattle-system
   needs:
     - kube-system/namespace-rancher
   values:
-  - hostname: rancher.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+  - hostname: rancher.{{ .Values.stacks.ingress.zoneInternal }}
     ingress:
       extraAnnotations:
-        kubernetes.io/ingress.class: {{ env "STACK_INGRESS_INT_CLASS" | default "internal" }}
+        kubernetes.io/ingress.class: {{ .Values.stacks.ingress.classInternal | default "internal" }}
         certmanager.k8s.io/cluster-issuer: default
 # - name: ingress-rancher
-#   namespace: {{ env "STACK_RANCHER_NAMESPACE" | default "cattle-system" }}
+#   namespace: cattle-system
 #   chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
-#   installed: {{ env "STACK_RANCHER" | default "true" }}
+#   installed: true
 #   labels:
 #     chart: "ingress-rancher"
 #     component: "ingress"
-#     namespace: {{ env "STACK_RANCHER_NAMESPACE" | default "cattle-system" }}
+#     namespace: cattle-system
 #   needs:
 #     - kube-system/namespace-rancher
 #   values:
@@ -62,7 +58,7 @@ releases:
 #       stage: {{ env "STAGE" | default "dev" }}
 #       target: {{ env "TARGET" | default "cicd" }}
 #       client: {{ env "CLIENT" | default "client1" }}
-#     ingressInternalClass: {{ env "STACK_INGRESS_INT_CLASS" | default "internal" }}
+#     ingressInternalClass: {{ .Values.ingress.classInternal | default "internal" }}
 #     ingressTests: false
 #     ingress:
 #       enabled: true

@@ -1,0 +1,85 @@
+ROOT_PATH ?= $(abspath $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST))))))
+BIN_PATH ?= $(ROOT_PATH)/.local/bin
+
+KUBE_CLUSTER_CONTEXT ?= $(KUBE_CLUSTER)
+KUBE_CONFIG := $(ROOT_PATH)/.local/kube.$(ENVIRONMENT).conf
+
+kubectl := $(BIN_PATH)/kubectl
+kubecmd := KUBECONFIG=$(KUBE_CONFIG) $(kubectl)
+stern := $(BIN_PATH)/stern
+
+export KUBECONFIG=$(KUBE_CONFIG)
+.PHONY: .dep/stern
+.dep/stern: ## Install stern log watcher
+ifeq (,$(wildcard $(INSTALL_PATH)/stern))
+	@$(MAKE) --no-print-directory -C $(APP_PATH)/githubapp auto wercker/stern INSTALL_PATH=$(INSTALL_PATH)
+	@echo "Installed: $(stern)"
+endif
+
+.PHONY: .dep/kubectl
+.dep/kubectl: ## install kubectl for this project
+ifeq (,$(wildcard $(INSTALL_PATH)/kubectl))
+	@mkdir -p $(BIN_PATH)
+	@curl --retry 3 --retry-delay 5 --fail -sSL -o $(kubectl) https://storage.googleapis.com/kubernetes-release/release/v$(KUBE_VERSION)/bin/$(HOST_PLATFORM)/$(ARCH)/kubectl
+	@chmod +x $(kubectl)
+	@echo "Installed: $(kubectl)"
+endif
+
+.PHONY: .deps/kube
+.deps/kube: .dep/kubectl .dep/stern ## Install kube dependencies
+
+.PHONY: kube/show/utilization
+kube/show/utilization: ## Show aks node utilization
+	$(kubecmd) get nodes --no-headers | awk '{print $$1}' | xargs -I {} sh -c 'echo {}; $(kubecmd) describe node {} | grep Allocated -A 5 | grep -ve Event -ve Allocated -ve percent -ve -- ; echo'
+
+.PHONY: kube/reset/dns
+kube/reset/dns: ## Deletes coredns pods to restart dns services on k8s cluster
+	$(kubecmd) -n kube-system delete po -l k8s-app=kube-dns
+
+kube/remove/pvc/finalizers/%: ## removes finalizers from a namespace persistent volume claims
+	$(kubecmd) get pvc -n $(subst kube/remove/pvc/finalizers/,,$@) | tail -n+2 | awk '{print $$1}' | xargs -I{} $(kubecmd) -n $(subst kube/remove/pvc/finalizers/,,$@) patch pvc {} -p '{"metadata":{"finalizers": null}}'
+
+kube/remove/pv/finalizers/%: ## removes finalizers from a namespace persistent volumes
+	$(kubecmd) get pv -n $(subst kube/remove/pv/finalizers/,,$@) | tail -n+2 | awk '{print $$1}' | xargs -I{} $(kubecmd) patch pv {} -p '{"metadata":{"finalizers": null}}'
+
+.PHONY: kube/context
+kube/context: ## Set kubectl config context to KUBE_CLUSTER
+	$(kubecmd) config set-context $(KUBE_CLUSTER_CONTEXT)
+	$(kubecmd) config use-context $(KUBE_CLUSTER_CONTEXT)
+
+.PHONY: kube/install/argocd
+kube/install/argocd: ## Install argocd
+	$(kubecmd) create namespace argocd
+	$(kubecmd) apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+
+.PHONY: kube/get/argocd/password
+kube/get/argocd/password: ## Pull the argocd password
+	$(kubecmd) get pods -n argocd -l app.kubernetes.io/name=argocd-server -o name | cut -d'/' -f 2
+
+.PHONY: kube/install/metallb
+kube/install/metallb: ## Install metallb
+	$(kubecmd) apply -f https://raw.githubusercontent.com/google/metallb/v0.8.3/manifests/metallb.yaml
+	$(kubecmd) apply -f https://git.io/km-config.yaml
+
+.PHONY: kube/create/dockersecret
+kube/create/dockersecret: ## Create docker secret from current .docker/config.json
+	$(kubecmd) create secret generic regcred \
+	--from-file=.dockerconfigjson="$${HOME}/.docker/config.json" \
+	--type=kubernetes.io/dockerconfigjson -n kube-system
+
+.PHONY: kube/proxy/dashboard
+kube/proxy/dashboard: ## Starts a proxy to the local cluster dashboard if it exists
+	PODNAME=$$($(kubecmd) get pods -n kube-system -l "app=kubernetes-dashboard,release=kubernetes-dashboard" -o jsonpath="{.items[0].metadata.name}"); \
+	$(kubecmd) -n kube-system port-forward $${PODNAME} 9090:9090
+
+.PHONY: kube/config
+kube/config: ## Exports a copy of the current kube config
+	@cat $(KUBE_CONFIG)
+
+.PHONY: kube/config/file
+kube/config/file: ## Prints the current kube config file location
+	@echo $(KUBE_CONFIG)
+
+.PHONY: kube/list/resources
+kube/list/resources: ## Prints kubernetes resources
+	for kind in `kubectl api-resources | tail +2 | awk '{ print $$1 }' | sort`; do kubectl explain $$kind ; done | grep -e "KIND:" -e  "VERSION:" | awk '{print $$2}' | paste -sd' \n'

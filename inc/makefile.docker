@@ -1,9 +1,9 @@
-APP ?= $(CURRENT_FOLDER)
+APP ?= myapp
 CLOUD ?= azure
 
 # Docker
 # Set to --no-cache to run docker build operations from scratch
-DOCKER_NC?=
+DOCKER_NC ?=
 # escape_docker_tag escape colon char to allow use a docker tag as rule
 define escape_docker_tag
 $(subst :,--,$(1))
@@ -14,8 +14,8 @@ define unescape_docker_tag
 $(subst --,:,$(1))
 endef
 
-REGISTRY_SERVER?=mycontainerrepo
-REGISTRY_DOMAIN?=$(REGISTRY_SERVER).azurecr.io
+REGISTRY_SERVER ?= mycontainerrepo
+REGISTRY_DOMAIN ?= $(REGISTRY_SERVER).azurecr.io
 
 ## Docker commands
 docker ?= docker
@@ -31,30 +31,40 @@ DOCKER_IMAGE?=$(REGISTRY_DOMAIN)/$(APP)
 DOCKER_IMAGE_VERSION?=$(DOCKER_IMAGE):$(VERSION)
 DOCKER_IMAGE_VERSIONED?=$(call escape_docker_tag,$(DOCKER_IMAGE):$(VERSION))
 
+.PHONY: docker/repo/login
 docker/repo/login: ## Login to docker repository
 ifeq ($(CLOUD),azure)
 	@az account set --subscription "${AZ_SUBSCRIPTION}"
 	az acr login --name $(REGISTRY_SERVER)
+else
+	docker login
 endif
 
+.PHONY: docker/deploy
 docker/deploy: docker/repo/login docker/build docker/tag docker/push ## Build, tag, and push base image
 
+.PHONY: docker/build
 docker/build: ## Build docker image
 	@echo "Build Image: ${APP}"
 	$(DOCKER_BUILD) . -t $(DOCKER_IMAGE) $(DOCKER_NC)
 
+.PHONY: docker/tag
 docker/tag: ## Tag docker image appropriately
 	$(DOCKER_TAG) $(DOCKER_IMAGE) $(DOCKER_IMAGE_VERSION)
 
+.PHONY: docker/push
 docker/push: # Push an image
 	$(DOCKER_PUSH) $(DOCKER_IMAGE_VERSION)
 
+.PHONY: docker/run/shell
 docker/run/shell: ## Run current docker image interactively with bash shell (as root)
 	$(DOCKER_RUN) -i -t --rm -u root --name="$(APP)" $(DOCKER_IMAGE_VERSION) bash
 
+.PHONY: docker/run
 docker/run: ## Run current docker image interactively (as root)
 	$(DOCKER_RUN) -i -t --rm -u root --name="$(APP)" $(DOCKER_IMAGE_VERSION)
 
+.PHONY: docker/serve/pgadmin
 docker/serve/pgadmin: ## Run pgadmin 4 container locally
 	$(docker) run -p 9001:80 \
 		-e "PGADMIN_DEFAULT_EMAIL=admin@localhost" \

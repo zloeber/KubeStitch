@@ -1,0 +1,34 @@
+ROOT_PATH ?= $(abspath $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST))))))
+BIN_PATH ?= $(ROOT_PATH)/.local/bin
+
+arkade := $(BIN_PATH)/arkade
+istioctl := $(BIN_PATH)/istioctl
+
+.PHONY: .dep/istioctl
+.dep/istioctl: ## Install istioctl locally
+ifeq (,$(wildcard $(INSTALL_PATH)/istioctl))
+	@$(MAKE) --no-print-directory -C $(APP_PATH)/githubapp auto istio/istio PACKAGE_EXE=istioctl INSTALL_PATH=$(INSTALL_PATH)
+	@echo "Installed: $(istioctl)"
+endif
+
+.PHONY: .dep/arkade
+.dep/arkade: ## Install arkade locally
+ifeq (,$(wildcard $(INSTALL_PATH)/arkade))
+	@$(MAKE) --no-print-directory -C $(APP_PATH)/githubapp auto alexellis/arkade INSTALL_PATH=$(INSTALL_PATH)
+	@echo "Installed: $(arkade)"
+endif
+
+.PHONY: .deps/istio
+.deps/istio: .dep/istioctl .dep/arkade ## Install istio dependencies
+
+.PHONY: istio/deploy
+istio/deploy: istio/verify ## Deploy istio to the cluster
+	$(arkade) install \
+	  --kubeconfig $(KUBE_CONFIG) \
+	  istio --helm3
+
+.PHONY: istio/verify
+istio/verify: ## Verify istio install
+	$(istioctl) verify-install \
+	  --kubeconfig $(KUBE_CONFIG) \
+	  --context $(KUBE_CLUSTER_CONTEXT)

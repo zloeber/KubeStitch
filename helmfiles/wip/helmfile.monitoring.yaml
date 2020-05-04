@@ -1,0 +1,639 @@
+helmDefaults:
+  tillerless: true
+  tillerNamespace: platform
+  atomic: true
+  verify: false
+  wait: false
+  timeout: 900
+  recreatePods: false
+  force: true
+
+repositories:
+- name: stable
+  url: https://kubernetes-charts.storage.googleapis.com/
+
+releases:
+{{- if eq (env "HELM_VERSION" | default "3") "3" }}
+- name: namespace-monitoring
+  # Helm 3 needs to put deployment info into a namespace. As this creates a namespace it will not exist yet so we use 'kube-system' 
+  #  which should exist in all clusters.
+  chart: ../charts/namespace/chart/namespace
+  namespace: kube-system
+  labels:
+    chart: namespace-monitoring
+    component: "monitoring"
+    namespace: "monitoring"
+  wait: true
+  installed: {{ env "STACK_MONITORING" | default true }}
+  values:
+  - namespaces:
+    - monitoring
+{{- end }}
+
+- name: monitoring-security-roles
+  chart: incubator/raw
+  namespace: kube-system
+{{- if eq (.Values.kube.helmVersion | default "3") "3" }}
+  needs:
+  - kube-system/namespace-monitoring
+{{- end }}
+  values:
+    - kind: ClusterRoleBinding
+      apiVersion: rbac.authorization.k8s.io/v1beta1
+      metadata:
+        name: default
+      roleRef:
+        apiGroup: rbac.authorization.k8s.io
+        kind: ClusterRole
+        name: cluster-admin
+      subjects:
+      - kind: ServiceAccount
+        name: default
+        namespace: monitoring
+
+- name: prometheus-operator
+  chart: "../charts/prometheus-operator"
+  namespace: {{ env "STACK_MONITORING_NAMESPACE" | default "monitoring" }}
+  wait: true
+  installed: {{ env "STACK_MONITORING" | default true }}
+  labels:
+    chart: "prometheus-operator"
+    repo: "coreos-stable"
+    component: "operator"
+    namespace: {{ env "STACK_MONITORING_NAMESPACE" | default "monitoring" }}
+    vendor: "coreos"
+{{- if eq (env "HELM_VERSION" | default "3") "3" }}
+  needs:
+  - kube-system/namespace-monitoring
+  - kube-system/monitoring-security-roles
+{{- end }}
+  values:
+  - image:
+      repository: quay.io/coreos/prometheus-operator
+      tag: {{ env "STACK_MONITORING_PROMETHEUSOPERATOR_TAG" | default "v0.20.0" }}
+    kubeControllerManager:
+      service:
+        selector:
+          k8s-app: null
+          component: kube-controller-manager
+    kubeScheduler:
+      service:
+        selector:
+          k8s-app: null
+          component: kube-scheduler
+    coreDns:
+      enabled: true
+      service:
+        selector:
+          k8s-app: kube-dns
+    kubeDns:
+      enabled: false
+    alertmanager:
+      enabled: true
+      config:
+        global:
+          resolve_timeout: "5m"
+        route:
+          group_by: ['job']
+          group_wait: "30s"
+          group_interval: "5m"
+          repeat_interval: "12h"
+          receiver: "null"
+          routes:
+          - match:
+              alertname: Watchdog
+            receiver: "null"
+        receivers:
+        - name: 'null'
+      alertmanagerSpec:
+        storage:
+          volumeClaimTemplate:
+            spec:
+              storageClassName: {{ env "STACK_MONITORING_STORAGECLASS" | default "default" }}
+              accessModes: ["ReadWriteOnce"]
+              resources:
+                requests:
+                  storage: {{ env "STACK_MONITORING_ALERTMANAGER_DISK_SIZE" | default "10Gi" }}
+    nodeExporter:
+      enabled: false
+      jobLabel: jobLabel
+{{- if env "AKS_RESERVED_NODESELECTOR" | default "" }}
+      nodeSelector:
+        agentpool: "{{ env "AKS_RESERVED_NODESELECTOR" | default "agentpool" }}"
+{{- end }}
+      serviceMonitor:
+        interval: ""
+        metricRelabelings: []
+        relabelings: []
+    prometheus-node-exporter:
+{{- if env "AKS_RESERVED_NODESELECTOR" | default "" }}
+      nodeSelector:
+        agentpool: "{{ env "AKS_RESERVED_NODESELECTOR" | default "agentpool" }}"
+{{- end }}
+      podLabels:
+        jobLabel: node-exporter
+      extraArgs:
+        - --collector.filesystem.ignored-mount-points=^/(dev|proc|sys|var/lib/docker/.+)($|/)
+        - --collector.filesystem.ignored-fs-types=^(autofs|binfmt_misc|cgroup|configfs|debugfs|devpts|devtmpfs|fusectl|hugetlbfs|mqueue|overlay|proc|procfs|pstore|rpc_pipefs|securityfs|sysfs|tracefs)$
+    prometheusOperator:
+      enabled: true
+{{- if env "AKS_RESERVED_NODESELECTOR" | default "" }}
+      nodeSelector:
+        agentpool: "{{ env "AKS_RESERVED_NODESELECTOR" | default "agentpool" }}"
+{{- end }}
+    prometheus:
+      enabled: true
+      prometheusSpec:
+        image:
+          repository: quay.io/prometheus/prometheus
+          tag: {{ env "STACK_MONITORING_PROMETHEUS_TAG" | default "v2.7.2" }}
+        tolerations: []
+        alertingEndpoints: []
+        externalLabels: {}
+{{- if env "AKS_RESERVED_NODESELECTOR" | default "" }}
+        nodeSelector:
+          agentpool: "{{ env "AKS_RESERVED_NODESELECTOR" | default "agentpool" }}"
+{{- end }}
+        secrets: []
+        configMaps: []
+        query: {}
+        ruleNamespaceSelector: {}
+        ruleSelectorNilUsesHelmValues: true
+        ruleSelector: {}
+        serviceMonitorSelectorNilUsesHelmValues: false
+        serviceMonitorSelector: {}
+        serviceMonitorNamespaceSelector: {}
+        retention: 14d
+        paused: false
+        replicas: {{ env "STACK_MONITORING_PROMETHEUS_REPLICAS" | default "3" }}
+        logLevel: info
+        routePrefix: /
+        podMetadata: {}
+        podAntiAffinity: ""
+        podAntiAffinityTopologyKey: kubernetes.io/hostname
+        remoteRead: []
+        remoteWrite: []
+        resources: {}
+        storageSpec: {}
+        volumeClaimTemplate:
+          spec:
+            storageClassName: {{ env "STACK_MONITORING_STORAGECLASS" | default "default" }}
+            accessModes: ["ReadWriteOnce"]
+            resources:
+              requests:
+                storage: {{ env "STACK_MONITORING_PROMETHEUS_DISK_SIZE" | default "200Gi" }}
+          selector: {}
+        additionalAlertManagerConfigs: []
+        additionalAlertRelabelConfigs: []
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          fsGroup: 2000
+        priorityClassName: ""
+        thanos: {}
+        containers: []
+        additionalScrapeConfigsExternal: false
+      additionalServiceMonitors: []
+
+- name: kube-prometheus
+  namespace: {{ env "STACK_MONITORING_NAMESPACE" | default "monitoring" }}
+  installed: {{ env "STACK_MONITORING" | default "true" }}
+  labels:
+    chart: "kube-prometheus"
+    component: "monitoring"
+    namespace: {{ env "STACK_MONITORING_NAMESPACE" | default "monitoring" }}
+    vendor: "coreos"
+    default: true
+  chart: "../charts/kube-prometheus"
+  needs:
+    - monitoring/prometheus-operator
+{{- if eq (env "HELM_VERSION" | default "3") "3" }}
+    - kube-system/namespace-monitoring
+{{- end }}
+  values:
+  - deployExporterNode: true
+    deployGrafana: true
+    grafana:
+      externalUrl: http://grafana.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+      serverDashboardConfigmaps:
+      - "grafana-custom-config"
+      keepOriginalDashboards: true
+    deployKubelets: true
+    deployKubeScheduler: false
+    deployKubeControllerManager: false
+    deployKubeState: true
+    global:
+      rbacEnable: true
+      pspEnable: true
+    deployAlertManager: true
+    alertmanager:
+      image:
+        repository: quay.io/prometheus/alertmanager
+        tag: {{ env "STACK_MONITORING_ALERTMANAGER_TAG" | default "v0.15.1" }}
+      externalUrl: http://alertmanager.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+      config:
+        global:
+          smtp_smarthost: '{{ env "STACK_MONITORING_SMTP_SERVER" | default "" }}'
+          smtp_from: 'Alertmanager <alertmanager@kubernetes>'
+          # smtp_auth_username: '{{ env "STACK_MONITORING_SMTP_USER" | default "" }}'
+          # smtp_auth_password: '{{ env "STACK_MONITORING_SMTP_API_KEY" | default "" }}'
+          resolve_timeout: 20m
+        route:
+          group_by: ['alertname', 'cluster', 'service']
+          group_wait: 30s
+          group_interval: 5m
+          repeat_interval: 3h
+          receiver: low_priority_channel
+          routes:
+          - receiver: high_priority_channel
+            match:
+              severity: critical
+          - receiver: medium_priority_channel
+            match:
+              severity: warning
+          - receiver: low_priority_channel
+            match:
+              severity: low
+          - receiver: deadmansswitch
+            match:
+              alertname: DeadMansSwitch
+
+        inhibit_rules:
+        - source_match:
+            severity: critical
+          target_match:
+            severity: warning
+          equal: ['alertname']
+          # This inhibt rule is a hack from: 
+          #  https://stackoverflow.com/questions/54806336/how-to-silence-prometheus-alertmanager-using-config-files/54814033#54814033
+        - source_match:
+            alertname: DeadMansSwitch
+          target_match_re:
+            alertname: '.+Overcommit'
+          equal: ['prometheus']
+        receivers:
+        - name: 'null'
+        - name: deadmansswitch
+          email_configs:
+          - to: "{{ env "STACK_MONITORING_SMTP_RECIPIENT" | default "" }}"
+        - name: high_priority_channel
+          webhook_configs:
+            - send_resolved: true
+              url: "{{ env "STACK_MONITORING_MSTEAMS_ENDPOINT" | default "http://prometheus-msteams.monitoring.svc:2000" }}/high_priority_channel"
+          email_configs:
+          - to: "{{ env "STACK_MONITORING_SMTP_RECIPIENT" | default "" }}"
+        - name: medium_priority_channel
+          webhook_configs:
+            - send_resolved: true
+              url: "{{ env "STACK_MONITORING_MSTEAMS_ENDPOINT" | default "http://prometheus-msteams.monitoring.svc:2000" }}/medium_priority_channel"
+          email_configs:
+          - to: "{{ env "STACK_MONITORING_SMTP_RECIPIENT" | default "" }}"
+        - name: low_priority_channel
+          webhook_configs:
+            - send_resolved: true
+              url: "{{ env "STACK_MONITORING_MSTEAMS_ENDPOINT" | default "http://prometheus-msteams.monitoring.svc:2000" }}/low_priority_channel"
+      storageSpec:
+        volumeClaimTemplate:
+          spec:
+            storageClassName: {{ env "STACK_MONITORING_STORAGECLASS" | default "default" }}
+            accessModes: ["ReadWriteOnce"]
+            resources:
+              requests:
+                storage: {{ env "STACK_MONITORING_ALERTMANAGER_DISK_SIZE" | default "50Gi" }}
+    prometheus:
+      externalUrl: http://prometheus.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+      image:
+        repository: quay.io/prometheus/prometheus
+        tag: {{ env "STACK_MONITORING_PROMETHEUS_TAG" | default "v2.7.2" }}
+{{- if env "AKS_RESERVED_NODESELECTOR" | default "" }}
+      nodeSelector:
+        agentpool: "{{ env "AKS_RESERVED_NODESELECTOR" | default "agentpool" }}"
+{{- end }}
+      paused: false
+      replicaCount: 1
+      podAntiAffinity: "soft"
+      config:
+        specifiedInValues: true
+      resources:
+        requests:
+          memory: 400Mi
+      secrets: []
+      retention: 14d
+      routePrefix: /
+      ruleNamespaceSelector: {}
+      rulesSelector: {}
+      rules:
+        specifiedInValues: true
+        additionalLabels: {}
+        value: {}
+      serviceMonitors: []
+      storageSpec:
+        volumeClaimTemplate:
+          spec:
+            storageClassName: {{ env "STACK_MONITORING_STORAGECLASS" | default "default" }}
+            accessModes: ["ReadWriteOnce"]
+            resources:
+              requests:
+                storage: {{ env "STACK_MONITORING_PROMETHEUS_DISK_SIZE" | default "50Gi" }}
+          selector: {}
+        sidecarsSpec: []
+      additionalScrapeConfigs:
+      # - job_name: kubernetes-apiservers
+      #   kubernetes_sd_configs:
+      #   - role: endpoints
+      #   scheme: https
+      #   tls_config:
+      #     ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+      #   bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+      #   relabel_configs:
+      #   - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
+      #     action: keep
+      #     regex: default;kubernetes;https
+      - job_name: kubernetes-nodes
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+          insecure_skip_verify: true
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        kubernetes_sd_configs:
+        - role: node
+        relabel_configs:
+        - action: labelmap
+          regex: __meta_kubernetes_node_label_(.+)
+        - target_label: __address__
+          replacement: kubernetes.default.svc:443
+        - source_labels: [__meta_kubernetes_node_name]
+          regex: (.+)
+          target_label: __metrics_path__
+          replacement: /api/v1/nodes/${1}/proxy/metrics
+      - job_name: kubernetes-service-endpoints
+        kubernetes_sd_configs:
+        - role: endpoints
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_scrape]
+          action: keep
+          regex: true
+        - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_scheme]
+          action: replace
+          target_label: __scheme__
+          regex: (https?)
+        - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_path]
+          action: replace
+          target_label: __metrics_path__
+          regex: (.+)
+        - source_labels: [__address__, __meta_kubernetes_service_annotation_prometheus_io_port]
+          action: replace
+          target_label: __address__
+          regex: (.+)(?::\d+);(\d+)
+          replacement: $1:$2
+        - action: labelmap
+          regex: __meta_kubernetes_service_label_(.+)
+        - source_labels: [__meta_kubernetes_namespace]
+          action: replace
+          target_label: kubernetes_namespace
+        - source_labels: [__meta_kubernetes_service_name]
+          action: replace
+          target_label: kubernetes_name
+      - job_name: prometheus-pushgateway
+        honor_labels: true
+        kubernetes_sd_configs:
+        - role: service
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_probe]
+          action: keep
+          regex: pushgateway
+      - job_name: kubernetes-services
+        metrics_path: /probe
+        kubernetes_sd_configs:
+        - role: service
+        params:
+          module: [http_2xx]
+        scrape_interval: 30s
+        scrape_timeout: 30s
+        scheme: https
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_probe]
+          separator: ;
+          regex: true
+          replacement: $1
+          action: keep
+        - source_labels: [__address__]
+          separator: ;
+          regex: (.*)
+          target_label: __param_target
+          replacement: $1
+          action: replace
+        - separator: ;
+          regex: (.*)
+          target_label: __address__
+          replacement: blackbox
+          action: replace
+        - source_labels: [__param_target]
+          separator: ;
+          regex: (.*)
+          target_label: instance
+          replacement: $1
+          action: replace
+        - separator: ;
+          regex: __meta_kubernetes_service_label_(.+)
+          replacement: $1
+          action: labelmap
+        - source_labels: [__meta_kubernetes_service_namespace]
+          separator: ;
+          regex: (.*)
+          target_label: kubernetes_namespace
+          replacement: $1
+          action: replace
+        - source_labels: [__meta_kubernetes_service_name]
+          separator: ;
+          regex: (.*)
+          target_label: kubernetes_name
+          replacement: $1
+          action: replace
+      - job_name: kubernetes-ingresses
+        metrics_path: /probe
+        kubernetes_sd_configs:
+        - role: ingress
+        params:
+          module: [http_2xx]
+        scrape_interval: 30s
+        scrape_timeout: 30s
+        scheme: http
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_ingress_annotation_prometheus_io_probe]
+          separator: ;
+          regex: true
+          replacement: $1
+          action: keep
+        - source_labels: [__meta_kubernetes_ingress_scheme, __address__, __meta_kubernetes_ingress_path]
+          separator: ;
+          regex: (.+);(.+);(.+)
+          target_label: __param_target
+          replacement: ${1}://${2}${3}
+          action: replace
+        - source_labels: [__param_target]
+          separator: ;
+          regex: (.*)
+          target_label: instance
+          replacement: $1
+          action: replace
+        - separator: ;
+          regex: __meta_kubernetes_ingress_label_(.+)
+          replacement: $1
+          action: labelmap
+        - source_labels: [__meta_kubernetes_namespace]
+          separator: ;
+          regex: (.*)
+          target_label: kubernetes_namespace
+          replacement: $1
+          action: replace
+        - source_labels: [__meta_kubernetes_ingress_name]
+          separator: ;
+          regex: (.*)
+          target_label: kubernetes_name
+          replacement: $1
+          action: replace
+      - job_name: kubernetes-pods
+        scrape_interval: 30s
+        scrape_timeout: 30s
+        metrics_path: /metrics
+        scheme: http
+        kubernetes_sd_configs:
+        - role: pod
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+          separator: ;
+          regex: true
+          replacement: $1
+          action: keep
+        - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+          separator: ;
+          regex: (.+)
+          target_label: __metrics_path__
+          replacement: $1
+          action: replace
+        - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+          separator: ;
+          regex: (.+):(?:\d+);(\d+)
+          target_label: __address__
+          replacement: ${1}:${2}
+          action: replace
+        - separator: ;
+          regex: __meta_kubernetes_pod_label_(.+)
+          replacement: $1
+          action: labelmap
+        - source_labels: [__meta_kubernetes_pod_namespace]
+          separator: ;
+          regex: (.*)
+          target_label: kubernetes_namespace
+          replacement: $1
+          action: replace
+        - source_labels: [__meta_kubernetes_pod_name]
+          separator: ;
+          regex: (.*)
+          target_label: kubernetes_pod_name
+          replacement: $1
+          action: replace
+    deployCoreDNS: true
+    deployKubeDNS: false
+    deployKubeEtcd: false
+    deployKafkaExporter: true
+    additionalRulesLabels: {}
+    exporter-kafka:
+      matchLabels:
+        release: confluent-kafka
+    exporter-kubelets:
+      https: false
+
+- name: ingress-alertmanager
+  namespace: {{ env "STACK_MONITORING_NAMESPACE" | default "monitoring" }}
+  installed: {{ env "STACK_MONITORING" | default true }}
+  chart: "{{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}"
+  labels:
+    chart: "ingress-alertmanager"
+    component: "ingress"
+    namespace: {{ env "STACK_MONITORING_NAMESPACE" | default "monitoring" }}
+{{- if eq (env "HELM_VERSION" | default "3") "3" }}
+  needs:
+  - kube-system/namespace-monitoring
+{{- end }}
+  values:
+  - project:
+      team: "operations"
+      target: {{ env "TARGET" | default "cicd" }}
+      client: {{ env "CLIENT" | default "client1" }}
+      workload: "alertmanager"
+      engine: "monitoring"
+    ingressInternalClass: {{ env "STACK_INGRESS_INT_CLASS" | default "internal" }}
+    ingress:
+      enabled: true
+      hosts:
+      - name: alertmanager.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+        config:
+          http:
+            paths:
+            - path: "/"
+              backend:
+                serviceName: kube-prometheus-alertmanager
+                servicePort: 9093
+
+- name: ingress-prometheus
+  namespace: {{ env "STACK_MONITORING_NAMESPACE" | default "monitoring" }}
+  installed: {{ env "STACK_MONITORING" | default true }}
+  chart: "{{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}"
+  labels:
+    chart: "ingress-prometheus"
+    component: "ingress"
+    namespace: {{ env "STACK_MONITORING_NAMESPACE" | default "monitoring" }}
+{{- if eq (env "HELM_VERSION" | default "3") "3" }}
+  needs:
+    - kube-system/namespace-monitoring
+{{- end }}
+  values:
+  - project:
+      team: "operations"
+      target: {{ env "TARGET" | default "cicd" }}
+      client: {{ env "CLIENT" | default "client1" }}
+      workload: "prometheus"
+      engine: "monitoring"
+    ingressInternalClass: {{ env "STACK_INGRESS_INT_CLASS" | default "internal" }}
+    ingress:
+      enabled: true
+      hosts:
+      - name: prometheus.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+        config:
+          http:
+            paths:
+            - path: "/"
+              backend:
+                serviceName: kube-prometheus
+                servicePort: 9090
+
+- name: rbac-monitoring
+  namespace: {{ env "STACK_MONITORING_NAMESPACE" | default "monitoring" }}
+  installed: {{ env "STACK_MONITORING" | default "true" }}
+  labels:
+    chart: rbac-monitoring
+    component: "monitoring"
+    namespace: {{ env "STACK_MONITORING_NAMESPACE" | default "monitoring" }}
+    default: true
+  chart: incubator/raw
+  needs:
+    - monitoring/prometheus-operator
+{{- if eq (env "HELM_VERSION" | default "3") "3" }}
+    - kube-system/namespace-monitoring
+{{- end }}
+  values:
+  - resources:
+    - kind: ClusterRoleBinding
+      apiVersion: rbac.authorization.k8s.io/v1beta1
+      metadata:
+        name: monitoring-admin
+      roleRef:
+        apiGroup: rbac.authorization.k8s.io
+        kind: ClusterRole
+        name: cluster-admin
+      subjects:
+      - kind: ServiceAccount
+        name: kube-prometheus
+        namespace: monitoring

@@ -1,0 +1,67 @@
+helmDefaults:
+  tillerless: true
+  tillerNamespace: platform
+  atomic: true
+  verify: false
+  wait: false
+  timeout: 900
+  recreatePods: false
+  force: false
+
+repositories:
+- name:  danielqsj
+  url: git+https://github.com/danielqsj/kafka_exporter@charts/kafka-exporter
+###############
+## kafka-exporter
+releases:
+{{- if eq (env "HELM_VERSION" | default "3") "3" }}
+- name: namespace-kafka-exporter
+  # Helm 3 needs to put deployment info into a namespace. As this creates a namespace it will not exist yet so we use 'kube-system' 
+  #  which should exist in all clusters.
+  chart: ../charts/namespace/chart/namespace
+  namespace: kube-system
+  labels:
+    chart: namespace-kafka-exporter
+    component: "kafka-exporter"
+    namespace: "kafka-exporter"
+  wait: true
+  installed: true
+  values:
+  - namespaces:
+    - kafka-exporter
+    helmResourcePolicy: discard
+    annotations:
+      certmanager.k8s.io/disable-validation: "true"
+{{- end }}
+## kafka-exporter Deployment
+- name: kafka-exporter
+  namespace: kafka-exporter
+  installed: {{ env "PLATFORM_KAFKA_EXPORTER" | default "true" }}
+  chart:  danielqsj/kafka-exporter
+  labels:
+    chart: kafka-exporter
+    component: kafka-exporter
+    namespace: kafka-exporter
+{{- if eq (env "HELM_VERSION" | default "3") "3" }}
+  needs:
+    - kube-system/namespace-kafka-exporter
+{{- end }}
+  values:
+  - kafkaExporter:
+      kafka:
+        servers:
+        - "{{ env "STACK_KAFKA_BOOTSTRAP_SERVERS" | default "confluent-kafka-cp-kafka.database.svc:9092" }}"
+    serviceAccount:
+      create: true
+    prometheus:
+      serviceMonitor:
+        enabled: true
+        namespace: {{ env "STACK_MONITORING_NAMESPACE" | default "monitoring" }}
+        interval: "30s"
+        additionalLabels:
+          app: kafka-exporter
+          prometheus: {{ env "STACK_MONITORING_PROMETHEUSINSTANCE" | default "kube-prometheus" }}
+{{- if env "AKS_RESERVED_NODESELECTOR" | default "" }}
+      nodeSelector:
+        agentpool: {{ env "AKS_RESERVED_NODESELECTOR" | default "agentpool" }}
+{{- end }}

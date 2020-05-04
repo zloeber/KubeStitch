@@ -11,7 +11,7 @@ helmDefaults:
 ###############
 ## Operator Lifecycle Manager
 releases:
-{{- if eq (env "HELM_VERSION" | default "2") "3" }}
+{{- if eq (env "HELM_VERSION" | default "3") "3" }}
 - name: namespace-olm
   # Helm 3 needs to put deployment info into a namespace. As this creates a namespace it will not exist yet so we use 'kube-system' 
   #  which should exist in all clusters.
@@ -41,7 +41,7 @@ releases:
     chart: olm
     component: olm
     namespace: olm
-{{- if eq (env "HELM_VERSION" | default "2") "3" }}
+{{- if eq (env "HELM_VERSION" | default "3") "3" }}
   needs:
     - kube-system/namespace-olm
 {{- end }}

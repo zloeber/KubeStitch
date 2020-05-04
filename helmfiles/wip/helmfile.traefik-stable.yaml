@@ -15,7 +15,7 @@ repositories:
 ###############
 ## traefik
 releases:
-{{- if eq (env "HELM_VERSION" | default "2") "3" }}
+{{- if eq (env "HELM_VERSION" | default "3") "3" }}
 - name: namespace-traefik
   # Helm 3 needs to put deployment info into a namespace. As this creates a namespace it will not exist yet so we use 'kube-system' 
   #  which should exist in all clusters.
@@ -42,7 +42,7 @@ releases:
     chart: traefik
     component: ingress
     namespace: "{{ env "STACK_INGRESS_INT_NAMESPACE" | default "ingress-int" }}"
-{{- if eq (env "HELM_VERSION" | default "2") "3" }}
+{{- if eq (env "HELM_VERSION" | default "3") "3" }}
   needs:
     - kube-system/namespace-traefik
 {{- end }}
@@ -82,7 +82,7 @@ releases:
 #     chart: "ingress-traefik"
 #     component: "ingress"
 #     namespace: {{ env "STACK_INGRESS_INT_NAMESPACE" | default "ingress-int" }}
-# {{- if eq (env "HELM_VERSION" | default "2") "3" }}
+# {{- if eq (env "HELM_VERSION" | default "3") "3" }}
 #   needs:
 #   - kube-system/namespace-traefik
 # {{- end }}
@@ -105,7 +105,7 @@ releases:
 #   chart: incubator/raw
 #   namespace: "{{ env "STACK_INGRESS_INT_NAMESPACE" | default "ingress-int" }}"
 #   installed: {{ env "STACK_INGRESS_INT" | default "true" }}
-# {{- if eq (env "HELM_VERSION" | default "2") "3" }}
+# {{- if eq (env "HELM_VERSION" | default "3") "3" }}
 #   needs:
 #     - kube-system/namespace-traefik
 # {{- end }}  

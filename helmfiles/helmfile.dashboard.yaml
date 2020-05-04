@@ -1,6 +1,8 @@
+---
 bases:
-- ./defaults.yaml
-- ../environment/values.{{ .Environment.Name | default "default" }}.yaml
+- ../config/environments.yaml
+- ../config/helmdefaults.yaml
+---
 
 repositories:
 - name: stable
@@ -8,23 +10,22 @@ repositories:
 
 releases:
 - name: "kubernetes-dashboard"
-  namespace: '{{- env "STACK_DASHBOARD_NAMESPACE" | default "kube-system" -}}'
+  namespace: kube-system
   labels:
     chart: "kubernetes-dashboard"
     repo: "stable"
     component: "monitoring"
-    namespace: "{{- env "STACK_DASHBOARD_NAMESPACE" | default "kube-system" -}}"
+    namespace: "kube-system"
     vendor: "kubernetes"
-    default: "true"
   chart: "stable/kubernetes-dashboard"
   version: "1.10.1"
   wait: true
-  installed: {{ env "STACK_DASHBOARD" | default "true" }}
+  installed: true
   values:
   - image:
-      repository: "k8s.gcr.io/kubernetes-dashboard-amd64"
-      tag: '{{ env "STACK_DASHBOARD_IMAGE_TAG" | default "v1.10.1" }}'
-      pullPolicy: "IfNotPresent"
+      repository: k8s.gcr.io/kubernetes-dashboard-amd64
+      tag: {{ env "STACK_DASHBOARD_IMAGE_TAG" | default "v1.10.1" }}
+      pullPolicy: IfNotPresent
     enableInsecureLogin: {{ env "STACK_DASHBOARD_ENABLE_INSECURE_LOGIN" | default "true"}}
 {{- if eq (env "STACK_DASHBOARD_ENABLE_INSECURE_LOGIN" | default "true") "true" }}
     service:
@@ -43,42 +44,17 @@ releases:
         cpu: '{{ env "STACK_DASHBOARD_REQUEST_CPU" | default "50m" }}'
         memory: '{{ env "STACK_DASHBOARD_REQUEST_MEMORY" | default "50Mi" }}'
     rbac:
-      create: {{ env "KUBE_RBAC_ENABLED" | default "true" }}
+      create: {{ .Values.kube.rbac }}
     serviceAccount:
-      create: {{ env "KUBE_RBAC_ENABLED" | default "true" }}
-      name: '{{ env "STACK_DASHBOARD_SERVICE_ACCOUNT_NAME" | default "" }}'
+      create: false
+      name: kubernetes-dashboard
     ingress:
       enabled: false
 
-- name: ingress-dashboard
-  namespace: '{{ env "STACK_DASHBOARD_NAMESPACE" | default "kube-system" }}'
-  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
-  installed: {{ env "STACK_DASHBOARD_INSTALLED" | default "true" }}
-  labels:
-    chart: ingress-dashboard
-    component: ingress
-    namespace: '{{ env "STACK_DASHBOARD_NAMESPACE" | default "kube-system" }}'
-  values:
-  - project:
-      team: {{ env "TEAM" | default "cicd" }}
-      target: {{ env "TARGET" | default "cicd" }}
-      client: {{ env "CLIENT" | default "client1" }}
-    ingressInternalClass: {{ env "STACK_INGRESS_INT_CLASS" | default "internal" }}
-    ingress:
-      enabled: true
-      hosts:
-      - name: dashboard.{{ env "ZONE" | default "" }}{{ env "TEAM" | default "team1" }}.{{ env "TARGET" | default "cicd" }}.{{ env "DNS_DOMAIN" | default "micro.svc" }}
-        config:
-          http:
-            paths:
-            - path: "/"
-              backend:
-                serviceName: kubernetes-dashboard
-                servicePort: 80
-
 - name: rbac-dashboard-service
   chart: incubator/raw
-  namespace: '{{ env "STACK_DASHBOARD_NAMESPACE" | default "kube-system" }}'
+  namespace: "kube-system"
+  installed: true
   values:
   - resources:
     - kind: RBACDefinition
@@ -90,6 +66,34 @@ releases:
           subjects:
             - kind: ServiceAccount
               name: kubernetes-dashboard
-              namespace: '{{ env "STACK_DASHBOARD_NAMESPACE" | default "kube-system" }}'
+              namespace: "kube-system"
           clusterRoleBindings:
             - clusterRole: cluster-admin
+
+{{- if .Values.stacks.ingress.installed }}
+- name: ingress-dashboard
+  namespace: "kube-system"
+  chart: {{ .Values.archtypeChart }}
+  installed: {{ .Values.stacks.ingress.installed }}
+  labels:
+    chart: ingress-dashboard
+    component: ingress
+    namespace: "kube-system"
+  values:
+  - project:
+      team: {{ env "TEAM" | default "cicd" }}
+      target: {{ env "TARGET" | default "cicd" }}
+      client: {{ env "CLIENT" | default "client1" }}
+    ingressInternalClass: {{ .Values.stacks.ingress.classInternal }}
+    ingress:
+      enabled: true
+      hosts:
+      - name: dashboard.{{ .Values.stacks.ingress.zoneInternal }}
+        config:
+          http:
+            paths:
+            - path: "/"
+              backend:
+                serviceName: kubernetes-dashboard
+                servicePort: 80
+{{- end }}

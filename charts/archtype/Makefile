@@ -2,10 +2,6 @@
 ## Author: Zachary Loeber
 SHELL:=/bin/bash
 
-ORG?=adodevopsorg
-ENGINE?=NextGen
-TARGET?=a1d
-TEAM?=inv
 REPO_NAME?=mycontainerrepo
 REPO?=http://${REPO_NAME}.azurecr.io
 RELEASE?=stable
@@ -44,36 +40,17 @@ az/deps: clean dep/helm az/config helm/init ## Azure dependencies
 deps: clean dep/helm helm/init ## Update helm dependencies
 	$(BIN_PATH)/helm dependency update
 
-helm/add: ## Adds azure acr helm repo to local helm repo list
-	$(BIN_PATH)/helm repo remove chartmuseum 2>/dev/null || true
-	$(BIN_PATH)/helm repo add chartmuseum http://chartmuseum.${TEAM}.${TARGET}.micro.svc
-
 helm/init: ## Initializes helm properly
 	$(BIN_PATH)/helm init -c
 
 helm/lint: ## Adds azure acr helm repo to local helm repo list
 	$(BIN_PATH)/helm lint ${PROJECT_PATH}
 
-# az/helm/add: ## Adds azure acr helm repo to local helm repo list
-# 	az acr helm repo add ${REPO} "${ORG}-${RELEASE}"
-
-helm/remove: ## Remove azure acr helm repo to local helm repo list
-	$(BIN_PATH)/helm repo remove chartmuseum 2> /dev/null
-
 helm/package: ## Builds and packages helm chart to ./charts
 	$(BIN_PATH)/helm package -u ${PROJECT_PATH}/ -d ${PROJECT_PATH}/charts
 
 helm/push: ## Push the packaged chart
 	$(BIN_PATH)/helm push ./charts/${CHART}-${VERSION}.tgz --force chartmuseum
-
-az/config: ## Some azure defaults for this session
-	az configure --defaults acr=${REPO_NAME}
-
-az/helm/push: ## Push the packaged chart
-	az acr helm push -n mycontainerrepo ${PROJECT_PATH}/charts/${CHART}-${VERSION}.tgz --force
-
-az/helm/list: ## Show acr helm charts
-	az acr helm list
 
 deploy: deps helm/lint helm/init helm/add helm/package helm/push ## build, package, and push helm repo
 
@@ -82,17 +59,8 @@ az/deploy: deps az/config helm/init helm/lint helm/package az/helm/push ## Build
 prompt/yesno: ## Are you sure
 	@( read -p "Are you sure?!? [y/N]: " sure && case "$$sure" in [yY]) true;; *) false;; esac )
 
-## Some extra, nice to have, bootstrap tasks
-.devops/repo/create: prompt/yesno ## Create devops repo for this project
-	@echo "No repo for your chart yet? Great, start here but.."
-	@echo "Just blow away the local .git folder first and ensure PROJECT is correct"
-	@echo ""
-	az repos create --name ${PROJECT} 2> /dev/null
-	git remote add origin https://dev.azure.com/${ORG}/NextGen/_git/${CHART}
-	git push -u origin --all
-
 help: ## Help
-	@grep --no-filename -E '^[a-zA-Z_/-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+	@grep --no-filename -E '^[a-zA-Z_%/-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 show/env: ## Show env vars
 	@echo "REPO=${REPO}"

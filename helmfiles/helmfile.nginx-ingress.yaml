@@ -1,19 +1,14 @@
-helmDefaults:
-  tillerless: true
-  tillerNamespace: platform
-  atomic: true
-  verify: false
-  wait: true
-  timeout: 600
-  recreatePods: false
-  force: true
+---
+bases:
+- ../config/environments.yaml
+- ../config/helmdefaults.yaml
+---
 
 repositories:
 - name: stable
-  url: "https://kubernetes-charts.storage.googleapis.com/"
+  url: https://kubernetes-charts.storage.googleapis.com/
 
 releases:
-{{- if eq (env "HELM_VERSION" | default "2") "3" }}
 - name: namespace-ingress-int
   # Helm 3 needs to put deployment info into a namespace. As this creates a namespace it will not exist yet so we use 'kube-system' 
   #  which should exist in all clusters.
@@ -28,7 +23,6 @@ releases:
   values:
   - namespaces:
     - {{ env "STACK_INGRESS_INT_NAMESPACE" | default "ingress-int" }}
-{{- end }}
 
 - name: ingress-int-cert
   chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}  
@@ -37,10 +31,8 @@ releases:
     chart: ingress-int
     component: "ingress"
     namespace: "{{ env "STACK_INGRESS_INT_NAMESPACE" }}"
-{{- if eq (env "HELM_VERSION" | default "2") "3" }}
   needs:
   - kube-system/namespace-ingress-int
-{{- end }}
   values:
   - project:
       team: "{{ env "TEAM" | default "team1" }}"
@@ -61,10 +53,8 @@ releases:
   labels:
     chart: "stable/nginx-ingress"
     namespace: {{ env "STACK_INGRESS_INT_NAMESPACE" | default "ingress-int" }}
-{{- if eq (env "HELM_VERSION" | default "2") "3" }}
   needs:
   - kube-system/namespace-ingress-int
-{{- end }}
   values:
   - controller:
       service:
@@ -83,7 +73,7 @@ releases:
         publish-service: "ingress-int/nginx-ingress-controller"
       autoscaling:
         enabled: true
-      hostNetwork: {{ env "CICD" | default "false" }}
-{{- if eq (env "CICD" | default "false") "true" }}
+{{- if eq .Values.cloud "local" }}
+      hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
 {{- end }}

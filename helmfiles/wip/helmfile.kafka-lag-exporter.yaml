@@ -1,0 +1,89 @@
+helmDefaults:
+  tillerless: true
+  tillerNamespace: platform
+  atomic: true
+  verify: false
+  wait: false
+  timeout: 900
+  recreatePods: false
+  force: false
+
+repositories:
+- name: lightbend
+  url: git+https://github.com/lightbend/kafka-lag-exporter@charts/kafka-lag-exporter
+
+###############
+## kafka-lag-exporter
+releases:
+{{- if eq (env "HELM_VERSION" | default "3") "3" }}
+- name: namespace-kafka-lag-exporter
+  # Helm 3 needs to put deployment info into a namespace. As this creates a namespace it will not exist yet so we use 'kube-system' 
+  #  which should exist in all clusters.
+  chart: ../charts/namespace/chart/namespace
+  namespace: kube-system
+  labels:
+    chart: namespace-kafka-lag-exporter
+    component: "kafka-lag-exporter"
+    namespace: "kafka-lag-exporter"
+  wait: true
+  installed: true
+  values:
+  - namespaces:
+    - kafka-lag-exporter
+    helmResourcePolicy: discard
+    annotations:
+      certmanager.k8s.io/disable-validation: "true"
+{{- end }}
+## kafka-lag-exporter Deployment
+- name: kafka-lag-exporter
+  namespace: kafka-lag-exporter
+  installed: {{ env "PLATFORM_KAFKA_LAG_EXPORTER" | default "true" }}
+  chart: lightbend/kafka-lag-exporter
+  labels:
+    chart: kafka-lag-exporter
+    component: kafka-lag-exporter
+    namespace: kafka-lag-exporter
+{{- if eq (env "HELM_VERSION" | default "3") "3" }}
+  needs:
+    - kube-system/namespace-kafka-lag-exporter
+{{- end }}
+  values:
+  - image:
+      repository: lightbend/kafka-lag-exporter
+      tag: 0.6.0
+    clusters:
+    - name: "{{ env "TARGET" | default "cicd" }}"
+      bootstrapBrokers: "{{ env "STACK_KAFKA_BOOTSTRAP_SERVERS" | default "confluent-kafka-cp-kafka.database.svc:9092" }}"
+      # topicWhitelist:
+      # - "^.+"
+      # topicBlacklist:
+      # - "^_.+"
+      # groupWhitelist:
+      # - "^.+"
+      # https://kafka.apache.org/documentation/#consumerconfigs
+      consumerProperties:
+        security.protocol: PLAINTEXT
+        # ssl.truststore.location: /path/to/my.truststore.jks
+        # ssl.trustore.password: mypwd
+      # https://kafka.apache.org/documentation/#adminclientconfigs
+      adminClientProperties:
+        security.protocol: PLAINTEXT
+        # ssl.truststore.location: /path/to/my.truststore.jks
+        # ssl.trustore.password: mypwd
+      labels:
+        team: {{ env "TEAM" | default "ops" }}
+        target: {{ env "TARGET" | default "cicd" }}
+        zone: {{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+    serviceAccount:
+      create: true
+    prometheus:
+      serviceMonitor:
+        enabled: true
+        namespace: {{ env "STACK_MONITORING_NAMESPACE" | default "monitoring" }}
+        interval: "30s"
+        additionalLabels:
+          prometheus: {{ env "STACK_MONITORING_PROMETHEUSINSTANCE" | default "kube-prometheus" }}
+{{- if env "AKS_RESERVED_NODESELECTOR" | default "" }}
+      nodeSelector:
+        agentpool: {{ env "AKS_RESERVED_NODESELECTOR" | default "agentpool" }}
+{{- end }}

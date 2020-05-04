@@ -1,0 +1,205 @@
+helmDefaults:
+  tillerless: true
+  tillerNamespace: platform
+  atomic: true
+  verify: false
+  wait: false
+  timeout: 900
+  recreatePods: true
+  force: false
+
+repositories:
+- name: "forecastle"
+  url: "git+https://github.com/stakater/Forecastle@deployments/kubernetes/chart"
+
+releases:
+  #######################################################################################
+  ## forecastle                                                                        ##
+  ## Forecastle is a dynamic web portal for Kubernetes services                        ##
+  #######################################################################################
+  # References:
+  #   - https://github.com/stakater/Forecastle/tree/v1.0.25/deployments/kubernetes/chart/forecastle
+  #   - https://github.com/stakater/Forecastle
+  #
+{{- if eq (env "HELM_VERSION" | default "3") "3" }}
+- name: namespace-forecastle
+  # Helm 3 needs to put deployment info into a namespace. As this creates a namespace it will not exist yet so we use 'kube-system' 
+  #  which should exist in all clusters.
+  chart: ../charts/namespace/chart/namespace
+  namespace: kube-system
+  labels:
+    chart: namespace-forecastle
+    component: "forecastle"
+    namespace: "forecastle"
+  wait: true
+  installed: true
+  values:
+  - namespaces:
+    - forecastle
+    helmResourcePolicy: keep
+    annotations:
+      certmanager.k8s.io/disable-validation: "true"
+{{- end }}
+- name: forecastle
+  namespace: forecastle
+  labels:
+    chart: "forecastle"
+    app: "forecastle"
+    repo: "github"
+    component: "forecastle"
+    namespace: "forecastle"
+    vendor: "stakater"
+  chart: "forecastle/forecastle"
+  installed: true
+{{- if eq (env "HELM_VERSION" | default "3") "3" }}
+  needs:
+  - kube-system/namespace-forecastle
+{{- end }}
+  values:
+    {{- if env "FORECASTLE_CUSTOM_APPS_YAML" }}
+    - {{ env "FORECASTLE_CUSTOM_APPS_YAML" }}
+    {{- end }}
+    - forecastle:
+        createCustomResource: false
+        image:
+          pullPolicy: "IfNotPresent"
+        namespace: forecastle
+        deployment:
+          # Some annotation is required or else we get a bunch of
+          # annotations from the default values.yaml
+          annotations: ""
+          replicas: 1
+          revisionHistoryLimit: 2
+
+        config:
+          instanceName: ""
+          headerBackground:
+          headerForeground: "#ffffff"
+          namespaceSelector:
+            any: true
+          title: "Portal ({{ env "TARGET" | default "cicd" }})"
+          ## Add custom apps via FORECASTLE_CUSTOM_APPS_YAML file in this format:
+          customApps:
+            - name: Dashboard
+              url: http://dashboard.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+              icon: http://dashboard.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}/assets/images/kubernetes-logo.png
+              group: Admin
+            - name: Prometheus
+              url: http://prometheus.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+              icon: https://branding.cncf.io/img/projects/prometheus/icon/black/prometheus-icon-black.png
+              group: Monitoring
+            - name: AlertManager
+              url: http://alertmanager.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+              icon: https://branding.cncf.io/img/projects/prometheus/stacked/color/prometheus-stacked-color.png
+              group: Monitoring
+            - name: Grafana
+              url: http://grafana.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+              icon: http://grafana.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}/public/img/grafana_icon.svg
+              group: Monitoring
+            - name: Kibana
+              url: http://kibana.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+              icon: http://kibana.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}/ui/favicons/favicon-32x32.png
+              group: Logging
+            - name: Cerebro
+              url: http://cerebro.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+              icon: http://cerebro.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}/img/logo.png
+              group: Logging
+            - name: KafkaHQ
+              url: http://kafkahq.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+              icon: http://kafkahq.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}/static/img/logo.svg
+              group: Database
+        service:
+          annotations: ""
+          expose: "true"
+
+- name: ingress-forecastle
+  namespace: "forecastle"
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  labels:
+    chart: ingress-forecastle
+    component: ingress
+    namespace: forecastle
+{{- if eq (env "HELM_VERSION" | default "3") "3" }}
+  needs:
+  - kube-system/namespace-forecastle
+{{- end }}
+  values:
+  - project:
+      app: "forecastle"
+      team: {{ env "TEAM" | default "ops" }}
+      target: {{ env "TARGET" | default "cicd" }}
+      client: {{ env "CLIENT" | default "client1" }}
+    ingressInternalClass: {{ env "STACK_INGRESS_INT_CLASS" | default "internal" }}
+    ingress:
+      enabled: true
+      hosts:
+      - name: portal.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+        config:
+          http:
+            paths:
+            - path: "/"
+              backend:
+                serviceName: forecastle
+                servicePort: 80
+
+- name: forecastle-rbac
+  chart: incubator/raw
+  namespace: forecastle
+  labels:
+    chart: forecastle-rbac
+    component: rbac
+    namespace: forecastle
+{{- if eq (env "HELM_VERSION" | default "3") "3" }}
+  needs:
+  - kube-system/namespace-forecastle
+{{- end }}
+  values:
+  - resources:
+    - kind: ClusterRole
+      apiVersion: rbac.authorization.k8s.io/v1
+      metadata:
+        name: forecastle-cluster-role
+        labels:
+          app.kubernetes.io/name: forecastle
+      rules:
+      - apiGroups: [""]
+        resources: ["*"]
+        verbs: 
+        - get
+        - list
+        - watch
+      - apiGroups:
+        - extensions
+        resources: ["*"]
+        verbs:
+        - get
+        - list
+        - watch
+      - apiGroups:
+        - apps
+        resources: ["*"]
+        verbs:
+        - get
+        - list
+        - watch
+      - apiGroups:
+        - forecastle.stakater.com
+        resources: ["*"]
+        verbs:
+        - get
+        - list
+        - watch
+    - kind: ClusterRoleBinding
+      apiVersion: rbac.authorization.k8s.io/v1
+      metadata:
+        name: forecastle-role-binding
+        labels:
+          app.kubernetes.io/name: forecastle
+      roleRef:
+        apiGroup: rbac.authorization.k8s.io
+        kind: ClusterRole
+        name: forecastle-cluster-role
+      subjects:
+      - name: forecastle
+        namespace: forecastle
+        kind: ServiceAccount

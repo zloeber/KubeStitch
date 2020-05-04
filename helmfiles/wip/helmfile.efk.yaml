@@ -1,0 +1,330 @@
+helmDefaults:
+  tillerless: true
+  tillerNamespace: platform
+  atomic: false
+  verify: false
+  wait: false
+  timeout: 600
+  recreatePods: false
+  force: false
+
+repositories:
+- name: elastic
+  url: https://helm.elastic.co
+- name: stable
+  url: https://kubernetes-charts.storage.googleapis.com
+
+
+releases:
+{{- if eq (env "HELM_VERSION" | default "3") "3" }}
+- name: namespace-logging
+  # Helm 3 needs to put deployment info into a namespace. As this creates a namespace it will not exist yet so we use 'kube-system' 
+  #  which should exist in all clusters.
+  chart: ../charts/namespace/chart/namespace
+  namespace: kube-system
+  labels:
+    chart: namespace-logging
+    component: "logging"
+    namespace: "logging"
+  installed: {{ env "STACK_LOGGING" | default "true" }}
+  values:
+  - namespaces:
+    - logging
+    helmResourcePolicy: keep
+    annotations:
+      certmanager.k8s.io/disable-validation: "true"
+{{- end }}
+
+- name: elasticsearch-master
+  chart: elastic/elasticsearch
+  namespace: "logging"
+  labels:
+    chart: "elasticsearch"
+    component: "logging"
+    namespace: "logging"
+  installed: {{ env "STACK_LOGGING" | default "true" }}
+{{- if eq (env "HELM_VERSION" | default "3") "3" }}
+  needs:
+  - kube-system/namespace-logging
+{{- end }}
+  values:
+  - rbac:
+      create: true
+    clusterName: "elasticcluster"
+    nodeGroup: "master"
+    roles:
+      master: "true"
+      ingest: "false"
+      data: "false"
+    replicas: {{ env "STACK_LOGGING_MASTER_REPLICAS" | default "3" }}
+{{- if env "AKS_RESERVED_NODESELECTOR" | default "" }}
+    nodeSelector:
+      agentpool: {{ env "AKS_RESERVED_NODESELECTOR" | default "agentpool" }}
+{{- end }}
+    volumeClaimTemplate:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: {{ env "STACK_LOGGING_STORAGECLASS" | default "default" }}
+      resources:
+        requests:
+          storage: {{ env "STACK_LOGGING_MASTER_DISK_SIZE" | default "30Gi" }}
+
+- name: elasticsearch-data
+  chart: elastic/elasticsearch
+  namespace: "logging"
+  labels:
+    chart: "elasticsearch"
+    component: "logging"
+    namespace: "logging"
+  installed: {{ env "STACK_LOGGING" | default "true" }}
+  needs:
+  - logging/elasticsearch-master
+{{- if eq (env "HELM_VERSION" | default "3") "3" }}
+  - kube-system/namespace-logging
+{{- end }}
+  values:
+  - clusterName: "elasticcluster"
+    nodeGroup: "data"
+    roles:
+      master: "false"
+      ingest: "true"
+      data: "true"
+    replicas: {{ env "STACK_LOGGING_DATA_REPLICAS" | default "3" }}
+{{- if env "AKS_RESERVED_NODESELECTOR" | default "" }}
+    nodeSelector:
+      agentpool: {{ env "AKS_RESERVED_NODESELECTOR" | default "agentpool" }}
+{{- end }}
+    volumeClaimTemplate:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: {{ env "STACK_LOGGING_STORAGECLASS" | default "default" }}
+      resources:
+        requests:
+          storage: {{ env "STACK_LOGGING_DATA_DISK_SIZE" | default "500Gi" }}
+
+# - name: service-elasticcluster
+#   namespace: "logging"
+#   version: 0.0.1
+#   chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+#   labels:
+#     chart: "elasticcluster"
+#     component: "loadbalancer"
+#     namespace: "logging"
+#   installed: {{ env "STACK_LOGGING" | default "true" }}
+# {{- if eq (env "HELM_VERSION" | default "3") "3" }}
+#   needs:
+#   - kube-system/namespace-logging
+# {{- end }}
+#   values:
+#   - fullnameOverride: "elasticcluster"
+#     nameOverride: "elasticcluster"
+#     project:
+#       app: logging
+#       team: operations
+#       target: {{ env "TARGET" | default "cicd" }}
+#       client: havi
+#       workload: elasticcluster
+#       engine: logging
+#     service:
+#       enabled: true
+#       type: LoadBalancer
+#       loadBalancerIP: {{ requiredEnv "IP_ELASTIC_LB_INT" }}
+#       annotations:
+#         service.beta.kubernetes.io/{{ env "CLOUD" | default "local" }}-load-balancer-internal: "true"
+#       selector:
+#         app: elasticsearch
+#         component: client
+#         release: elasticsearch
+#       ports:
+#         es-client:
+#           port: 9200
+#           protocol: TCP
+#           targetPort: 9200
+        
+- name: fluent-bit
+  chart: stable/fluent-bit
+  #version: 2.0.5
+  namespace: "logging"
+  labels:
+    chart: "fluent-bit"
+    component: "fluent-bit"
+    namespace: "logging"
+  installed: {{ env "STACK_LOGGING" | default "true" }}
+{{- if eq (env "HELM_VERSION" | default "3") "3" }}
+  needs:
+  - kube-system/namespace-logging
+{{- end }}
+  values:
+  - metrics:
+      enabled: true
+      service:
+        annotations:
+          prometheus.io/path: "/api/v1/metrics/prometheus"
+          prometheus.io/port: "2020"
+          prometheus.io/scrape: "true"
+        port: 2020
+        type: ClusterIP
+    trackOffsets: true
+    backend:
+      type: es
+      es:
+        host: elasticcluster-master
+        port: 9200
+    parsers:
+      enabled: true
+      ## List the respective parsers in key: value format per entry
+      ## Regex required fields are name and regex. JSON required field
+      ## is name.
+      regex:
+        - name: "apache"
+          regex: '^(?<host>[^ ]*) [^ ]* (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^\"]*?)(?: +\S*)?)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>[^\"]*)")?$'
+          timeKey: "time"
+          timeFormat: "%d/%b/%Y:%H:%M:%S %z"
+        - name: 'syslog'
+          regex: '^\<(?<pri>[0-9]+)\>(?<time>[^ ]* {1,2}[^ ]* [^ ]*) (?<host>[^ ]*) (?<ident>[a-zA-Z0-9_\/\.\-]*)(?:\[(?<pid>[0-9]+)\])?(?:[^\:]*\:)? *(?<message>.*)$'
+          timeKey: "time"
+          timeFormat: "%b %d %H:%M:%S"
+        - name: "apache2"
+          regex: '^(?<host>[^ ]*) [^ ]* (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^ ]*) +\S*)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>[^\"]*)")?$'
+          timeKey: "time"
+          timeFormat: "%d/%b/%Y:%H:%M:%S %z"
+        - name: "apache_error"
+          regex: '^\[[^ ]* (?<time>[^\]]*)\] \[(?<level>[^\]]*)\](?: \[pid (?<pid>[^\]]*)\])?( \[client (?<client>[^\]]*)\])? (?<message>.*)$'
+        - name: "nginx"
+          regex: '^(?<remote>[^ ]*) (?<host>[^ ]*) (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^\"]*?)(?: +\S*)?)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>[^\"]*)")?$'
+          timeKey: "time"
+          timeFormat: "%d/%b/%Y:%H:%M:%S %z"
+      json:
+        - name: "json"
+          timeKey: "time"
+          timeFormat: "%d/%b/%Y:%H:%M:%S %z"
+        - name: "docker"
+          timeKey: "time"
+          timeFormat: "%Y-%m-%dT%H:%M:%S.%L"
+          timeKeep: "On"
+          extraEntries: |
+            Decode_Field_As   escaped_utf8    log    do_next
+            Decode_Field_As   json       log
+
+- name: ingress-elasticsearch
+  namespace: "logging"
+  version: 0.0.1
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  labels:
+    chart: "ingress-elasticsearch"
+    component: "ingress"
+    namespace: "logging"
+  installed: {{ env "STACK_LOGGING" | default "true" }}
+{{- if eq (env "HELM_VERSION" | default "3") "3" }}
+  needs:
+    - kube-system/namespace-logging
+{{- end }}
+  values:
+  - project:
+      team: {{ env "TEAM" | default "operations" }}
+      target: {{ env "TARGET" | default "cicd" }}
+      client: {{ env "CLIENT" | default "operations" }}
+      workload: {{ env "WORKLOAD" | default "monitoring" }}
+      engine: {{ env "ENGINE" | default "nextgen" }}
+    ingressInternalClass: {{ env "STACK_INGRESS_INT_CLASS" | default "internal" }}
+    ingress:
+      enabled: true
+      hosts:
+      - name: elasticsearch.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+        config:
+          http:
+            paths:
+            - path: "/"
+              backend:
+                serviceName: elasticcluster-master
+                servicePort: 9200
+          
+- name: elasticsearch-curator
+  chart: stable/elasticsearch-curator
+  #version: 2.1.0
+  namespace: "logging"
+  installed: {{ env "STACK_LOGGING" | default "true" }}
+  labels:
+    chart: "elasticsearch-curator"
+    component: "elasticsearch-curator"
+    namespace: "logging"
+{{- if eq (env "HELM_VERSION" | default "3") "3" }}
+  needs:
+  - kube-system/namespace-logging
+{{- end }}
+  values:
+  - config:
+      elasticsearch:
+        hosts:
+          - "elasticcluster-master"
+    configMaps:
+      # Delete indices older than 7 days
+      action_file_yml: |-
+        ---
+        actions:
+          1:
+            action: delete_indices
+            description: "Remove ES Indicies over {{ env "STACK_LOGGING_DAYSKEPT" | default "7" }} days"
+            options:
+              continue_if_exception: True
+              disable_action: False
+              ignore_empty_list: False
+            filters:
+            - filtertype: age
+              source: name
+              direction: older
+              timestring: '%Y.%m.%d'
+              unit: days
+              unit_count: {{ env "STACK_LOGGING_DAYSKEPT" | default "7" }}
+              exclude: False
+            - filtertype: pattern
+              kind: prefix
+              value: "kubernetes"
+      config_yml: |-
+        ---
+        client:
+          hosts:
+            - elasticcluster-master
+          port: 9200
+
+- name: kibana
+  chart: elastic/kibana
+  namespace: logging
+  wait: false
+  atomic: false
+  labels:
+    chart: "kibana"
+    component: "logging"
+    namespace: "logging"
+{{- if eq (env "HELM_VERSION" | default "3") "3" }}
+  needs:
+    - kube-system/namespace-logging
+{{- end }}
+  values:
+  - elasticsearchHosts: "http://elasticcluster-master:9200"
+
+- name: ingress-kibana
+  namespace: "logging"
+  version: 0.0.1
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  labels:
+    chart: "ingress-kibana"
+    component: "ingress"
+    namespace: "logging"
+  values:
+  - project:
+      team: "operations"
+      target: {{ env "TARGET" | default "cicd" }}
+      client: {{ env "CLIENT" | default "client1" }}
+      workload: "kibana"
+      engine: "logging"
+    ingressInternalClass: {{ env "STACK_INGRESS_INT_CLASS" | default "internal" }}
+    ingress:
+      enabled: true
+      hosts:
+      - name: kibana.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+        config:
+          http:
+            paths:
+            - path: "/"
+              backend:
+                serviceName: kibana-kibana
+                servicePort: 5601

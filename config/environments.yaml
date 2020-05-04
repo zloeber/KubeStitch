@@ -1,0 +1,14 @@
+## Possible environments. default would be a locally hosted kubernetes instance
+environments:
+  default:
+    values:
+      - ../config/environment.default.yaml
+  dev:
+    values:
+      - ../config/environment.dev.yaml
+  stage:
+    values:
+      - ../config/environment.stage.yaml
+  prod:
+    values:
+      - ../config/environment.prod.yaml

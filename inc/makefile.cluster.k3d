@@ -1,0 +1,52 @@
+ROOT_PATH ?= $(abspath $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST))))))
+BIN_PATH ?= $(ROOT_PATH)/.local/bin
+
+k3d := $(BIN_PATH)/k3d
+KUBE_CLUSTER_CONTEXT := $(KUBE_CLUSTER)
+K3D_WORKERS ?= 1
+
+.PHONY: .deps/cluster.k3d
+.deps/cluster.k3d: ## Get k3d binary dependency
+ifeq (,$(wildcard $(INSTALL_PATH)/k3d))
+	@$(MAKE) --no-print-directory -C $(APP_PATH)/githubapp auto rancher/k3d INSTALL_PATH=$(INSTALL_PATH)
+	@echo "Installed: $(k3d)"
+endif
+
+.PHONY: .k3d/create/cluster
+.k3d/create/cluster: ## create k3d cluster
+	$(k3d) create \
+		--name $(KUBE_CLUSTER) \
+		--workers $(K3D_WORKERS) \
+		--wait 10 \
+		--server-arg --no-deploy --server-arg traefik
+
+.PHONY: .k3d/cluster/config
+.k3d/cluster/config: ## Export cluster configuration
+	cat $(shell $(k3d) get-kubeconfig --name=$(KUBE_CLUSTER)) > $(KUBE_CONFIG)
+
+.PHONY: cluster/start
+cluster/start: .k3d/create/cluster .k3d/cluster/config kube/context ## Start cluster
+
+.PHONY: cluster/stop
+cluster/stop: ## Stop and delete cluster
+	$(k3d) delete --name $(KUBE_CLUSTER)
+
+#k3d/context: ## Configure k3d
+#	export KUBECONFIG=`echo $$($(k3d) get-kubeconfig --name='$(KUBE_CLUSTER)')` && \
+#	echo $$KUBECONFIG && \
+#	$(kubecmd) config set-context $(KUBE_CLUSTER) && \
+#	$(kubecmd) config use-context $(KUBE_CLUSTER)
+
+#.PHONY: .k3d/dnsforward/start
+#k3d/dnsforward/start: ## Forwards all dns requests to dns-proxy-server
+#	tmpdir=$$(mktemp -d) && echo "$${tmpdir}" && \
+#	export STACK_INGRESS_INTERNALIP=`kubectl -n kube-system get svc traefik -o jsonpath='{.status.loadBalancer.ingress[0].ip}'` && \
+#	$(gomplate) --file $(DEPLOY_PATH)/dnsproxy/config.json --out "$${tmpdir}/config.json" && \
+#	$(docker) run --rm -d \
+#		--hostname $(DNS_DOMAIN) \
+#		--name dns-proxy-server \
+#		-p 5380:5380 \
+#		-v $${tmpdir}:/app/conf \
+#		-v /var/run/docker.sock:/var/run/docker.sock \
+#		-v /etc/resolv.conf:/etc/resolv.conf \
+#		defreitas/dns-proxy-server

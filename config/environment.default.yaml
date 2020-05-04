@@ -1,0 +1,31 @@
+releaseName: default
+cloud: local
+archtypeChart: ../charts/archtype
+kube:
+  rbac: true
+  helmVersion: "3"
+stacks:
+  security:
+    installed: true
+    namespace: security
+  ingress:
+    installed: true
+    namespaceInternal: ingress-int
+    namespaceExternal: ingress-ext
+    classStage: stage
+    classInternal: internal
+    classExternal: external
+    zoneStage: stage.micro.svc
+    zoneInternal: int.micro.svc
+    zoneExternal: ext.micro.svc
+    ipInternal: "172.17.0.250"
+  certmanager:
+    installed: true
+    namespace: cert-manager
+    serviceaccountname: ""
+    email: zloeber@gmail.com
+    IAMRole: ""
+  monitoring:
+    installed: false
+    namespace: monitoring
+    prometheusInstance: kube-prometheus

@@ -1,14 +1,6 @@
 .SHELL:=/bin/bash
-.PHONY:=help show/env show/brief
-
-CURRENT_FOLDER=$(shell basename "$$(pwd)")
 ROOT_DIR ?= $(abspath $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST))))))
 BIN_PATH ?= $(ROOT_PATH)/.local/bin
-
-export PACKAGES_VERSION ?= master
-export PACKAGES_PATH ?= $(ROOT_PATH)/.packages
-export INSTALL_PATH ?= $(BIN_PATH)
-export VENDOR_PATH ?= $(PACKAGES_PATH)/vendor
 
 ## Force some language items
 export LANG=C.UTF-8
@@ -36,17 +28,42 @@ endif
 ifeq ($(OS),Windows_NT)
 HOST_PLATFORM:=Windows
 else
-HOST_PLATFORM:=$(shell sh -c 'uname -s 2>/dev/null || echo not')
+HOST_PLATFORM:=$(shell sh -c 'uname -s 2>/dev/null || echo not supported' | tr '[:upper:]' '[:lower:]')
 endif
 
 $(BIN_PATH): ## Stage build directory if it does not exist
 	@mkdir -p $(BIN_PATH)
 
+.PHONY: prompt/yesno
 prompt/yesno: ## Are you sure?
 	@( read -p "Are you sure?!? [y/N]: " sure && case "$$sure" in [yY]) true;; *) false;; esac )
 
+.PHONY: help
 help: ## Help
-	@grep --no-filename -E '^[a-zA-Z_/-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+	@grep --no-filename -E '^[a-zA-Z_%/-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+
+.print-%: # Print a make variable for github actions
+	@echo '$*::$($*)'
+
+.printshort-%: # Print a variable value
+	@echo '$($*)'
 
 %: ## A parameter
 	@true
+
+.PHONY: show/env
+show/env: ## Show our environment settings
+	@echo "ARCH: $(ARCH)"
+	@echo "HOST_PLATFORM: $(HOST_PLATFORM)"
+	@echo "ENVIRONMENT: $(ENVIRONMENT)"
+	@echo "STACK: $(STACK)"
+	@echo "CLOUD: $(CLOUD)"
+	@echo "KUBE_PROVIDER: $(KUBE_PROVIDER)"
+	@echo "KUBE_CLUSTER: $(KUBE_CLUSTER)"
+	@echo "KUBE_VERSION: $(KUBE_VERSION)"
+	@echo "KUBE_CONFIG: $(KUBE_CONFIG)"
+	@echo "HELMFILE_PATH: $(HELMFILE_PATH)"
+	@echo "CHART_PATH: $(CHART_PATH)"
+	@echo "ENVIRONMENT_VARS: $(ENVIRONMENT_VARS)"
+	@echo "DEPTASKS: $(DEPTASKS)"
+	@echo "INCLUDES: $(INCLUDES)"

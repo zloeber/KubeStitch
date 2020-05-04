@@ -1,4 +1,0 @@
-jx/env/prepare: ## Prepare for a new jx environment
-    git clone git@github.com:jenkins-x/jenkins-x-boot-config.git environment-project-dev
-    rm -rf environment-project-dev/.git
-    cd environment-project-dev && git init

@@ -227,9 +227,7 @@ chart: {{ template "common.chartref" . }}
 heritage: {{ .Release.Service | quote }}
 release: {{ .Release.Name | quote }}
 stage: {{ $project.stage | default "unknown" | quote }}
-team: {{ $project.team | default "inv" | quote }}
 target: {{ $project.target | default "unknown" | quote }}
-client: {{ $project.client | default "mcd" | quote }}
 zone: {{ $clusterdns | quote }}
 namespace: "{{ .Release.Namespace }}"
 {{- end -}}
