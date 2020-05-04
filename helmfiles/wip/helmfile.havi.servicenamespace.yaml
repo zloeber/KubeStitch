@@ -13,13 +13,13 @@ helmDefaults:
 repositories:
 - name: incubator
   url: https://kubernetes-charts-incubator.storage.googleapis.com/
-- name: havibase
+- name: baserepo
   url: https://mycontainerrepo.azurecr.io/helm/v1/repo
 
 releases:
 - name: 'service-namespace-{{ env "TEAM" | default "team1" }}-{{ env "STAGE" | default "dev" }}-{{ env "APP" | default "stream" }}'
   namespace: '{{ env "TEAM" | default "team1" }}-{{ env "STAGE" | default "dev" }}-{{ env "APP" | default "stream" }}'
-  chart: "havibase/archtype"
+  chart: "baserepo/archtype"
   labels:
     name: 'service-namespace-{{ env "TEAM" | default "team1" }}-{{ env "STAGE" | default "dev" }}-{{ env "APP" | default "stream" }}'
     namespace: '{{ env "TEAM" | default "team1" }}-{{ env "STAGE" | default "dev" }}-{{ env "APP" | default "stream" }}'

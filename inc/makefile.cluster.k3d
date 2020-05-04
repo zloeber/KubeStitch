@@ -36,17 +36,3 @@ cluster/stop: ## Stop and delete cluster
 #	echo $$KUBECONFIG && \
 #	$(kubecmd) config set-context $(KUBE_CLUSTER) && \
 #	$(kubecmd) config use-context $(KUBE_CLUSTER)
-
-#.PHONY: .k3d/dnsforward/start
-#k3d/dnsforward/start: ## Forwards all dns requests to dns-proxy-server
-#	tmpdir=$$(mktemp -d) && echo "$${tmpdir}" && \
-#	export STACK_INGRESS_INTERNALIP=`kubectl -n kube-system get svc traefik -o jsonpath='{.status.loadBalancer.ingress[0].ip}'` && \
-#	$(gomplate) --file $(DEPLOY_PATH)/dnsproxy/config.json --out "$${tmpdir}/config.json" && \
-#	$(docker) run --rm -d \
-#		--hostname $(DNS_DOMAIN) \
-#		--name dns-proxy-server \
-#		-p 5380:5380 \
-#		-v $${tmpdir}:/app/conf \
-#		-v /var/run/docker.sock:/var/run/docker.sock \
-#		-v /etc/resolv.conf:/etc/resolv.conf \
-#		defreitas/dns-proxy-server

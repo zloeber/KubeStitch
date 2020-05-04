@@ -39,7 +39,7 @@ sparkApplications:
     spec:
       type: "Scala"
       mode: "cluster"
-      mainClass: com.havi.nextgen.job.file.FileToKafkaLoader
+      mainClass: com.job.file.FileToKafkaLoader
       mainApplicationFile: "local:///opt/spark/jars/nextgen-spark-jobs-assembly-1.0.jar"
       driver:
         cores: 0.1

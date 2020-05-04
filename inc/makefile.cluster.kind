@@ -42,6 +42,10 @@ cluster/test: ## Validate the kubernetes deployment
 	KUBECONFIG=$(KUBE_CONFIG) \
 		$(stern) -l app=kube-bench --container kube-bench
 
+.PHONY: kind/ingressip
+kind/ingressip: ## Get an ingress IP to use
+	@echo `docker inspect --format '{{ .NetworkSettings.IPAddress }}' $$(docker ps -q) | cut -d"." -f1-3`".100"
+
 #kind/localstorage: ## Install local kind storage
 #	$(kubecmd) apply -f https://raw.githubusercontent.com/kudobuilder/operators/master/test/manifests/local-path-storage.yaml
 

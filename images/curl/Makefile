@@ -1,4 +1,3 @@
-## Havi NextGen Azure WebApp (Python)
 # Author: Zachary Loeber
 #
 # Show more help

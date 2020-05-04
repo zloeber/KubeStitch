@@ -232,7 +232,7 @@ releases:
     project:
       team: operations
       target: {{ env "TARGET" | default "cicd" }}
-      client: havi
+      client: client1
       workload: kafkacluster
       engine: database
     service:

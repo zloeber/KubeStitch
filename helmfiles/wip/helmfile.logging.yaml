@@ -83,7 +83,7 @@ releases:
       app: logging
       team: operations
       target: {{ env "TARGET" | default "cicd" }}
-      client: havi
+      client: client1
       workload: elasticcluster
       engine: logging
     service:

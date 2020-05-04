@@ -18,7 +18,7 @@ stacks:
     zoneStage: stage.micro.svc
     zoneInternal: int.micro.svc
     zoneExternal: ext.micro.svc
-    ipInternal: "172.17.0.250"
+    ipInternal: "172.17.0.100"
   certmanager:
     installed: true
     namespace: cert-manager

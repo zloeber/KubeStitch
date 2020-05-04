@@ -29,7 +29,7 @@ deps: clean dep/helm helm/init ## Update helm dependencies
 	helm dependency update
 
 az/init: ## Initialize Azure ACR
-	az acr helm repo add -n mycontainerrepo --subscription "HAVI RTB NonProd"
+	az acr helm repo add -n mycontainerrepo --subscription "Your Subscription"
 
 helm/add: ## Adds azure acr helm repo to local helm repo list
 	helm repo remove chartmuseum 2>/dev/null || true
