@@ -1,6 +1,7 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
 ROOT_PATH := $(abspath $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST))))))
+CONFIG_PATH := $(ROOT_PATH)/config
 BIN_PATH := $(ROOT_PATH)/.local/bin
 INSTALL_PATH := $(BIN_PATH)
 APP_PATH := $(ROOT_PATH)/.local/apps
@@ -9,7 +10,7 @@ DEPLOY_PATH ?= $(ROOT_PATH)/deploy
 ENVIRONMENT ?= default
 
 # Import target deployment env vars
-ENVIRONMENT_VARS ?= ${ROOT_PATH}/config/$(ENVIRONMENT).env
+ENVIRONMENT_VARS ?= $(CONFIG_PATH)/$(ENVIRONMENT).env
 ifneq (,$(wildcard $(ENVIRONMENT_VARS)))
 include ${ENVIRONMENT_VARS}
 export $(shell sed 's/=.*//' ${ENVIRONMENT_VARS})
@@ -48,16 +49,16 @@ clean: ## Remove downloaded dependencies
 	rm -rf $(APP_PATH)/githubapp
 	rm $(INSTALL_PATH)/*
 
-.PHONY: dnsforward/start
-dnsforward/start: ## Forwards all dns requests to a local dns-proxy-server
-	tmpdir=$$(mktemp -d) && echo "$${tmpdir}" && \
-	export STACK_INGRESS_INTERNALIP=`kubectl -n kube-system get svc traefik -o jsonpath='{.status.loadBalancer.ingress[0].ip}'` && \
-	$(gomplate) --file $(DEPLOY_PATH)/dnsproxy/config.json --out "$${tmpdir}/config.json" && \
-	$(docker) run --rm -d \
-		--hostname $(DNS_DOMAIN) \
-		--name dns-proxy-server \
-		-p 5380:5380 \
-		-v $${tmpdir}:/app/conf \
-		-v /var/run/docker.sock:/var/run/docker.sock \
-		-v /etc/resolv.conf:/etc/resolv.conf \
-		defreitas/dns-proxy-server
+# .PHONY: dnsforward/start
+# dnsforward/start: ## Forwards all dns requests to a local dns-proxy-server
+# 	tmpdir=$$(mktemp -d) && echo "$${tmpdir}" && \
+# 	export STACK_INGRESS_INTERNALIP=`kubectl -n kube-system get svc traefik -o jsonpath='{.status.loadBalancer.ingress[0].ip}'` && \
+# 	$(gomplate) --file $(DEPLOY_PATH)/dnsproxy/config.json --out "$${tmpdir}/config.json" && \
+# 	$(docker) run --rm -d \
+# 		--hostname $(DNS_DOMAIN) \
+# 		--name dns-proxy-server \
+# 		-p 5380:5380 \
+# 		-v $${tmpdir}:/app/conf \
+# 		-v /var/run/docker.sock:/var/run/docker.sock \
+# 		-v /etc/resolv.conf:/etc/resolv.conf \
+# 		defreitas/dns-proxy-server

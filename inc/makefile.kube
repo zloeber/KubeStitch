@@ -56,11 +56,6 @@ kube/install/argocd: ## Install argocd
 kube/get/argocd/password: ## Pull the argocd password
 	$(kubecmd) get pods -n argocd -l app.kubernetes.io/name=argocd-server -o name | cut -d'/' -f 2
 
-.PHONY: kube/install/metallb
-kube/install/metallb: ## Install metallb
-	$(kubecmd) apply -f https://raw.githubusercontent.com/google/metallb/v0.8.3/manifests/metallb.yaml
-	$(kubecmd) apply -f https://git.io/km-config.yaml
-
 .PHONY: kube/create/dockersecret
 kube/create/dockersecret: ## Create docker secret from current .docker/config.json
 	$(kubecmd) create secret generic regcred \
@@ -71,6 +66,18 @@ kube/create/dockersecret: ## Create docker secret from current .docker/config.js
 kube/proxy/dashboard: ## Starts a proxy to the local cluster dashboard if it exists
 	PODNAME=$$($(kubecmd) get pods -n kube-system -l "app=kubernetes-dashboard,release=kubernetes-dashboard" -o jsonpath="{.items[0].metadata.name}"); \
 	$(kubecmd) -n kube-system port-forward $${PODNAME} 9090:9090
+
+.PHONY: kube/deploy/metallb
+kube/deploy/metallb: .dep/kubectl .kube/get/configfile ## Deploy metallb on the cluster
+	@$(kubecmd) apply -f https://raw.githubusercontent.com/metallb/metallb/v0.9.3/manifests/namespace.yaml
+	@$(kubecmd) apply -f https://raw.githubusercontent.com/metallb/metallb/v0.9.3/manifests/metallb.yaml
+	@$(kubecmd) apply -f $(CONFIG_PATH)/metallb-config.yaml
+	@$(kubecmd) create secret generic -n metallb-system memberlist --from-literal=secretkey="$(openssl rand -base64 128)" || true
+
+.PHONY: kube/delete/metallb
+kube/delete/metallb: ## Delete metallb deployment
+	@$(kubecmd) delete -f https://raw.githubusercontent.com/metallb/metallb/v0.9.3/manifests/metallb.yaml
+	@$(kubecmd) delete -f https://raw.githubusercontent.com/metallb/metallb/v0.9.3/manifests/namespace.yaml
 
 .PHONY: kube/config
 kube/config: ## Exports a copy of the current kube config

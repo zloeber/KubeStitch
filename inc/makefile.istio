@@ -32,3 +32,9 @@ istio/verify: ## Verify istio install
 	$(istioctl) verify-install \
 	  --kubeconfig $(KUBE_CONFIG) \
 	  --context $(KUBE_CLUSTER_CONTEXT)
+
+.PHONY: istio/dashboard
+istio/dashboard/%: ## Access istio dashboard
+	$(istioctl) dashboard $(subst istio/dashboard/,,$@) \
+	  --kubeconfig $(KUBE_CONFIG) \
+	  --context $(KUBE_CLUSTER_CONTEXT)
