@@ -2,7 +2,7 @@ ROOT_PATH ?= $(abspath $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIS
 BIN_PATH ?= $(ROOT_PATH)/.local/bin
 
 KUBE_CLUSTER_CONTEXT ?= $(KUBE_CLUSTER)
-KUBE_CONFIG := $(ROOT_PATH)/.local/kube.$(ENVIRONMENT).conf
+KUBE_CONFIG := $(ROOT_PATH)/.local/kube.$(PROFILE).conf
 
 kubectl := $(BIN_PATH)/kubectl
 kubecmd := KUBECONFIG=$(KUBE_CONFIG) $(kubectl)
@@ -90,3 +90,7 @@ kube/config/file: ## Prints the current kube config file location
 .PHONY: kube/list/resources
 kube/list/resources: ## Prints kubernetes resources
 	for kind in `kubectl api-resources | tail +2 | awk '{ print $$1 }' | sort`; do kubectl explain $$kind ; done | grep -e "KIND:" -e  "VERSION:" | awk '{print $$2}' | paste -sd' \n'
+
+.PHONY: kube/bearertoken
+kube/bearertoken: Return bearer token for cluster
+	@echo $(shell $(kubectl) get secrets -o jsonpath="{.items[?(@.metadata.annotations['kubernetes\.io/service-account\.name']=='default')].data.token}"|base64 --decode))

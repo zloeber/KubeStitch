@@ -3,23 +3,25 @@ BIN_PATH ?= $(ROOT_PATH)/.local/bin
 
 CHART_PATH ?= $(ROOT_PATH)/charts
 HELMFILE_PATH ?= $(ROOT_PATH)/helmfiles
-STACK ?= cluster.default
+STACK ?= cluster.$(PROFILE)
 HELMFILE_VERSION ?= 0.109.0
 HELM_VERSION ?= 3.2.0
+ENVIRONMENT ?= default
 
 export XDG_CACHE_HOME=$(ROOT_PATH)/.local
 export XDG_CONFIG_HOME=$(ROOT_PATH)/.local
 export XDG_DATA_HOME=$(ROOT_PATH)/.local
 
 helmfile_binary ?= $(BIN_PATH)/helmfile
-helmfile ?= $(helmfile_binary) --environment $(ENVIRONMENT)
+helmfile := $(helmfile_binary) --environment $(ENVIRONMENT)
 helm_binary ?= $(BIN_PATH)/helm
-helm ?= $(helm_binary)
+helm := $(helm_binary)
 gomplate := $(BIN_PATH)/gomplate
+yq := $(BIN_PATH)/yq
 
 .PHONY: .dep/helmfile
 .dep/helmfile: ## Install helmfile
-ifeq (,$(wildcard $(INSTALL_PATH)/helmfile))
+ifeq (,$(wildcard $(helmfile_binary)))
 	@$(MAKE) --no-print-directory -C $(APP_PATH)/githubapp reset helmfile INSTALL_PATH=$(INSTALL_PATH)
 	@$(MAKE) --no-print-directory -C $(APP_PATH)/githubapp auto roboll/helmfile INSTALL_PATH=$(INSTALL_PATH)
 	@echo "Installed: $(helmfile_binary)"
@@ -27,14 +29,14 @@ endif
 
 .PHONY: .dep/gomplate
 .dep/gomplate: ## Install gomplate locally
-ifeq (,$(wildcard $(INSTALL_PATH)/gomplate))
+ifeq (,$(wildcard $(BIN_PATH)/gomplate))
 	@$(MAKE) --no-print-directory -C $(APP_PATH)/githubapp auto hairyhenderson/gomplate INSTALL_PATH=$(INSTALL_PATH)
 	@echo "Installed: $(gomplate)"
 endif
 
 .PHONY: .dep/helm
 .dep/helm: ## Install helm locally
-ifeq (,$(wildcard $(INSTALL_PATH)/helm))
+ifeq (,$(wildcard $(helm_binary)))
 	mkdir -p /tmp/helm3
 	curl --retry 3 --retry-delay 5 --fail -sSL -o - https://get.helm.sh/helm-v$(HELM_VERSION)-$(HOST_PLATFORM)-$(ARCH).tar.gz | tar -C /tmp/helm3 -xz $(HOST_PLATFORM)-$(ARCH)/helm
 	mv /tmp/helm3/$(HOST_PLATFORM)-$(ARCH)/helm $(helm_binary)
@@ -53,11 +55,7 @@ endif
 
 
 .PHONY: .deps/helm
-.deps/helm: .dep/helm .dep/helmfile .helm/plugins ## Install helm, helmfile, and plugins locally
-
-#.PHONY: .helm/secrets/encrypt
-#.helm/secrets/encrypt: ## Encrypt helm secrets file for target env (if exists)
-#	$(helm) secrets enc ${TARGET_CONFIG_PATH}/secrets.yaml.dec
+.deps/helm: .dep/helm .dep/helmfile .helm/plugins ## Install yq, helm, helmfile, and plugins locally
 
 .PHONY: helmfile/list
 helmfile/list: ## Lists all available helmfiles
@@ -68,30 +66,30 @@ helmfile/apply: ## apply all resources from state file only when there are chang
 	$(helmfile) -b $(helm_binary) -f $(HELMFILE_PATH)/helmfile.$(STACK).yaml apply
 
 .PHONY: helmfile/sync
-helmfile/sync: ## Sync STACK with TARGET infrastructure stack
+helmfile/sync: ## Sync STACK with cluster
 	$(helmfile) -b $(helm_binary) -f $(HELMFILE_PATH)/helmfile.$(STACK).yaml sync
 
 .PHONY: helmfile/diff
-helmfile/diff: ## diffs STACK to TARGET infrastructure
+helmfile/diff: ## diffs STACK with cluster
 	$(helmfile) -b $(helm_binary) -f $(HELMFILE_PATH)/helmfile.$(STACK).yaml diff
 
 .PHONY: helmfile/test
-helmfile/test: ## Tests STACK in TARGET
+helmfile/test: ## Tests STACK on cluster
 	$(helmfile) -b $(helm_binary) -f $(HELMFILE_PATH)/helmfile.$(STACK).yaml test
 
 .PHONY: helmfile/destroy
-helmfile/destroy: prompt/yesno ## Removes STACK from TARGET cluster
+helmfile/destroy: prompt/yesno ## Removes STACK from cluster
 	$(helmfile) -b $(helm_binary) -f $(HELMFILE_PATH)/helmfile.$(STACK).yaml destroy
 
 .PHONY: helmfile/template
-helmfile/template: ## template STACK yaml manifest for TARGET cluster
+helmfile/template: ## template STACK yaml manifest for cluster
 	$(helmfile) -b $(helm_binary) -f $(HELMFILE_PATH)/helmfile.$(STACK).yaml template
 
 .PHONY: helmfile/remove
-helmfile/remove: helmfile/destroy ## Removes STACK from TARGET cluster (alias for destroy)
+helmfile/remove: helmfile/destroy ## Removes STACK from cluster (alias for destroy)
 
 .PHONY: helmfile/reload
-helmfile/reload: helmfile/destroy helmfile/sync ## Removes then adds STACK from TARGET cluster
+helmfile/reload: helmfile/destroy helmfile/sync ## Removes then adds STACK from cluster
 
 .PHONY: helmfile/scorch
 helmfile/scorch: helmfile/destroy ## (WARNING!) Removes stack then its namespace if possible

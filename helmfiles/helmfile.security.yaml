@@ -7,6 +7,8 @@ bases:
 repositories:
 - name: reactiveops-stable
   url: https://charts.reactiveops.com/stable
+- name: incubator
+  url: https://kubernetes-charts-incubator.storage.googleapis.com
 
 releases:
 - name: namespace-security
@@ -92,18 +94,18 @@ releases:
       - kind: ServiceAccount
         name: platform-admin
         namespace: kube-system
-    - kind: ClusterRoleBinding
-      apiVersion: rbac.authorization.k8s.io/v1beta1
-      metadata:
-        name: kubernetes-dashboard
-      roleRef:
-        apiGroup: rbac.authorization.k8s.io
-        kind: ClusterRole
-        name: cluster-admin
-      subjects:
-      - kind: ServiceAccount
-        name: kubernetes-dashboard
-        namespace: kube-system
+    # - kind: ClusterRoleBinding
+    #   apiVersion: rbac.authorization.k8s.io/v1beta1
+    #   metadata:
+    #     name: kubernetes-dashboard
+    #   roleRef:
+    #     apiGroup: rbac.authorization.k8s.io
+    #     kind: ClusterRole
+    #     name: cluster-admin
+    #   subjects:
+    #   - kind: ServiceAccount
+    #     name: kubernetes-dashboard
+    #     namespace: kube-system
     - kind: ClusterRoleBinding
       apiVersion: rbac.authorization.k8s.io/v1beta1
       metadata:

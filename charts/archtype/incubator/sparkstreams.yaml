@@ -56,7 +56,7 @@ metadata:
 {{ toYaml . | indent 6 }}
 {{- end }}
 {{- end }}
-{{ include "nextgen.spark.secretmap" $root | indent 6 }}
+{{ include "project.spark.secretmap" $root | indent 6 }}
 {{ include "spark.configmap" $root | indent 6 }}
 
     executor:
@@ -69,7 +69,7 @@ metadata:
 {{ toYaml . | indent 6 }}
 {{- end }}
 {{- end }}
-{{ include "nextgen.spark.secretmap" $root | indent 6 }}
+{{ include "project.spark.secretmap" $root | indent 6 }}
 {{ include "spark.configmap" $root | indent 6 }}
 
     monitoring:

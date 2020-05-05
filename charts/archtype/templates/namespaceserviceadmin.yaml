@@ -6,17 +6,17 @@
 {{- $noValues := omit . "Values" -}}
 
 {{- with merge $noValues $overrides $common -}}
-{{- $nextgenServiceAdmin := .Values.nextgenServiceAdmin -}}
-{{- if $nextgenServiceAdmin.enabled }}
+{{- $projectServiceAdmin := .Values.projectServiceAdmin -}}
+{{- if $projectServiceAdmin.enabled }}
 apiVersion: rbacmanager.reactiveops.io/v1beta1
 kind: RBACDefinition
 metadata:
-  name: rbac-{{ $nextgenServiceAdmin.name | default .Release.Namespace }}-{{ $project.team }}-{{ $project.workload }}
+  name: rbac-{{ $projectServiceAdmin.name | default .Release.Namespace }}-{{ $project.team }}-{{ $project.workload }}
 rbacBindings:
-- name: rbac-{{ $nextgenServiceAdmin.name | default .Release.Namespace }}-{{ $project.team }}-{{ $project.workload }}
+- name: rbac-{{ $projectServiceAdmin.name | default .Release.Namespace }}-{{ $project.team }}-{{ $project.workload }}
   subjects:
     - kind: ServiceAccount
-      name: {{ $nextgenServiceAdmin.serviceAccount }}
+      name: {{ $projectServiceAdmin.serviceAccount }}
   roleBindings:
     - clusterRole: admin
       namespaceSelector:

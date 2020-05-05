@@ -1,8 +1,14 @@
 ROOT_PATH ?= $(abspath $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST))))))
 BIN_PATH ?= $(ROOT_PATH)/.local/bin
+ISTIO_PROFILE ?= demo
 
+yq ?= $(BIN_PATH)/yq
 arkade := $(BIN_PATH)/arkade
 istioctl := $(BIN_PATH)/istioctl
+
+ifneq (,$(wildcard $(yq)))
+STACK_INGRESS_INTERNALZONE := $(shell $(yq) r $(CONFIG_PATH)/environment.$(ENVIRONMENT).yaml stacks.ingress.zoneInternal)
+endif
 
 .PHONY: .dep/istioctl
 .dep/istioctl: ## Install istioctl locally
@@ -21,8 +27,8 @@ endif
 .PHONY: .deps/istio
 .deps/istio: .dep/istioctl .dep/arkade ## Install istio dependencies
 
-.PHONY: istio/deploy
-istio/deploy: istio/verify ## Deploy istio to the cluster
+.PHONY: istio/deploy/arkade
+istio/deploy/arkade: istio/verify ## Deploy istio to the cluster
 	$(arkade) install \
 	  --kubeconfig $(KUBE_CONFIG) \
 	  istio --helm3
@@ -33,8 +39,65 @@ istio/verify: ## Verify istio install
 	  --kubeconfig $(KUBE_CONFIG) \
 	  --context $(KUBE_CLUSTER_CONTEXT)
 
+.PHONY: istio/deploy/operator
+istio/deploy/operator: istio/verify ## Deploy the istio operator
+	tmpdir=$$(mktemp -d) && echo "$${tmpdir}" && \
+	export STACK_INGRESS_INTERNALZONE=$(STACK_INGRESS_INTERNALZONE) && \
+	$(gomplate) --file $(DEPLOY_PATH)/istio/profile.yaml --out "$${tmpdir}/profile.yaml" && \
+	$(istioctl) operator init \
+	--operatorNamespace=istio-operator \
+	--istioNamespace=istio-system \
+	--filename=$${tmpdir}/profile.yaml \
+	--kubeconfig $(KUBE_CONFIG) \
+	--context $(KUBE_CLUSTER_CONTEXT)
+
+.PHONY: istio/generate/operator
+istio/generate/operator: ## Generate the istio operator manifest
+	tmpdir=$$(mktemp -d) && echo "$${tmpdir}" && \
+	export STACK_INGRESS_INTERNALZONE=$(STACK_INGRESS_INTERNALZONE) && \
+	$(gomplate) --file $(DEPLOY_PATH)/istio/overrides.yaml --out "$${tmpdir}/overrides.yaml" && \
+	$(istioctl) manifest generate \
+	  --set profile=$(ISTIO_PROFILE) \
+	  -f $${tmpdir}/overrides.yaml
+
+.PHONY: istio/remove/operator
+istio/remove/operator: ## Remove the istio operator
+	tmpdir=$$(mktemp -d) && echo "$${tmpdir}" && \
+	export STACK_INGRESS_INTERNALZONE=$(STACK_INGRESS_INTERNALZONE) && \
+	$(gomplate) --file $(DEPLOY_PATH)/istio/overrides.yaml --out "$${tmpdir}/overrides.yaml" && \
+	$(istioctl) manifest generate \
+	  --set profile=$(ISTIO_PROFILE) \
+	  -f $${tmpdir}/overrides.yaml | \
+	  	$(kubecmd) delete -f -
+
 .PHONY: istio/dashboard
 istio/dashboard/%: ## Access istio dashboard
 	$(istioctl) dashboard $(subst istio/dashboard/,,$@) \
 	  --kubeconfig $(KUBE_CONFIG) \
 	  --context $(KUBE_CLUSTER_CONTEXT)
+
+.PHONY: istio/start/dnsforward
+istio/start/dnsforward: ## Forwards all dns requests to a local dns-proxy-server
+	tmpdir=$$(mktemp -d) && echo "$${tmpdir}" && \
+	export STACK_INGRESS_INTERNALZONE=$(STACK_INGRESS_INTERNALZONE) && \
+	export STACK_INGRESS_INTERNALIP=`$(kubecmd) -n istio-system get svc istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}'` && \
+	$(gomplate) --file $(DEPLOY_PATH)/dnsproxy/config.json --out "$${tmpdir}/config.json" && \
+	docker run --rm -d \
+		--hostname $(STACK_INGRESS_INTERNALZONE) \
+		--name dns-proxy-server \
+		-p 5380:5380 \
+		-v $${tmpdir}:/app/conf \
+		-v /var/run/docker.sock:/var/run/docker.sock \
+		-v /etc/resolv.conf:/etc/resolv.conf \
+		defreitas/dns-proxy-server
+	@echo ""
+	@echo "STACK_INGRESS_INTERNALZONE=$(STACK_INGRESS_INTERNALZONE)"
+	@echo "View dnsforwarding admin page at: http://localhost:5380"
+
+.PHONY: istio/stop/dnsforward
+istio/stop/dnsforward: ## Stop the dns forwarding container
+	docker stop dns-proxy-server
+
+.PHONY: istio/watch/ingress
+istio/watch/ingress: ## Show istio ingress logs
+	@$(stern) --all-namespaces -l istio=ingressgateway --tail 20 -t 

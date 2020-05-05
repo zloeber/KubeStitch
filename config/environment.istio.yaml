@@ -9,8 +9,8 @@ stacks:
     installed: true
     namespace: security
   ingress:
-    installed: true
-    istio: false
+    installed: false
+    istio: true
     istioIngressGateway: istio-ingressgateway
     namespaceInternal: ingress-int
     namespaceExternal: ingress-ext

@@ -23,7 +23,7 @@ endif
 	$(kind) get kubeconfig --name $(KUBE_CLUSTER) > $(KUBE_CONFIG)
 
 .PHONY: cluster/start
-cluster/start: .kind/start kube/context ## Create local cicd cluster
+cluster/start: .kind/start kube/context kube/deploy/metallb ## Create local cicd cluster
 
 .PHONY: cluster/ingress
 cluster/ingress: ## Start cluster ingress
