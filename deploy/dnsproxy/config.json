@@ -6,11 +6,11 @@
 	],
 	"envs": [
 		{
-			"name": "{{ env.Getenv "TEAM" "team1" }}_{{ env.Getenv "TARGET" "cicd" }}",
+			"name": "local_forwarding_zone",
 			"hostnames": [
 				{
 					"id": 2,
-					"hostname": "dashboard.{{ env.Getenv "TEAM" "team1" }}.{{ env.Getenv "TARGET" "cicd" }}.{{ env.Getenv "DOMAIN" "micro.svc" }}",
+					"hostname": "bookinfo.int.micro.svc",
 					"ip": "{{ env.Getenv "STACK_INGRESS_INTERNALIP" }}",
 					"target": "acme.com",
 					"ttl": 60,
@@ -19,7 +19,7 @@
 			]
 		}
 	],
-	"activeEnv": "{{ env.Getenv "TEAM" "team1" }}_{{ env.Getenv "TARGET" "cicd" }}",
+	"activeEnv": "local_forwarding_zone",
 	"webServerPort": 5380,
 	"dnsServerPort": 53,
 	"defaultDns": true,

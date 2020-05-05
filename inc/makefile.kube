@@ -2,7 +2,7 @@ ROOT_PATH ?= $(abspath $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIS
 BIN_PATH ?= $(ROOT_PATH)/.local/bin
 
 KUBE_CLUSTER_CONTEXT ?= $(KUBE_CLUSTER)
-KUBE_CONFIG := $(ROOT_PATH)/.local/kube.$(ENVIRONMENT).conf
+KUBE_CONFIG := $(ROOT_PATH)/.local/kube.$(PROFILE).conf
 
 kubectl := $(BIN_PATH)/kubectl
 kubecmd := KUBECONFIG=$(KUBE_CONFIG) $(kubectl)

@@ -7,6 +7,8 @@ bases:
 repositories:
 - name: reactiveops-stable
   url: https://charts.reactiveops.com/stable
+- name: incubator
+  url: https://kubernetes-charts-incubator.storage.googleapis.com
 
 releases:
 - name: namespace-security

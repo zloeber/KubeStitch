@@ -53,16 +53,17 @@ help: ## Help
 
 .PHONY: show/env
 show/env: ## Show our environment settings
-	@echo "ARCH: $(ARCH)"
-	@echo "HOST_PLATFORM: $(HOST_PLATFORM)"
-	@echo "ENVIRONMENT: $(ENVIRONMENT)"
+	@echo "PROFILE: $(PROFILE)"
 	@echo "STACK: $(STACK)"
 	@echo "CLOUD: $(CLOUD)"
+	@echo "ARCH: $(ARCH)"
+	@echo "HOST_PLATFORM: $(HOST_PLATFORM)"
 	@echo "KUBE_PROVIDER: $(KUBE_PROVIDER)"
 	@echo "KUBE_CLUSTER: $(KUBE_CLUSTER)"
 	@echo "KUBE_VERSION: $(KUBE_VERSION)"
 	@echo "KUBE_CONFIG: $(KUBE_CONFIG)"
 	@echo "HELMFILE_PATH: $(HELMFILE_PATH)"
+	@echo "ENVIRONMENT: $(ENVIRONMENT)"
 	@echo "CHART_PATH: $(CHART_PATH)"
 	@echo "ENVIRONMENT_VARS: $(ENVIRONMENT_VARS)"
 	@echo "DEPTASKS: $(DEPTASKS)"

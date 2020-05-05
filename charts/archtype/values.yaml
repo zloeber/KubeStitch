@@ -2,7 +2,7 @@
 project:
   buildid: cicd
   team: inv
-  target: a1d
+  target: targetenv
   client: mcd
   workload: spark
   app: stream
@@ -33,14 +33,14 @@ sparkoperator:
 sparkApplications:
   default:
     enabled: false
-    repository: "nextgena1d.azurecr.io"
-    image: "alpine/nextgen-spark"
+    repository: "projecttargetenv.azurecr.io"
+    image: "alpine/project-spark"
     version: "v2.4.4"
     spec:
       type: "Scala"
       mode: "cluster"
       mainClass: com.job.file.FileToKafkaLoader
-      mainApplicationFile: "local:///opt/spark/jars/nextgen-spark-jobs-assembly-1.0.jar"
+      mainApplicationFile: "local:///opt/spark/jars/project-spark-jobs-assembly-1.0.jar"
       driver:
         cores: 0.1
         coreLimit: "200m"
@@ -52,7 +52,7 @@ sparkApplications:
 
 sparkStreams:
   enabled: false
-  repository: "nextgena1d.azurecr.io"
+  repository: "projecttargetenv.azurecr.io"
   jarpath: "local:///opt/spark/jars"
   image: "inv-stream"
   version: "2.4.4"
@@ -135,7 +135,7 @@ keyvaultSecrets:
   enabled: false
   type: secret
   #secretMap: local-secret-name
-  #vaultName: "glo-mda-kv-a1d"
+  #vaultName: "glo-mda-kv-targetenv"
 #  secrets: []
 # sourceSecret: SECRETNAME
 # name: secret_name
@@ -146,7 +146,7 @@ serviceAdmin:
   enabled: false
   serviceAccount: default
 
-nextgenServiceAdmin:
+projectServiceAdmin:
   enabled: false
   name: default
   serviceAccount: default
@@ -157,12 +157,7 @@ nextgenServiceAdmin:
           - key: ns
             operator: In
             values:
-              - inv-stream
-              - inv-test-stream
-              - inv-dev-stream
-              - inv-qa-stream
-              - inv-preprod-stream
-              - inv-prod-stream
+              - project-app-namespace
   
 # Inline environment
 env: {}
@@ -180,7 +175,7 @@ service:
   # annotations:
   #   name: value
 
-# nextgenDeployment:
+# projectDeployment:
 #   enabled: false
 #   ## Pods replace strategy
 #   ## ref: https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy

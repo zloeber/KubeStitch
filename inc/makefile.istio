@@ -1,6 +1,7 @@
 ROOT_PATH ?= $(abspath $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST))))))
 BIN_PATH ?= $(ROOT_PATH)/.local/bin
 
+ISTIO_PROFILE ?= demo
 arkade := $(BIN_PATH)/arkade
 istioctl := $(BIN_PATH)/istioctl
 
@@ -33,8 +34,30 @@ istio/verify: ## Verify istio install
 	  --kubeconfig $(KUBE_CONFIG) \
 	  --context $(KUBE_CLUSTER_CONTEXT)
 
+.PHONY: istio/deploy/operator
+istio/deploy/operator: istio/verify ## Deploy the istio operator
+	$(istioctl) manifest apply \
+	  --set profile=$(ISTIO_PROFILE) \
+	  --kubeconfig $(KUBE_CONFIG) \
+	  --context $(KUBE_CLUSTER_CONTEXT)
+
 .PHONY: istio/dashboard
 istio/dashboard/%: ## Access istio dashboard
 	$(istioctl) dashboard $(subst istio/dashboard/,,$@) \
 	  --kubeconfig $(KUBE_CONFIG) \
 	  --context $(KUBE_CLUSTER_CONTEXT)
+
+.PHONY: istio/start/dnsforward
+istio/start/dnsforward: ## Forwards all dns requests to a local dns-proxy-server
+	tmpdir=$$(mktemp -d) && echo "$${tmpdir}" && \
+	export STACK_INGRESS_INTERNALIP=`$(kubecmd) -n istio-system get svc istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}'` && \
+	$(gomplate) --file $(DEPLOY_PATH)/dnsproxy/config.json --out "$${tmpdir}/config.json" && \
+	docker run --rm -d \
+		--hostname int.micro.svc \
+		--name dns-proxy-server \
+		-p 5380:5380 \
+		-v $${tmpdir}:/app/conf \
+		-v /var/run/docker.sock:/var/run/docker.sock \
+		-v /etc/resolv.conf:/etc/resolv.conf \
+		defreitas/dns-proxy-server
+	@echo "View dnsforwarding admin page at: http://localhost:5380"
