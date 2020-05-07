@@ -56,7 +56,7 @@ istio/dashboard/%: ## Access istio dashboard
 	  --context $(KUBE_CLUSTER_CONTEXT)
 
 .PHONY: istio/start/dnsforward
-istio/start/dnsforward: ## Forwards all dns requests to a local dns-proxy-server
+istio/start/dnsforward: istio/stop/dnsforward ## Forwards all dns requests to a local dns-proxy-server
 	tmpdir=$$(mktemp -d) && echo "$${tmpdir}" && \
 	export STACK_INGRESS_INTERNALZONE=$(STACK_INGRESS_INTERNALZONE) && \
 	export STACK_INGRESS_INTERNALIP=`$(kubecmd) -n istio-system get svc istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}'` && \
@@ -75,7 +75,7 @@ istio/start/dnsforward: ## Forwards all dns requests to a local dns-proxy-server
 
 .PHONY: istio/stop/dnsforward
 istio/stop/dnsforward: ## Stop the dns forwarding container
-	docker stop dns-proxy-server
+	docker stop dns-proxy-server || true
 
 .PHONY: istio/watch/ingress
 istio/watch/ingress: ## Show istio ingress logs
