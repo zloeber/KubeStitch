@@ -93,7 +93,7 @@ export PROFILE=istio
 make deps cluster/start
 
 # Install istio operator via istioctl using the ISTIO_PROFILE of demo
-make istio/deploy/operator
+make istio/deploy
 
 # Deploy the bookinfo helmfile for the full deployment along with ingress
 make helmfile/sync STACK=bookinfo
@@ -120,6 +120,12 @@ make istio/stop/dnsforward
 # Destroy the cluster, reset your env vars
 make cluster/stop
 unset PROFILE KUBECONFIG
+```
+
+If k3d is more your style then you can repeat this entire set of directions with another profile I setup and tested in a few minutes after doing this with kind. Just use the istio-k3d profile instead! Here is the short version of the above steps to start things.
+
+```bash
+make cluster/start istio/deploy istio/start/dnsforward helmfile/sync STACK=bookinfo PROFILE=istio-k3d
 ```
 
 ## Additional Notes

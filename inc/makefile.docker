@@ -1,5 +1,5 @@
-APP ?= myapp
-CLOUD ?= azure
+DOCKER_APP ?= myapp
+DOCKER_PROVIDER ?= dockerhub
 
 # Docker
 # Set to --no-cache to run docker build operations from scratch
@@ -15,7 +15,14 @@ $(subst --,:,$(1))
 endef
 
 REGISTRY_SERVER ?= mycontainerrepo
+ifeq ($(DOCKER_PROVIDER),acr)
 REGISTRY_DOMAIN ?= $(REGISTRY_SERVER).azurecr.io
+endif
+ifeq ($(DOCKER_PROVIDER),dockerhub)
+REGISTRY_DOMAIN ?= https://index.docker.io/v1/
+endif
+
+
 
 ## Docker commands
 docker ?= docker
@@ -27,25 +34,26 @@ DOCKER_RMI=$(docker) rmi -f
 DOCKER_EXEC=$(docker) exec
 
 ## Docker (derived)
-DOCKER_IMAGE?=$(REGISTRY_DOMAIN)/$(APP)
+DOCKER_IMAGE?=$(REGISTRY_DOMAIN)/$(DOCKER_APP)
 DOCKER_IMAGE_VERSION?=$(DOCKER_IMAGE):$(VERSION)
 DOCKER_IMAGE_VERSIONED?=$(call escape_docker_tag,$(DOCKER_IMAGE):$(VERSION))
 
-.PHONY: docker/repo/login
-docker/repo/login: ## Login to docker repository
-ifeq ($(CLOUD),azure)
+.PHONY: docker/login
+docker/login: ## Login to docker repository
+ifeq ($(DOCKER_PROVIDER),acr)
 	@az account set --subscription "${AZ_SUBSCRIPTION}"
 	az acr login --name $(REGISTRY_SERVER)
-else
+endif
+ifeq ($(DOCKER_PROVIDER),dockerhub)
 	docker login
 endif
 
 .PHONY: docker/deploy
-docker/deploy: docker/repo/login docker/build docker/tag docker/push ## Build, tag, and push base image
+docker/deploy: docker/login docker/build docker/tag docker/push ## Build, tag, and push base image
 
 .PHONY: docker/build
 docker/build: ## Build docker image
-	@echo "Build Image: ${APP}"
+	@echo "Build Image: ${DOCKER_APP}"
 	$(DOCKER_BUILD) . -t $(DOCKER_IMAGE) $(DOCKER_NC)
 
 .PHONY: docker/tag
@@ -58,11 +66,11 @@ docker/push: # Push an image
 
 .PHONY: docker/run/shell
 docker/run/shell: ## Run current docker image interactively with bash shell (as root)
-	$(DOCKER_RUN) -i -t --rm -u root --name="$(APP)" $(DOCKER_IMAGE_VERSION) bash
+	$(DOCKER_RUN) -i -t --rm -u root --name="$(DOCKER_APP)" $(DOCKER_IMAGE_VERSION) bash
 
 .PHONY: docker/run
 docker/run: ## Run current docker image interactively (as root)
-	$(DOCKER_RUN) -i -t --rm -u root --name="$(APP)" $(DOCKER_IMAGE_VERSION)
+	$(DOCKER_RUN) -i -t --rm -u root --name="$(DOCKER_APP)" $(DOCKER_IMAGE_VERSION)
 
 .PHONY: docker/serve/pgadmin
 docker/serve/pgadmin: ## Run pgadmin 4 container locally

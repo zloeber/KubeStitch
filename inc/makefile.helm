@@ -59,7 +59,7 @@ endif
 
 .PHONY: helmfile/list
 helmfile/list: ## Lists all available helmfiles
-	@ls $(HELMFILE_PATH)/helmfile.*.yaml | cut -d'.' -f 2
+	@ls $(HELMFILE_PATH)/helmfile.*.yaml | xargs -n1 basename | sed -e 's/\.yaml//g' -e 's/helmfile\.//g'
 
 .PHONY: helmfile/apply
 helmfile/apply: ## apply all resources from state file only when there are changes

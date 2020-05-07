@@ -34,12 +34,31 @@ spec:
     cni:
       enabled: false
     egressGateways:
-    - enabled: true
+    - enabled: false
       k8s:
+        hpaSpec:
+          maxReplicas: 5
+          metrics:
+          - resource:
+              name: cpu
+              targetAverageUtilization: 80
+            type: Resource
+          minReplicas: 1
+          scaleTargetRef:
+            apiVersion: apps/v1
+            kind: Deployment
+            name: istio-ingressgateway
         resources:
+          limits:
+            cpu: 2000m
+            memory: 1024Mi
           requests:
-            cpu: 10m
-            memory: 40Mi
+            cpu: 100m
+            memory: 128Mi
+        strategy:
+          rollingUpdate:
+            maxSurge: 100%
+            maxUnavailable: 25%
       name: istio-egressgateway
     galley:
       enabled: false
@@ -55,10 +74,29 @@ spec:
     ingressGateways:
     - enabled: true
       k8s:
+        hpaSpec:
+          maxReplicas: 5
+          metrics:
+          - resource:
+              name: cpu
+              targetAverageUtilization: 80
+            type: Resource
+          minReplicas: 1
+          scaleTargetRef:
+            apiVersion: apps/v1
+            kind: Deployment
+            name: istio-ingressgateway
         resources:
+          limits:
+            cpu: 2000m
+            memory: 1024Mi
           requests:
-            cpu: 10m
-            memory: 40Mi
+            cpu: 100m
+            memory: 128Mi
+        strategy:
+          rollingUpdate:
+            maxSurge: 100%
+            maxUnavailable: 25%
       name: istio-ingressgateway
     nodeAgent:
       enabled: false
@@ -76,12 +114,6 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
-        - name: GODEBUG
-          value: gctrace=1
-        - name: PILOT_TRACE_SAMPLING
-          value: "100"
-        - name: CONFIG_NAMESPACE
-          value: istio-config
         readinessProbe:
           httpGet:
             path: /ready
@@ -91,8 +123,8 @@ spec:
           timeoutSeconds: 5
         resources:
           requests:
-            cpu: 10m
-            memory: 100Mi
+            cpu: 500m
+            memory: 2048Mi
         strategy:
           rollingUpdate:
             maxSurge: 100%
@@ -118,16 +150,12 @@ spec:
             apiVersion: apps/v1
             kind: Deployment
             name: istio-policy
-        resources:
-          requests:
-            cpu: 10m
-            memory: 100Mi
         strategy:
           rollingUpdate:
             maxSurge: 100%
             maxUnavailable: 25%
     sidecarInjector:
-      enabled: true
+      enabled: false
       k8s:
         replicaCount: 1
         strategy:
@@ -163,15 +191,15 @@ spec:
             cpu: 4800m
             memory: 4G
           requests:
-            cpu: 50m
-            memory: 100Mi
+            cpu: 1000m
+            memory: 1G
         strategy:
           rollingUpdate:
             maxSurge: 100%
             maxUnavailable: 25%
   hub: docker.io/istio
-  profile: demo
-  tag: 1.5.1
+  profile: default
+  tag: 1.5.0
   values:
     clusterResources: true
     galley:
@@ -179,8 +207,17 @@ spec:
       image: galley
     gateways:
       istio-egressgateway:
-        autoscaleEnabled: false
-        name: istio-egressgateway
+        autoscaleEnabled: true
+        env:
+          ISTIO_META_ROUTER_MODE: sni-dnat
+        ports:
+        - name: http2
+          port: 80
+        - name: https
+          port: 443
+        - name: tls
+          port: 15443
+          targetPort: 15443
         secretVolumes:
         - mountPath: /etc/istio/egressgateway-certs
           name: egressgateway-certs
@@ -191,23 +228,21 @@ spec:
         type: ClusterIP
       istio-ingressgateway:
         applicationPorts: ""
-        autoscaleEnabled: false
+        autoscaleEnabled: true
         debug: info
         domain: ""
+        env:
+          ISTIO_META_ROUTER_MODE: sni-dnat
         meshExpansionPorts:
         - name: tcp-pilot-grpc-tls
           port: 15011
           targetPort: 15011
-        - name: tcp-istiod
-          port: 15012
-          targetPort: 15012
         - name: tcp-citadel-grpc-tls
           port: 8060
           targetPort: 8060
         - name: tcp-dns-tls
           port: 853
           targetPort: 853
-        name: istio-ingressgateway
         ports:
         - name: status-port
           port: 15020
@@ -229,9 +264,6 @@ spec:
         - name: tracing
           port: 15032
           targetPort: 15032
-        - name: tcp
-          port: 31400
-          targetPort: 31400
         - name: tls
           port: 15443
           targetPort: 15443
@@ -270,7 +302,7 @@ spec:
       defaultResources:
         requests:
           cpu: 10m
-      disablePolicyChecks: false
+      disablePolicyChecks: true
       enableHelmTest: false
       enableTracing: true
       imagePullPolicy: IfNotPresent
@@ -310,7 +342,7 @@ spec:
       priorityClassName: ""
       proxy:
         accessLogEncoding: TEXT
-        accessLogFile: /dev/stdout
+        accessLogFile: ""
         accessLogFormat: ""
         autoInject: enabled
         clusterDomain: cluster.local
@@ -349,8 +381,8 @@ spec:
             cpu: 2000m
             memory: 1024Mi
           requests:
-            cpu: 10m
-            memory: 40Mi
+            cpu: 100m
+            memory: 128Mi
         statusPort: 15020
         tracer: zipkin
       proxy_init:
@@ -409,9 +441,9 @@ spec:
         repository: grafana/grafana
         tag: 6.5.2
       ingress:
-        enabled: true
+        enabled: false
         hosts:
-        - grafana.{{ env.Getenv "STACK_INGRESS_INTERNALZONE" }}
+        - grafana.local
       nodeSelector: {}
       persist: false
       podAntiAffinityLabelSelector: []
@@ -444,9 +476,9 @@ spec:
         viewOnlyMode: false
       hub: quay.io/kiali
       ingress:
-        enabled: true
+        enabled: false
         hosts:
-        - kiali.{{ env.Getenv "STACK_INGRESS_INTERNALZONE" }}
+        - kiali.local
       nodeSelector: {}
       podAntiAffinityLabelSelector: []
       podAntiAffinityTermLabelSelector: []
@@ -454,7 +486,7 @@ spec:
         cert_file: /kiali-cert/cert-chain.pem
         enabled: false
         private_key_file: /kiali-cert/key.pem
-      tag: v1.15
+      tag: v1.14
     mixer:
       adapters:
         kubernetesenv:
@@ -472,7 +504,7 @@ spec:
             enabled: false
             sampleProbability: 1
         stdio:
-          enabled: true
+          enabled: false
           outputAsJson: false
         useAdapterCRDs: false
       policy:
@@ -480,11 +512,11 @@ spec:
           kubernetesenv:
             enabled: true
           useAdapterCRDs: false
-        autoscaleEnabled: false
+        autoscaleEnabled: true
         image: mixer
         sessionAffinityEnabled: false
       telemetry:
-        autoscaleEnabled: false
+        autoscaleEnabled: true
         env:
           GOMAXPROCS: "6"
         image: mixer
@@ -503,7 +535,7 @@ spec:
       image: node-agent-k8s
     pilot:
       appNamespaces: []
-      autoscaleEnabled: false
+      autoscaleEnabled: true
       autoscaleMax: 5
       autoscaleMin: 1
       configMap: true
@@ -533,9 +565,9 @@ spec:
       contextPath: /prometheus
       hub: docker.io/prom
       ingress:
-        enabled: true
+        enabled: false
         hosts:
-        - prometheus.{{ env.Getenv "STACK_INGRESS_INTERNALZONE" }}
+        - prometheus.local
       nodeSelector: {}
       podAntiAffinityLabelSelector: []
       podAntiAffinityTermLabelSelector: []

@@ -1,0 +1,24 @@
+ROOT_PATH ?= $(abspath $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST))))))
+BIN_PATH ?= $(ROOT_PATH)/.local/bin
+
+argocd := $(BIN_PATH)/argocd
+
+.PHONY: argocd/install
+argocd/install: ## Install argocd
+	$(kubecmd) create namespace argocd
+	$(kubecmd) apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+
+.PHONY: argocd/get/password
+argocd/get/password: ## Pull the argocd password
+	$(kubecmd) get pods -n argocd -l app.kubernetes.io/name=argocd-server -o name | cut -d'/' -f 2
+
+
+.PHONY: .dep/argocd
+.dep/argocd: ## Install argocd locally
+ifeq (,$(wildcard $(argocd))
+	@$(MAKE) --no-print-directory -C $(APP_PATH)/githubapp auto argoproj/argo-cd PACKAGE_EXE=argocd INSTALL_PATH=$(BIN_PATH)
+	@echo "Installed: $(argocd)"
+endif
+
+.PHONY: .deps/argocd
+.deps/argocd: .dep/argocd ## Install dependencies

@@ -27,8 +27,8 @@ KUBE_PROVIDER ?= kind
 KUBE_CLUSTER ?= cicd
 KUBE_VERSION ?= 1.18.0
 DOCKER_PROVIDER ?= dockerhub
-TASKSETS ?= cluster.$(KUBE_PROVIDER) common kube helm
-
+ADDITIONAL_TASKSETS ?=
+TASKSETS := cluster.$(KUBE_PROVIDER) common kube helm $(ADDITIONAL_TASKSETS)
 DEPTASKS := $(foreach taskset, $(TASKSETS), $(addprefix .deps/, $(taskset)))
 INCLUDES := $(foreach taskset, $(TASKSETS), $(addprefix $(ROOT_PATH)/inc/makefile., $(taskset)))
 

@@ -47,15 +47,6 @@ kube/context: ## Set kubectl config context to KUBE_CLUSTER
 	$(kubecmd) config set-context $(KUBE_CLUSTER_CONTEXT)
 	$(kubecmd) config use-context $(KUBE_CLUSTER_CONTEXT)
 
-.PHONY: kube/install/argocd
-kube/install/argocd: ## Install argocd
-	$(kubecmd) create namespace argocd
-	$(kubecmd) apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
-
-.PHONY: kube/get/argocd/password
-kube/get/argocd/password: ## Pull the argocd password
-	$(kubecmd) get pods -n argocd -l app.kubernetes.io/name=argocd-server -o name | cut -d'/' -f 2
-
 .PHONY: kube/create/dockersecret
 kube/create/dockersecret: ## Create docker secret from current .docker/config.json
 	$(kubecmd) create secret generic regcred \
@@ -89,8 +80,8 @@ kube/config/file: ## Prints the current kube config file location
 
 .PHONY: kube/list/resources
 kube/list/resources: ## Prints kubernetes resources
-	for kind in `kubectl api-resources | tail +2 | awk '{ print $$1 }' | sort`; do kubectl explain $$kind ; done | grep -e "KIND:" -e  "VERSION:" | awk '{print $$2}' | paste -sd' \n'
+	for kind in `$(kubecmd) api-resources | tail +2 | awk '{ print $$1 }' | sort`; do kubectl explain $$kind ; done | grep -e "KIND:" -e  "VERSION:" | awk '{print $$2}' | paste -sd' \n'
 
 .PHONY: kube/bearertoken
 kube/bearertoken: Return bearer token for cluster
-	@echo $(shell $(kubectl) get secrets -o jsonpath="{.items[?(@.metadata.annotations['kubernetes\.io/service-account\.name']=='default')].data.token}"|base64 --decode))
+	@echo $(shell $(kubecmd) get secrets -o jsonpath="{.items[?(@.metadata.annotations['kubernetes\.io/service-account\.name']=='default')].data.token}"|base64 --decode))

@@ -1,0 +1,22 @@
+ROOT_PATH ?= $(abspath $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST))))))
+BIN_PATH ?= $(ROOT_PATH)/.local/bin
+
+arkade := $(BIN_PATH)/arkade
+
+
+.PHONY: .dep/arkade
+.dep/arkade: ## Install arkade locally
+ifeq (,$(wildcard $(INSTALL_PATH)/arkade))
+	@$(MAKE) --no-print-directory -C $(APP_PATH)/githubapp auto alexellis/arkade INSTALL_PATH=$(INSTALL_PATH)
+	@echo "Installed: $(arkade)"
+endif
+
+.PHONY: arkade/deploy/%
+istio/deploy/arkade: istio/verify ## Deploy arkade package to the cluster
+	$(arkade) install \
+	  --kubeconfig $(KUBE_CONFIG) \
+	  $(subst arkade/deploy/,,$@) \
+      --helm3
+
+.PHONY: .deps/arkade
+.deps/arkade: .dep/arkade ## Install dependencies

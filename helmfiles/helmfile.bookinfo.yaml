@@ -365,7 +365,7 @@ releases:
     - apiVersion: networking.istio.io/v1beta1
       kind: VirtualService
       metadata:
-          name: bookinfo-service
+        name: bookinfo-service
       spec:
         gateways:
         - bookinfo-gateway
