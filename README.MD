@@ -42,12 +42,19 @@ make deps cluster/start helmfile/sync
 
 ## Profiles
 
+<<<<<<< HEAD
 Firstly, this was originally created to support multiple clusters and teams. I've since pared it back to targeting profiles. This means all top level settings that you may want to overwrite are able to be put in one file: `./config/<profilename>.env`. You can see the current profile (default) and environment (default) and some additional variables with `make show/env`.  
 
 To create a whole new target environment you can simply copy and modify the `./config/default.env` to `./config/<newprofile>.env` then pass in `PROFILE=<newprofile>` to all make commands (or export it at the start of your session).
 
 > **NOTE** `PROFILE` is for using different CICD configurations such as using k3d vs. using kind. `ENVIRONMENT` is what you would use to create helmfile deployment environment configurations. `ENVIRONMENT` is always 'default' unless manually passed in and is only used in the helmfile/* tasks. You can set `ENVIRONMENT` within the profile definition as well. The istio example below does this.
 
+=======
+Firstly, this was originally created to support multiple clusters and teams. I've since pared it back to targeting profiles firstly, environments second. You can see the current profile (default) and environment (default) and some additional variables with `make show/env`. The profile is sources variables from `./config/${PROFILE}.env`. To create a whole new target environment you can simply copy and modify the `./config/default.env` to `./config/newprofile.env` then pass in `PROFILE=newprofile` to all make commands.
+
+> **NOTE** `PROFILE` is for using different CICD configurations for testing purposes. `ENVIRONMENT` is what you would use to create helmfile deployment environment configurations. `ENVIRONMENT` is always 'default' unless manually passed in and is only used in the helmfile/* tasks.
+
+>>>>>>> 72c7f18dd8456e2dba79627ebe5054f8c798c1c6
 The default profile is for a recent version of kubernetes running on kind. Another profile has been included to deploy k3d as well.
 
 ```bash
@@ -76,6 +83,7 @@ make cluster/stop  ## Default environment is 'default'
 
 Here is an example environment running istio on a kind cluster. It includes;
 
+<<<<<<< HEAD
 - A separate 'istio' profile (`./config/istio.env`) with overrides to the 
 - An additional plugin to include istio specific commands (found in inc/makefile.istio)
 - An istioctl based istio operator deployment
@@ -84,6 +92,13 @@ Here is an example environment running istio on a kind cluster. It includes;
     - Not a bad example of converting a straight yaml file to helmfile using the raw chart as a crude shortcut)
     - Exhibits helmfile dependency chaining
     - Uses a local custom namespace chart to also enable the istio sidecar injection label
+=======
+- The deployment of metallb for the allocation of the loadbalancer element. 
+- An additional plugin to include istio specific commands (found in inc/makefile.istio)
+- An arkade based istio deployment
+- An istioctl based istio operator deployment 
+- An additional task to use istioctl to pull up any deployed istio dashboards
+>>>>>>> 72c7f18dd8456e2dba79627ebe5054f8c798c1c6
 
 ```bash
 # Ensure we get the correct target
@@ -107,6 +122,17 @@ At this point you should be able to go to the example bookinfo microservice depl
 ```bash
 # configure local kubectl to access your kind cluster
 export KUBECONFIG=`make kube/config/file`
+kubectl get pods -n istio-system
+
+# Deploy the bookinfo helmfile to create ingress rules for the app
+make helmfile/sync STACK=bookinfo
+
+# Go ahead and deploy the bookinfo example microservices app (https://istio.io/docs/examples/microservices-istio/bookinfo-kubernetes/)
+kubectl label namespace default istio-injection=enabled
+kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.5/samples/bookinfo/platform/kube/bookinfo.yaml
+
+# Start the local dns forwarding to access the created resources without using kube proxy
+make istio/start/dnsforward
 
 # view some stuff to validate
 kubectl get pods -n istio-system
