@@ -1,0 +1,52 @@
+---
+bases:
+- ../config/environments.yaml
+- ../config/helmdefaults.yaml
+---
+
+repositories:
+- name: incubator
+  url: https://kubernetes-charts-incubator.storage.googleapis.com
+
+releases:
+- name: istio-dashboard-ingress
+  chart: incubator/raw
+  namespace: istio-system
+  labels:
+    chart: istio-ingress
+    component: istio-dashboard-ingress
+    namespace: istio-system
+  values:
+  - resources:
+    - apiVersion: networking.istio.io/v1beta1
+      kind: Gateway
+      metadata:
+        name: istio-dashboard-gateway
+      spec:
+        selector:
+          istio: ingressgateway
+        servers:
+        - hosts:
+          - '*'
+          port:
+            name: http
+            number: 80
+            protocol: HTTP
+    - apiVersion: networking.istio.io/v1beta1
+      kind: VirtualService
+      metadata:
+        name: istio-kiali-service
+      spec:
+        gateways:
+        - istio-dashboard-gateway
+        hosts:
+        - 'kiali.{{ .Values.stacks.ingress.zoneInternal }}'
+        http:
+        - match:
+          - uri:
+              prefix: /
+          route:
+          - destination:
+              host: kiali
+              port:
+                number: 20001

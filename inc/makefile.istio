@@ -1,6 +1,5 @@
 ROOT_PATH ?= $(abspath $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST))))))
 BIN_PATH ?= $(ROOT_PATH)/.local/bin
-ISTIO_PROFILE ?= demo
 
 yq ?= $(BIN_PATH)/yq
 istioctl := $(BIN_PATH)/istioctl
@@ -45,7 +44,6 @@ istio/remove: ## Remove istio
 	export STACK_INGRESS_INTERNALZONE=$(STACK_INGRESS_INTERNALZONE) && \
 	$(gomplate) --file $(DEPLOY_PATH)/istio/profile.yaml --out "$${tmpdir}/profile.yaml" && \
 	$(istioctl) manifest generate \
-	  --set profile=$(ISTIO_PROFILE) \
 	  -f $${tmpdir}/profile.yaml | \
 	  	$(kubecmd) delete -f -
 
@@ -58,9 +56,11 @@ istio/dashboard/%: ## Access istio dashboard
 .PHONY: istio/start/dnsforward
 istio/start/dnsforward: istio/stop/dnsforward ## Forwards all dns requests to a local dns-proxy-server
 	tmpdir=$$(mktemp -d) && echo "$${tmpdir}" && \
-	export STACK_INGRESS_INTERNALZONE=$(STACK_INGRESS_INTERNALZONE) && \
 	export STACK_INGRESS_INTERNALIP=`$(kubecmd) -n istio-system get svc istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}'` && \
-	$(gomplate) --file $(DEPLOY_PATH)/dnsproxy/config.json --out "$${tmpdir}/config.json" && \
+	$(gomplate) \
+		-d config=$(CONFIG_PATH)/environment.$(ENVIRONMENT).yaml \
+		--file $(DEPLOY_PATH)/dnsproxy/config.json \
+		--out "$${tmpdir}/config.json" && \
 	docker run --rm -d \
 		--hostname $(STACK_INGRESS_INTERNALZONE) \
 		--name dns-proxy-server \
