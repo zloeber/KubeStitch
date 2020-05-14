@@ -117,7 +117,7 @@ releases:
 
 - name: kured-monitors
   namespace: {{ env "STACK_KURED_NAMESPACE" | default "kured" }}
-  chart: ../charts/archtype
+  chart: ../charts/archetype
   labels:
     chart: kured-monitors
     component: monitoring

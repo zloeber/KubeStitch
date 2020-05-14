@@ -11,7 +11,7 @@ helmDefaults:
 releases:
 - name: deployment-elastichq
   namespace: "logging"
-  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
   version: 0.0.1
   labels:
     chart: "deployment-elastichq"

@@ -25,7 +25,7 @@ releases:
     - {{ env "STACK_INGRESS_INT_NAMESPACE" | default "ingress-int" }}
 
 - name: ingress-int-cert
-  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}  
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}  
   namespace: ingress-int
   labels:
     chart: ingress-int

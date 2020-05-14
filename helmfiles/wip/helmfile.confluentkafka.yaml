@@ -18,7 +18,7 @@ releases:
 ## Zookeepercluster loadbalanced IP
 - name: loadbalancer-zookeeper
   namespace: "database"
-  chart: "../charts/archtype/"
+  chart: "../charts/archetype/"
   labels:
     chart: "loadbalancer-zookeeper"
     component: "loadbalancer"
@@ -49,7 +49,7 @@ releases:
 ## Kafka loadbalanced IP
 - name: loadbalancer-kafkacluster
   namespace: "database"
-  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
   labels:
     chart: "loadbalancer-kafkacluster"
     component: "loadbalancer"
@@ -80,7 +80,7 @@ releases:
 
 - name: ingress-kafkahq
   namespace: "database"
-  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
   labels:
     chart: "ingress-kafkahq"
     component: "ingress"
@@ -106,7 +106,7 @@ releases:
 
 - name: ingress-kafka
   namespace: "database"
-  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
   labels:
     chart: "ingress-kafka"
     component: "ingress"
@@ -132,7 +132,7 @@ releases:
 
 - name: ingress-kafkaconnect
   namespace: "database"
-  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
   labels:
     chart: "ingress-kafkaconnect"
     component: "ingress"
@@ -158,7 +158,7 @@ releases:
 
 # - name: ingress-kafkarest
 #   namespace: "database"
-#   chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+#   chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
 #   labels:
 #     chart: "ingress-kafkarest"
 #     component: "ingress"
@@ -184,7 +184,7 @@ releases:
 
 - name: ingress-schemaregistry
   namespace: "database"
-  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
   labels:
     chart: "ingress-schemaregistry"
     component: "ingress"
@@ -210,7 +210,7 @@ releases:
 
 - name: ingress-replicator
   namespace: "database"
-  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
   labels:
     chart: "ingress-replicator"
     component: "ingress"
@@ -236,7 +236,7 @@ releases:
 
 - name: ingress-ksqlserver
   namespace: "database"
-  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
   labels:
     chart: "ingress-ksqlserver"
     component: "ingress"
@@ -262,7 +262,7 @@ releases:
 
 - name: ingress-kafka-controlcenter
   namespace: "database"
-  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
   labels:
     chart: ingress-kafka-controlcenter
     component: "ingress"

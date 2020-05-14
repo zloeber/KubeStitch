@@ -28,7 +28,7 @@ releases:
 - name: ingress-cerebro
   namespace: "logging"
   version: 0.0.1
-  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
   labels:
     chart: "ingress-cerebro"
     component: "ingress"

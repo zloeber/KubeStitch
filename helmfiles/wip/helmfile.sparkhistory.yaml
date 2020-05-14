@@ -56,7 +56,7 @@ releases:
 
 - name: ingress-spark-history
   namespace: {{ env "STACK_SPARKHISTORY_NAMESPACE" | default "sparkhistory" }}
-  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
   labels:
     chart: ingress-spark-history
     component: ingress

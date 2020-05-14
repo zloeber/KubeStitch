@@ -1,16 +1,12 @@
-archtype:
-  project:
-    app: dataflow-base-svc
-    team: inv
-    stage: dev
-    target: a2d
-    client: mcd
+archetype:
+  app: base-svc
+  zone: internal
+
   # Useful for cleaner looking manifests. Unset this in shared environments
-  fullnameOverride: dataflow-base-svc
+  # fullnameOverride: base-svc
   # Generally leave this as false unless a pipeline is using helm3, does not precreate the namespace, and is not using the namespace plugin
   namespace:
     enabled: false
-  keyvaultName: keyvaultname
   # These are pulled into the namespace by the cluster. Enable and define all that the service requires
   keyvaultSecrets:
     enabled: false

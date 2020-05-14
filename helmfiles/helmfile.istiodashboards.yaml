@@ -9,12 +9,12 @@ repositories:
   url: https://kubernetes-charts-incubator.storage.googleapis.com
 
 releases:
-- name: istio-dashboard-ingress
+- name: istio-dashboard-kiali
   chart: incubator/raw
   namespace: istio-system
   labels:
     chart: istio-ingress
-    component: istio-dashboard-ingress
+    component: istio-dashboard-kiali
     namespace: istio-system
   values:
   - resources:
@@ -50,3 +50,33 @@ releases:
               host: kiali
               port:
                 number: 20001
+
+- name: ingress-dashboard-prometheus
+  namespace: istio-system
+  chart: {{ .Values.archetypeChart | default "../charts/archetype" }}
+  installed: true
+  labels:
+    chart: "ingress-dashboard-prometheus"
+    component: "ingress"
+    namespace: cattle-system
+  needs:
+    - kube-system/namespace-rancher
+  values:
+  - project:
+      team: {{ env "TEAM" | default "team1" }}
+      stage: {{ env "STAGE" | default "dev" }}
+      target: {{ env "TARGET" | default "cicd" }}
+      client: {{ env "CLIENT" | default "client1" }}
+    ingressInternalClass: {{ .Values.ingress.classInternal | default "internal" }}
+    ingressTests: false
+    ingress:
+      enabled: true
+      hosts:
+      - name: rancher.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+        config:
+          http:
+            paths:
+            - path: "/"
+              backend:
+                serviceName: rancher
+                servicePort: 9092

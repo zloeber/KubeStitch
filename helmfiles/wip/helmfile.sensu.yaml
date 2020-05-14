@@ -31,7 +31,7 @@ releases:
 
 - name: ingress-sensu
   namespace: "sensu"
-  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
   labels:
     chart: "ingress-sensu"
     component: "monitoring"

@@ -44,7 +44,7 @@ releases:
         certmanager.k8s.io/cluster-issuer: default
 # - name: ingress-rancher
 #   namespace: cattle-system
-#   chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+#   chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
 #   installed: true
 #   labels:
 #     chart: "ingress-rancher"

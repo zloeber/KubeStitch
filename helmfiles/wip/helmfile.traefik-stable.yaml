@@ -77,7 +77,7 @@ releases:
 
 # - name: ingress-traefik-dashbaord
 #   namespace: {{ env "STACK_INGRESS_INT_NAMESPACE" | default "ingress-int" }}
-#   chart: "../charts/archtype"
+#   chart: "../charts/archetype"
 #   labels:
 #     chart: "ingress-traefik"
 #     component: "ingress"

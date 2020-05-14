@@ -2,7 +2,7 @@
 ## Author: Zachary Loeber
 SHELL:=/bin/bash
 
-CHART?=archtype
+CHART?=archetype
 ORG?=adodevopsorg
 REPO_NAME?=mycontainerrepo
 REPO?=http://${REPO_NAME}.azurecr.io

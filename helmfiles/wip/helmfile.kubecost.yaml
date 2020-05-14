@@ -65,7 +65,7 @@ releases:
 
   - name: ingress-kubecost
     namespace: monitoring
-    chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+    chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
     labels:
       chart: ingress-kubecost
       component: ingress

@@ -106,11 +106,11 @@ releases:
           # Allow Dashboard to get metrics.
         - apiGroups: [""]
           resources: ["services"]
-          resourceNames: ["heapster", "dashboard-metrics-scraper"]
+          resourceNames: ["metrics-server", "dashboard-metrics-scraper"]
           verbs: ["proxy"]
         - apiGroups: [""]
           resources: ["services/proxy"]
-          resourceNames: ["heapster", "http:heapster:", "https:heapster:", "dashboard-metrics-scraper", "http:dashboard-metrics-scraper"]
+          resourceNames: ["metrics-server", "http:metrics-server:", "https:metrics-server:", "dashboard-metrics-scraper", "http:dashboard-metrics-scraper"]
           verbs: ["get"]
     - apiVersion: rbac.authorization.k8s.io/v1
       kind: ClusterRole
@@ -341,7 +341,7 @@ releases:
 {{- if .Values.stacks.ingress.installed }}
 - name: ingress-kubernetes-dashboard
   namespace: kubernetes-dashboard
-  chart: {{ .Values.archtypeChart }}
+  chart: {{ .Values.archetypeChart }}
   installed: true
   needs:
   - kube-system/namespace-dashboard
@@ -350,16 +350,22 @@ releases:
     component: ingress
     namespace: kubernetes-dashboard
   values:
-  - project:
-      team: {{ env "TEAM" | default "cicd" }}
-      target: {{ env "TARGET" | default "cicd" }}
-      client: {{ env "CLIENT" | default "client1" }}
-    ingressInternalClass: {{ .Values.stacks.ingress.classInternal }}
+  - zone: internal
+    app: kubernetes-dashboard
+    ingressClassMap:
+      internal: {{ .Values.stacks.ingress.classInternal }}
+    # certificate:
+    #   enabled: true
+    #   name: dashboard-ingress-cert
+    #   selfSigned: true
+    #   commonName: dashboard.{{ .Values.stacks.ingress.zoneInternal }}
+    #   isCA: false
     ingress:
       enabled: true
       tlsEnabled: true
       hosts:
       - name: dashboard.{{ .Values.stacks.ingress.zoneInternal }}
+        secretName: ingress-kubernetes-dashboard
         config:
           http:
             paths:
@@ -367,30 +373,4 @@ releases:
               backend:
                 serviceName: kubernetes-dashboard
                 servicePort: 443
-{{- end }}
-{{- if .Values.stacks.ingress.istio }}
-- name: istio-kubernetes-dashboard
-  chart: incubator/raw
-  namespace: kubernetes-dashboard
-  installed: true
-  needs:
-  - kube-system/namespace-dashboard
-  values:
-  - resources:
-    - apiVersion: networking.istio.io/v1alpha3
-      kind: VirtualService
-      metadata:
-        name: istio-kubernetes-dashboard
-      spec:
-        hosts:
-        - "dashboard.{{ .Values.stacks.ingress.zoneInternal }}"
-        gateways:
-        - {{ .Values.stacks.ingress.istioIngressGateway }}
-        http:
-        - name: "kubernetes-dashboard"
-          route:
-          - destination:
-              port:
-                number: 443
-              host: "kubernetes-dashboard.kubernetes-dashboard.svc.cluster.local"
 {{- end }}

@@ -15,7 +15,7 @@ repositories:
 releases:
 - name: config-keyvault-security
   namespace: {{ env "STACK_KEYVAULT_NAMESPACE" | default "security" }}
-  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
   installed: {{ env "STACK_KEYVAULT" | default "true" }}
   labels:
     chart: config-keyvault-security

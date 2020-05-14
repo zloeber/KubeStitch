@@ -13,7 +13,7 @@ repositories:
   url: "https://kubernetes-charts.storage.googleapis.com/"
 
 releases:
-## Deploy kafka-manager using archtype
+## Deploy kafka-manager using archetype
 - name: kafka-manager
   namespace: database
   chart: stable/kafka-manager
@@ -38,7 +38,7 @@ releases:
 
 - name: ingress-kafkamanager
   namespace: "database"
-  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
   labels:
     chart: "ingress-kafkamanager"
     component: "ingress"

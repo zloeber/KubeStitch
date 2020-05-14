@@ -33,7 +33,7 @@ releases:
 
 - name: ingress-kafkaschemaui
   namespace: "database"
-  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
   labels:
     chart: "ingress-kafkaschemaui"
     component: "ingress"

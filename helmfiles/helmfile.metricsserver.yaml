@@ -1,0 +1,26 @@
+---
+bases:
+- ../config/environments.yaml
+- ../config/helmdefaults.yaml
+---
+
+repositories:
+- name: stable
+  url: https://kubernetes-charts.storage.googleapis.com
+
+releases:
+- name: metrics-server
+  chart: stable/metrics-server
+  wait: true
+  installed: true
+  namespace: kube-system
+  labels:
+    chart: metrics-server
+    repo: "stable"
+    component: "monitoring"
+    namespace: "kube-system"
+    vendor: "kubernetes"
+  values:
+  - args:
+    - '--kubelet-insecure-tls'
+    - '--kubelet-preferred-address-types=InternalIP'

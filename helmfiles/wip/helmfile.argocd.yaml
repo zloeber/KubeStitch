@@ -108,7 +108,7 @@ releases:
           options: {}
 # - name: ingress-argocd
 #   namespace: {{ env "STACK_ARGOCD_NAMESPACE" | default "argocd" }}
-#   chart: "../charts/archtype"
+#   chart: "../charts/archetype"
 #   installed: {{ env "STACK_ARGOCD" | default "true" }}
 #   labels:
 #     chart: "ingress-argocd"
@@ -145,7 +145,7 @@ releases:
 
 # - name: ingress-argocd-grpck
 #   namespace: {{ env "STACK_ARGOCD_NAMESPACE" | default "argocd" }}
-#   chart: "../charts/archtype"
+#   chart: "../charts/archetype"
 #   installed: {{ env "STACK_ARGOCD" | default "true" }}
 #   labels:
 #     chart: "ingress-argocd"

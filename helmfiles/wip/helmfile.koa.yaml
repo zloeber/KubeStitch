@@ -85,7 +85,7 @@ releases:
 
 - name: ingress-koa
   namespace: {{ env "STACK_KOA_NAMESPACE" | default "koa" }}
-  chart: {{ env "ARCHTYPE_CHART" | default "../charts/custom/archtype" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/custom/archetype" }}
   installed: {{ env "PLATFORM_koa_INSTALLED" | default "true" }}
   labels:
     chart: "ingress-koa"

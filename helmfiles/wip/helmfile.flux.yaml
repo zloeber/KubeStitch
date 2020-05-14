@@ -27,7 +27,7 @@ releases:
 - name: ingress-flux
   namespace: "flux"
   version: 0.0.1
-  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
   labels:
     chart: "ingress-flux"
     component: "ingress"
@@ -54,7 +54,7 @@ releases:
 # - name: loadbalancer-flux
 #   namespace: "flux"
 #   version: 0.0.1
-#   chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+#   chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
 #   labels:
 #     chart: "loadbalancer-flux"
 #     component: "loadbalancer"

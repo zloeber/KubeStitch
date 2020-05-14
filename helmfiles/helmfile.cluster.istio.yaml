@@ -1,12 +1,11 @@
 ---
 bases:
 - ../config/environments.yaml
-#- ../config/helmdefaults.yaml
 ---
 
 helmfiles:
 - ../helmfiles/helmfile.cert-manager.yaml
 - ../helmfiles/helmfile.security.yaml
-- ../helmfiles/helmfile.heapster.yaml
+- ../helmfiles/helmfile.metricsserver.yaml
 - ../helmfiles/helmfile.dashboard.yaml
 #- ../helmfiles/helmfile.nginx-ingress.yaml

@@ -4,10 +4,6 @@ BIN_PATH ?= $(ROOT_PATH)/.local/bin
 yq ?= $(BIN_PATH)/yq
 istioctl := $(BIN_PATH)/istioctl
 
-ifneq (,$(wildcard $(yq)))
-STACK_INGRESS_INTERNALZONE := $(shell $(yq) r $(CONFIG_PATH)/environment.$(ENVIRONMENT).yaml stacks.ingress.zoneInternal)
-endif
-
 .PHONY: .dep/istioctl
 .dep/istioctl: ## Install istioctl locally
 ifeq (,$(wildcard $(INSTALL_PATH)/istioctl))
@@ -54,28 +50,10 @@ istio/dashboard/%: ## Access istio dashboard
 	  --context $(KUBE_CLUSTER_CONTEXT)
 
 .PHONY: istio/start/dnsforward
-istio/start/dnsforward: istio/stop/dnsforward ## Forwards all dns requests to a local dns-proxy-server
-	tmpdir=$$(mktemp -d) && echo "$${tmpdir}" && \
-	export STACK_INGRESS_INTERNALIP=`$(kubecmd) -n istio-system get svc istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}'` && \
-	$(gomplate) \
-		-d config=$(CONFIG_PATH)/environment.$(ENVIRONMENT).yaml \
-		--file $(DEPLOY_PATH)/dnsproxy/config.json \
-		--out "$${tmpdir}/config.json" && \
-	docker run --rm -d \
-		--hostname $(STACK_INGRESS_INTERNALZONE) \
-		--name dns-proxy-server \
-		-p 5380:5380 \
-		-v $${tmpdir}:/app/conf \
-		-v /var/run/docker.sock:/var/run/docker.sock \
-		-v /etc/resolv.conf:/etc/resolv.conf \
-		defreitas/dns-proxy-server
-	@echo ""
-	@echo "STACK_INGRESS_INTERNALZONE=$(STACK_INGRESS_INTERNALZONE)"
-	@echo "View dnsforwarding admin page at: http://localhost:5380"
+istio/start/dnsforward: dnsforward/stop dnsforward/start ## Forwards all dns requests to a local dns-proxy-server
 
 .PHONY: istio/stop/dnsforward
-istio/stop/dnsforward: ## Stop the dns forwarding container
-	docker stop dns-proxy-server || true
+istio/stop/dnsforward: dnsforward/stop ## Stop the dns forwarding container
 
 .PHONY: istio/watch/ingress
 istio/watch/ingress: ## Show istio ingress logs

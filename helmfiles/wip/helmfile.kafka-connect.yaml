@@ -50,7 +50,7 @@ releases:
 
 - name: ingress-kafkaconnect
   namespace: "database"
-  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
   labels:
     chart: "ingress-kafkaconnect"
     component: "ingress"

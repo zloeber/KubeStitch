@@ -30,7 +30,7 @@ releases:
 - name: ingress-kuberhealthy
   namespace: {{ env "STACK_MONITORING_NAMESPACE" | default "monitoring" }}
   version: 0.0.1
-  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
   labels:
     chart: "ingress-kuberhealthy"
     component: "ingress"

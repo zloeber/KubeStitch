@@ -28,7 +28,7 @@ releases:
 
 - name: ingress-weavescope
   namespace: weavescope
-  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
   labels:
     chart: ingress-weavescope
     component: ingress
@@ -55,7 +55,7 @@ releases:
 
 - name: weavescope-security
   namespace: weavescope
-  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
   labels:
     chart: weavescope-security
     component: security

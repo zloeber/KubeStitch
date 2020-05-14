@@ -13,7 +13,7 @@ helmDefaults:
 releases:
 - name: dataflow-monitors
   namespace: monitoring
-  chart: ../charts/archtype
+  chart: ../charts/archetype
   labels:
     chart: dataflow-monitors
     component: monitoring

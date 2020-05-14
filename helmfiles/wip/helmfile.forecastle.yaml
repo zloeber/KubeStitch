@@ -114,7 +114,7 @@ releases:
 
 - name: ingress-forecastle
   namespace: "forecastle"
-  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
   labels:
     chart: ingress-forecastle
     component: ingress

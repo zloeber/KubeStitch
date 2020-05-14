@@ -180,7 +180,7 @@ releases:
 {{- if eq (env "CICD" | default "false") "false" }}
 - name: loadbalancer-zookeeper
   namespace: "database"
-  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
   labels:
     chart: "loadbalancer-zookeeper"
     component: "loadbalancer"
@@ -217,7 +217,7 @@ releases:
 {{- if eq (env "CICD" | default "false") "false" }}
 - name: loadbalancer-kafkacluster
   namespace: "database"
-  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
   labels:
     chart: "loadbalancer-kafkacluster"
     component: "loadbalancer"
@@ -254,7 +254,7 @@ releases:
 
 - name: ingress-kafka
   namespace: "database"
-  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
   labels:
     chart: "ingress-kafka"
     component: "ingress"
@@ -285,7 +285,7 @@ releases:
 
 - name: ingress-kafkaconnect
   namespace: "database"
-  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
   labels:
     chart: "ingress-kafkaconnect"
     component: "ingress"
@@ -316,7 +316,7 @@ releases:
 
 - name: ingress-kafkarest
   namespace: "database"
-  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
   labels:
     chart: "ingress-kafkarest"
     component: "ingress"
@@ -347,7 +347,7 @@ releases:
 
 - name: ingress-schemaregistry
   namespace: "database"
-  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
   labels:
     chart: "ingress-schemaregistry"
     component: "ingress"
@@ -378,7 +378,7 @@ releases:
 
 - name: ingress-ksqlserver
   namespace: "database"
-  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
   labels:
     chart: "ingress-ksqlserver"
     component: "ingress"

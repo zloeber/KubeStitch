@@ -78,7 +78,7 @@ releases:
 - name: sparkoperator-kv-inject
   force: true
   namespace: sparkoperator
-  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
   labels:
     name: sparkoperator-kv-inject
     namespace: sparkoperator
@@ -138,7 +138,7 @@ releases:
 ## Create a base self-signed cert
 - name: "sparkoperator-certca-sparkstream"
   namespace: 'sparkoperator'
-  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
   labels:
     chart: "sparkoperator-certca-sparkstream"
     component: "certificate"
@@ -166,7 +166,7 @@ releases:
 ## Create the spark webhook cert from self-signed cert
 - name: sparkoperator-certwebhook-sparkstream
   namespace: 'sparkoperator'
-  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
   labels:
     chart: sparkoperator-certwebhook-sparkstream
     component: "certificate"
@@ -245,7 +245,7 @@ releases:
 
 - name: ingress-spark-history
   namespace: sparkoperator
-  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
   labels:
     chart: ingress-spark-history
     component: ingress
@@ -293,7 +293,7 @@ releases:
 
 # - name: ingress-spark-sparkoperator
 #   namespace: sparkoperator
-#   chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+#   chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
 #   labels:
 #     chart: ingress-spark-sparkoperator
 #     component: ingress

@@ -1,6 +1,6 @@
 releaseName: default
 cloud: local
-archtypeChart: ../charts/archtype
+archetypeChart: ../charts/archetype
 kube:
   rbac: true
   helmVersion: "3"
@@ -8,12 +8,16 @@ stacks:
   security:
     installed: true
     namespace: security
+  istio:
+    installed: true
+    ingressGatewaySelector:
+      istio: ingressgateway
+
   ingress:
     installed: false
     istio: true
-    istioIngressGateway: istio-ingressgateway
-    namespaceInternal: ingress-int
-    namespaceExternal: ingress-ext
+    namespaceInternal: istio-system
+    namespaceExternal: istio-system
     classStage: stage
     classInternal: internal
     classExternal: external

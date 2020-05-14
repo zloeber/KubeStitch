@@ -36,7 +36,7 @@ releases:
 - name: ingress-sonarqube
   namespace: "sonarqube"
   #version: 0.0.1
-  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
   labels:
     chart: "ingress-sonarqube"
     component: "ingress"
@@ -64,7 +64,7 @@ releases:
 - name: ext-ingress-sonarqube
   namespace: "sonarqube"
   #version: 0.0.1
-  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
   labels:
     chart: "ext-ingress-sonarqube"
     component: "ingress"

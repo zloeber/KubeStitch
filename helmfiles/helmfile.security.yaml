@@ -46,7 +46,7 @@ releases:
 
 - name: config-security
   namespace: {{ .Values.stacks.security.namespace | default "security" }}
-  chart: {{ .Values.archtypeChart | default "../charts/archtype" }}
+  chart: {{ .Values.archetypeChart | default "../charts/archetype" }}
   labels:
     chart: config-security
     component: security

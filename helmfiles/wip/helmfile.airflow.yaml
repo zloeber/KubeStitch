@@ -19,8 +19,8 @@ repositories:
   url: https://kubernetes-charts.storage.googleapis.com/
 - name: incubator
   url: https://kubernetes-charts-incubator.storage.googleapis.com
-# - name: archtype
-#   url: git+ssh://ssh.dev.azure.com/v3/adodevopsorg/NextGen/CICD@charts/archtype?ref=master
+# - name: archetype
+#   url: git+ssh://ssh.dev.azure.com/v3/adodevopsorg/NextGen/CICD@charts/archetype?ref=master
 # - name: airflow
 #   url: git+ssh://ssh.dev.azure.com/v3/adodevopsorg/NextGen/CICD@charts/airflow-chart?ref=master
 
@@ -66,7 +66,7 @@ releases:
 
 - name: airflow-kv-injection
   namespace: airflow
-  chart: ../charts/archtype
+  chart: ../charts/archetype
   labels:
     name: airflow-kv-injection
     namespace: airflow
@@ -266,7 +266,7 @@ releases:
 
 - name: ingress-airflow-web
   namespace: airflow
-  chart: ../charts/archtype
+  chart: ../charts/archetype
   labels:
     chart: ingress-airflow-web
     component: ingress
@@ -293,7 +293,7 @@ releases:
 
 - name: ingress-airflow-flower
   namespace: airflow
-  chart: ../charts/archtype
+  chart: ../charts/archetype
   labels:
     chart: "ingress-airflow-flower"
     component: "ingress"

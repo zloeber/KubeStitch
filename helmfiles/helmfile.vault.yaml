@@ -1,0 +1,82 @@
+---
+bases:
+- ../config/environments.yaml
+- ../config/helmdefaults.yaml
+---
+
+repositories:
+- name: incubator
+  url: https://kubernetes-charts-incubator.storage.googleapis.com
+- name: vault
+  url: "git+https://github.com/hashicorp/vault-helm@/"
+
+###############
+## Hashicorp vault
+releases:
+- name: namespace-vault
+  chart: ../charts/namespace/chart/namespace
+  namespace: kube-system
+  labels:
+    chart: namespace-vault
+    component: vault
+    namespace: kube-system
+  wait: true
+  installed: true
+  values:
+  - namespaces:
+    - vault
+
+## vault Deployment
+- name: vault
+  namespace: vault
+  installed: true
+  chart: vault/vault
+  labels:
+    chart: vault
+    component: vault
+    namespace: vault
+  needs:
+    - kube-system/namespace-vault
+  values:
+  - dev:
+      enabled: true
+    dataStorage:
+      enabled: true
+      size: 2Gi
+    ui:
+      enabled: true
+
+- name: ingress-vault
+  namespace: "vault"
+  chart: {{ .Values.archetypeChart }}
+  installed: true
+  needs:
+  - kube-system/namespace-vault
+  labels:
+    chart: ingress-vault
+    component: ingress
+    namespace: vault
+  values:
+  - zone: internal
+    app: vault-dashboard
+    ingressClassMap:
+      internal: {{ .Values.stacks.ingress.classInternal }}
+    # certificate:
+    #   enabled: true
+    #   name: dashboard-ingress-cert
+    #   selfSigned: true
+    #   commonName: dashboard.{{ .Values.stacks.ingress.zoneInternal }}
+    #   isCA: false
+    ingress:
+      enabled: true
+      tlsEnabled: true
+      hosts:
+      - name: vault.{{ .Values.stacks.ingress.zoneInternal }}
+        secretName: ingress-vault-dashboard
+        config:
+          http:
+            paths:
+            - path: "/"
+              backend:
+                serviceName: vault
+                servicePort: 8200

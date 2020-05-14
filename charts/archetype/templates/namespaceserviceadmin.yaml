@@ -11,9 +11,9 @@
 apiVersion: rbacmanager.reactiveops.io/v1beta1
 kind: RBACDefinition
 metadata:
-  name: rbac-{{ $projectServiceAdmin.name | default .Release.Namespace }}-{{ $project.team }}-{{ $project.workload }}
+  name: rbac-{{ $projectServiceAdmin.name | default .Release.Namespace }}-service-admin
 rbacBindings:
-- name: rbac-{{ $projectServiceAdmin.name | default .Release.Namespace }}-{{ $project.team }}-{{ $project.workload }}
+- name: rbac-{{ $projectServiceAdmin.name | default .Release.Namespace }}-service-admin
   subjects:
     - kind: ServiceAccount
       name: {{ $projectServiceAdmin.serviceAccount }}
@@ -25,11 +25,7 @@ rbacBindings:
             operator: In
             values:
               - {{ .Release.Namespace }}
-              # - {{ $project.team }}-test-{{ $project.workload }}
-              # - {{ $project.team }}-dev-{{ $project.workload }}
-              # - {{ $project.team }}-qa-{{ $project.workload }}
-              # - {{ $project.team }}-preprod-{{ $project.workload }}
-              # - {{ $project.team }}-prod-{{ $project.workload }}
+
 {{- end }}
 
 {{- end -}}

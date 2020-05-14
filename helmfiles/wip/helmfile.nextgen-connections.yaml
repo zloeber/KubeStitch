@@ -13,7 +13,7 @@ releases:
 ## Deploy nextgen configmap for dev-policy
 - name: confmap-inventory-dev-policy
   namespace: "nextgen-dev-policy"
-  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
   version: 0.0.1
   labels:
     chart: "nextgen-dev-policy"
@@ -41,7 +41,7 @@ releases:
 # - name: servicemonitor-sparkstream-execs
 #   namespace: {{ env "STACK_MONITORING_NAMESPACE" | default "monitoring" }}
 #   version: 0.0.1
-#   chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+#   chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
 #   labels:
 #     chart: "servicemonitor-sparkstream-execs"
 #     component: "servicemonitor"

@@ -4,10 +4,9 @@
 {{- $overrides := dict "Values" $noCommon -}}
 {{- $noValues := omit . "Values" -}}
 {{- with merge $noValues $overrides $common -}}
-
 {{- $config := .Values.ingress -}}
 
-{{- if $config.enabled }}
+{{- if and $config.enabled ( eq $config.type "standard" ) }}
 apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
@@ -17,28 +16,22 @@ metadata:
     {{- with $config.annotations }}
     {{ toYaml . | nindent 4 }}
     {{- end }}
-{{- else }}
-    service.beta.kubernetes.io/{{ .Values.cloud | default "azure" }}-load-balancer-internal: {{ .Values.enableInternalIngress | default "true" | quote }}
-    forecastle.stakater.com/expose: {{ .Values.ingress.forecastle | default "false" | quote }}
-    nginx.ingress.kubernetes.io/ssl-redirect: "{{ .Values.enableSSLRedirect }}"
-{{- if $config.internal }}
-    kubernetes.io/ingress.class: {{ .Values.ingressInternalClass | default "internal" | quote }}
-    certmanager.k8s.io/cluster-issuer: "{{ .Values.internalCertIssuer }}"
-{{- else if $config.external }}
-    kubernetes.io/ingress.class: {{ .Values.ingressExternalClass | default "external" | quote }}
-    certmanager.k8s.io/cluster-issuer: "{{ .Values.externalCertIssuer }}"
-{{- else }}
-    kubernetes.io/ingress.class: {{ .Values.ingressClass | default "nginx" | quote }}
-    certmanager.k8s.io/cluster-issuer: "{{ .Values.certIssuer }}"
 {{- end }}
-    prometheus.io/scrape: {{ $config.prometheusScraped | default "false" | quote }}
+{{- include "archetype.ingress.class" $root | nindent 4 }}
+{{- include "archetype.certissuer" (list .Values.certIssuerMap .Values.zone) | nindent 4 }}
+{{- if $config.forecastle }}
+    forecastle.stakater.com/expose: {{ .Values.ingress.forecastle | quote }}
+{{- end }}
+    service.beta.kubernetes.io/{{ .Values.cloud | default "local" }}-load-balancer-internal: "true" }}
+{{- if $config.prometheusScraped }}
+    prometheus.io/scrape: "true"
     prometheus.io/port: {{ $config.prometheusPort | default "5555" | quote }}
+{{- end }}
+{{- if $config.enableSSLRedirect }}
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+{{- end }}
 {{- if $config.rewrite }}
     ingress.kubernetes.io/rewrite-target: {{ $config.rewriteTarget | default "/" | quote }}
-    {{- with $config.additionalAnnotations }}
-    {{ toYaml . | nindent 4 }}
-    {{- end }}
-{{- end }}
 {{- end }}
   labels:
     ingressName: {{ include "common.shortname" $root }}

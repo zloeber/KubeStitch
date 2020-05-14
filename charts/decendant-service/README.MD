@@ -1,6 +1,6 @@
 ## Generic Scala Service Chart
 
-This is a wrapper around the archtype chart.
+This is a wrapper around the archetype chart.
 
 ## Service Monitoring
 

@@ -66,7 +66,7 @@ releases:
 - name: service-elasticcluster
   namespace: "logging"
   version: 0.0.1
-  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
   labels:
     chart: "elasticcluster"
     component: "loadbalancer"
@@ -170,7 +170,7 @@ releases:
 - name: ingress-elasticsearch
   namespace: "logging"
   version: 0.0.1
-  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
   labels:
     chart: "ingress-elasticsearch"
     component: "ingress"

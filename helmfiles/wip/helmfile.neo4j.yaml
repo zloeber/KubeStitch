@@ -54,7 +54,7 @@ releases:
 
 - name: ingress-neo4j
   namespace: "{{ env "STACK_NEO4J_NAMESPACE" | default "neo4j" }}"
-  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
   labels:
     chart: ingress-neo4j
     component: neo4j
@@ -84,7 +84,7 @@ releases:
 
 - name: loadbalancer-neo4j
   namespace: "{{ env "STACK_NEO4J_NAMESPACE" | default "neo4j" }}"
-  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
   labels:
     chart: "loadbalancer-neo4j"
     component: "neo4j"

@@ -1,33 +1,60 @@
-## These will be used to infer labels and other vital origin information
-project:
-  buildid: cicd
-  team: inv
-  target: targetenv
-  client: mcd
-  workload: spark
-  app: stream
-  stage: test
-
-## Globals
-cloud: azure
-dnsZone: "micro.svc"
-replicaCount: 1
-ingressClass: "internal"
-ingressInternalClass: "internal"
-ingressExternalClass: "external"
-certissuer: "local-selfsigned-issuer"
-internalCertIssuer: "default"
-stagingCertIssuer: "letsencrypt-staging"
-externalCertIssuer: "letsencrypt-prod"
+## Top level default settings
+app: 
+cloud: local # Can be used to implement cloud specific internal loadbalancers (for example)
+zone: internal # Used by various lookups
+dnsZone: micro.svc # root level dns zone for this cluster
+ingressClass: nginx
+replicaCount: 1 # default deployment replica count
 enablePrometheusScrape: false
 enableSSLRedirect: false
 enableInternalIngress: true
 keyvaultInjection: false
 injectionEnabled: false
-serviceTests: false
-ingressTests: false
-#keyvaultName: 
+serviceTests: false ## Used to enable service post helm deployment testing pods
+ingressTests: false ## used to enable ingress post helm deployment testing pods
 
+## Global overrides (primarily affects release names)
+global:
+  fullnamePrefix: ""
+  fullnamePrefix: ""
+
+## Default port assignments
+ports:
+  internal: 8080
+  external: 80
+  tls_internal: 4443
+  tls_external: 443
+  prometheus: 5555
+  jmx: 8090
+  readiness: 8081
+  liveleness: 8081
+
+## Mapping of zone names to dns subdomains
+zoneMap:
+  internal: int
+  external: ext
+  staging: stage
+  default: ""
+
+## A mapping of zone names to ingress class names if ingressClass is not defined (default is not defined)
+ingressClassMap:
+  internal: int
+  external: ext
+  staging: stage
+  default: nginx
+
+## A mapping of zone names to certificate issuers
+certIssuerMap:
+  internal:
+    cert-manager.io/cluster-issuer: "default"
+  external:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+  staging:
+    cert-manager.io/cluster-issuer: "letsencrypt-staging"
+  default:
+    cert-manager.io/cluster-issuer: "default"
+
+## Specific to spark operator deployments
 sparkoperator:
   enabled: false
 sparkApplications:
@@ -52,9 +79,9 @@ sparkApplications:
 
 sparkStreams:
   enabled: false
-  repository: "projecttargetenv.azurecr.io"
-  jarpath: "local:///opt/spark/jars"
-  image: "inv-stream"
+  repository: projecttargetenv.azurecr.io
+  jarpath: local:///opt/spark/jars
+  image: imagename
   version: "2.4.4"
   type: scala
   mode: cluster
@@ -322,17 +349,6 @@ cronjob:
       # command:
       args: []
 
-ports:
-  default:
-    internal: 8080
-    external: 80
-    tls_internal: 4443
-    tls_external: 443
-    prometheus: 5555
-    jmx: 8090
-    readiness: 8081
-    liveleness: 8081
-
 certificate:
   enabled: false
   name: localhost
@@ -441,8 +457,12 @@ clusterRoleBinding:
 # Custom ingress
 ingress:
   enabled: false
-  internal: true
-  external: false
+  type: standard
+  zone: internal  # possible values = internal, external, staging
+  istio:
+    gateway: []
+    gatewaySelector:
+      istio: ingressgateway
   forecastle: false
   prometheusScraped: false
   prometheusPort: 5555
@@ -455,7 +475,6 @@ ingress:
   ## Define an empty annotations to have no annotations at all for ingress created (as an example)
   # annotations: {}
   labels: {}
-
   # annotations:
   #   # kubernetes.io/ingress.class: nginx
   #   # kubernetes.io/tls-acme: "true"
@@ -469,9 +488,13 @@ ingress:
   #           serviceName: kube-resource-report
   #           servicePort: 80
   #tls:
-#    - secretName: server-tls
-#      hosts:
-#      - domain.com
+  #    - secretName: server-tls
+  #      hosts:
+  #      - domain.com
+
+# Istio Settings
+
+  #gateway:
 
 # configmaps:
 #   coredns-custom:

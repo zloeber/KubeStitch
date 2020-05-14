@@ -1,0 +1,23 @@
+ROOT_PATH ?= $(abspath $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST))))))
+BIN_PATH ?= $(ROOT_PATH)/.local/bin
+FURY_VERSION ?= 1.1.0
+
+furyctl := $(BIN_PATH)/furyctl
+
+.PHONY: .fury/init
+.fury/init: ## Install fury
+	$(furyctl) init --version v$(FURY_VERSION)
+
+.PHONY: fury/deploy
+fury/deploy: ## Deploy fury stacks
+	cd $(DEPLOY_PATH)/fury && $(furyctl) vendor
+
+.PHONY: .dep/fury
+.dep/fury: ## Install fury locally
+ifeq (,$(wildcard $(furyctl)))
+	@$(MAKE) --no-print-directory -C $(APP_PATH)/githubapp auto sighupio/furyctl INSTALL_PATH=$(BIN_PATH)
+	@echo "Installed: $(furyctl)"
+endif
+
+.PHONY: .deps/fury
+.deps/fury: .dep/fury ## Install dependencies

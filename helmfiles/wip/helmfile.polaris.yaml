@@ -21,7 +21,7 @@ releases:
 
 - name: ingress-polaris
   namespace: {{ env "STACK_MONITORING_NAMESPACE" | default "monitoring" }}
-  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
   labels:
     chart: "ingress-polaris"
     component: "ingress"

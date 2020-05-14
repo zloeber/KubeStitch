@@ -9,6 +9,6 @@ appVersion: 0.0.1
 maintainers:
   - name: Zachary Loeber
 dependencies:
-  - name: archtype
+  - name: archetype
     version: "0.0.1"
     repository: https://mycontainerrepo.azurecr.io/helm/v1/repo

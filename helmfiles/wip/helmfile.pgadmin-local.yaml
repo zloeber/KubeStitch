@@ -44,7 +44,7 @@ releases:
             MaintenanceDB: "postgres"
 - name: ingress-pgadmin
   namespace: "pgadmin"
-  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
   labels:
     chart: "ingress-pgadmin"
     component: "database"

@@ -1,0 +1,9 @@
+Service deployed - 
+  App: {{ .Values.archetype.app | default "" | quote }}
+  Zone: {{ .Values.archetype.zone | default "" | quote }}
+
+Liveliness Probe Enabled: {{ .Values.archetype.deployment.livelinessProbe.enabled | default "false" | quote }}
+Readiness Probe Enabled: {{ .Values.archetype.deployment.readinessProbe.enabled | default "false" | quote }}
+Affinity Enabled: {{ .Values.archetype.affinity.enabled | default "false" | quote }}
+Prometheus Service Monitor Enabled: {{ .Values.archetype.prometheus.serviceMonitor.enabled | default "false" | quote }}
+Prometheus Alert Enabled: {{ .Values.archetype.prometheus.alerts.enabled | default "false" | quote }}

@@ -49,7 +49,7 @@ releases:
 
 - name: ingress-goldilocks
   namespace: {{ env "STACK_GOLDILOCKS_NAMESPACE" | default "goldilocks" }}
-  chart: {{ env "ARCHTYPE_CHART" | default "../charts/custom/archtype" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/custom/archetype" }}
   installed: {{ env "STACK_GOLDILOCKS" | default "true" }}
   labels:
     chart: "ingress-goldilocks"

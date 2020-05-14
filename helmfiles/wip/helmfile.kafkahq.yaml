@@ -22,7 +22,7 @@ releases:
 
 - name: ingress-kafkahq
   namespace: "database"
-  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
   labels:
     chart: ingress-kafkahq
     component: ingress

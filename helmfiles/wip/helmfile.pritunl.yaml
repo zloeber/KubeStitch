@@ -21,12 +21,12 @@ releases:
 - name: "pritunl"
   namespace: "vpn"
   labels:
-    chart: "archtype"
+    chart: "archetype"
     repo: "nextgen"
     component: "vpn"
     namespace: "vpn"
     default: "false"
-  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
   wait: true
   installed: {{ env "PRITUNL_INSTALLED" | default "true" }}
   values:

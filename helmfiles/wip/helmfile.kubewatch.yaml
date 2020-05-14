@@ -71,7 +71,7 @@ releases:
 
 - name: ingress-kubewatch
   namespace: "kubewatch"
-  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
   installed: {{ env "PLATFORM_TEMPLATE_INSTALLED" | default "true" }}
   labels:
     chart: "ingress-kubewatch"

@@ -65,7 +65,7 @@ releases:
 
 - name: ingress-cassandra
   namespace: "cassandra"
-  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
   labels:
     chart: "ingress-cassandra"
     component: "ingress"
@@ -96,7 +96,7 @@ releases:
 
 # - name: ingress-cassandra-reaper
 #   namespace: "cassandra"
-#   chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+#   chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
 #   labels:
 #     chart: "ingress-cassandra-reaper"
 #     component: "ingress"
@@ -124,7 +124,7 @@ releases:
 {{- if eq (env "CICD" | default "false") "false" }}
 - name: loadbalancer-cassandra
   namespace: "cassandra"
-  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
   labels:
     chart: "loadbalancer-cassandra"
     component: "loadbalancer"

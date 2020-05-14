@@ -9,10 +9,10 @@ helmDefaults:
   force: true
 
 releases:
-## Deploy kafka-connect-ui using archtype
+## Deploy kafka-connect-ui using archetype
 - name: deployment-kafkaconnectui
   namespace: "database"
-  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
 #  version: 0.0.1
   labels:
     chart: "deployment-kafkaconnectui"

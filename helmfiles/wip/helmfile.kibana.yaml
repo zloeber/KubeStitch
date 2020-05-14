@@ -54,7 +54,7 @@ releases:
 - name: ingress-kibana
   namespace: "logging"
   version: 0.0.1
-  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
   labels:
     chart: "ingress-kibana"
     component: "ingress"

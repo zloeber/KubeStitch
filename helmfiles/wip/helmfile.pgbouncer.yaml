@@ -14,7 +14,7 @@ releases:
 ## Create a base self-signed cert
 - name: "cert-pgbouncer"
   namespace: 'pgbouncer'
-  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
   labels:
     chart: "sparkoperator-pgbouncer"
     component: "certificate"

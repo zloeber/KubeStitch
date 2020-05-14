@@ -18,6 +18,12 @@ helm_binary ?= $(BIN_PATH)/helm
 helm := $(helm_binary)
 gomplate := $(BIN_PATH)/gomplate
 yq := $(BIN_PATH)/yq
+ct := $(BIN_PATH)/ct
+
+ifneq (,$(wildcard $(yq)))
+STACK_INGRESS_INTERNALZONE := $(shell $(yq) r $(CONFIG_PATH)/environment.$(ENVIRONMENT).yaml stacks.ingress.zoneInternal)
+STACK_INGRESS_INTERNALNAMESPACE := $(shell $(yq) r $(CONFIG_PATH)/environment.$(ENVIRONMENT).yaml stacks.ingress.namespaceInternal)
+endif
 
 .PHONY: .dep/helmfile
 .dep/helmfile: ## Install helmfile
@@ -25,6 +31,13 @@ ifeq (,$(wildcard $(helmfile_binary)))
 	@$(MAKE) --no-print-directory -C $(APP_PATH)/githubapp reset helmfile INSTALL_PATH=$(INSTALL_PATH)
 	@$(MAKE) --no-print-directory -C $(APP_PATH)/githubapp auto roboll/helmfile INSTALL_PATH=$(INSTALL_PATH)
 	@echo "Installed: $(helmfile_binary)"
+endif
+
+.PHONY: .dep/ct
+.dep/ct: ## Install ct locally
+ifeq (,$(wildcard $(ct)))
+	@$(MAKE) --no-print-directory -C $(APP_PATH)/githubapp auto helm/chart-testing PACKAGE_EXE=ct INSTALL_PATH=$(INSTALL_PATH)
+	@echo "Installed: $(ct)"
 endif
 
 .PHONY: .dep/gomplate
@@ -55,7 +68,7 @@ endif
 
 
 .PHONY: .deps/helm
-.deps/helm: .dep/helm .dep/helmfile .helm/plugins ## Install yq, helm, helmfile, and plugins locally
+.deps/helm: .dep/helm .dep/ct .dep/helmfile .helm/plugins ## Install yq, ct, helm, helmfile, and plugins locally
 
 .PHONY: helmfile/list
 helmfile/list: ## Lists all available helmfiles
@@ -94,3 +107,10 @@ helmfile/reload: helmfile/destroy helmfile/sync ## Removes then adds STACK from 
 .PHONY: helmfile/scorch
 helmfile/scorch: helmfile/destroy ## (WARNING!) Removes stack then its namespace if possible
 	$(kubecmd) delete namespace $(STACK)
+
+.PHONY: show/helm
+show/helm: ## Show helm settings
+	@echo "export XDG_CACHE_HOME=$(XDG_CACHE_HOME)"
+	@echo "export XDG_CONFIG_HOME=$(XDG_CONFIG_HOME)"
+	@echo "export XDG_DATA_HOME=$(XDG_DATA_HOME)"
+	@echo "alias hlm=$(helm_binary)"

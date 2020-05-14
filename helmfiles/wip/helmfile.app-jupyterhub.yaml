@@ -36,7 +36,7 @@ releases:
 - name: ingress-jupyterhub
   namespace: "app-jupyterhub"
   version: 0.0.1
-  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
   labels:
     chart: "ingress-jupyterhub"
     component: "ingress"

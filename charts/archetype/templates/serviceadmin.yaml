@@ -25,11 +25,6 @@ rbacBindings:
             operator: In
             values:
               - {{ .Release.Namespace }}
-              # - {{ $project.team }}-test-{{ $project.workload }}
-              # - {{ $project.team }}-dev-{{ $project.workload }}
-              # - {{ $project.team }}-qa-{{ $project.workload }}
-              # - {{ $project.team }}-preprod-{{ $project.workload }}
-              # - {{ $project.team }}-prod-{{ $project.workload }}
 {{- end }}
 
 {{- end -}}

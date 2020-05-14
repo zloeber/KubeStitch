@@ -18,7 +18,7 @@ spec:
   ports:
   - name: metrics
     protocol: TCP
-    port: {{ .Values.prometheus.serviceMonitor.targetPort | default .Values.ports.default.prometheus }}
+    port: {{ .Values.prometheus.serviceMonitor.targetPort | default .Values.ports.prometheus }}
     targetPort: metrics
   selector:
     {{- include "common.service.selectors" $root | nindent 4 }}

@@ -548,7 +548,7 @@ releases:
 - name: ingress-alertmanager
   namespace: {{ env "STACK_MONITORING_NAMESPACE" | default "monitoring" }}
   installed: {{ env "STACK_MONITORING" | default true }}
-  chart: "{{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}"
+  chart: "{{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}"
   labels:
     chart: "ingress-alertmanager"
     component: "ingress"
@@ -580,7 +580,7 @@ releases:
 - name: ingress-prometheus
   namespace: {{ env "STACK_MONITORING_NAMESPACE" | default "monitoring" }}
   installed: {{ env "STACK_MONITORING" | default true }}
-  chart: "{{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}"
+  chart: "{{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}"
   labels:
     chart: "ingress-prometheus"
     component: "ingress"

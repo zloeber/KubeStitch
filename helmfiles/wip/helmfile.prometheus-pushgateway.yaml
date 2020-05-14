@@ -31,7 +31,7 @@ releases:
   - name: ingress-pushgateway
     namespace: {{ env "STACK_MONITORING_NAMESPACE" | default "monitoring" }}
     installed: {{ env "STACK_MONITORING" | default "true" }}
-    chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+    chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
     labels:
       chart: "ingress-pushgateway"
       component: "ingress"

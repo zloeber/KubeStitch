@@ -23,15 +23,15 @@ Fullname of configMap/secret that contains files
 {{- end -}}
 
 {{- define "configmap.name" -}}
-{{- default (printf "%s-config" .Values.project.app  | trunc 54 | trimSuffix "-") | lower -}}
+{{- default (printf "%s-config" .Values.app  | trunc 54 | trimSuffix "-") | lower -}}
 {{- end -}}
 
 {{- define "service.name" -}}
-{{- default (printf "%s-svc" .Values.project.app | trunc 54 | trimSuffix "-") | lower -}}
+{{- default (printf "%s-svc" .Values.app | trunc 54 | trimSuffix "-") | lower -}}
 {{- end -}}
 
 {{- define "spark.configmap.name" -}}
-{{- default (printf "%s-configmap" .Values.project.app | lower | trunc 54 | trimSuffix "-") .Values.fullnameOverride -}}
+{{- default (printf "%s-configmap" .Values.app | lower | trunc 54 | trimSuffix "-") .Values.fullnameOverride -}}
 {{- end -}}
 
 {{/*
@@ -113,39 +113,41 @@ http:
   paths:
   - backend:
       serviceName: {{ include "common.fullname" . }}
-      servicePort: {{ .Values.ports.default.external }}
+      servicePort: {{ .Values.ports.external }}
     path: "/"
 {{- end -}}
 
 {{- define "common.container.ports" -}}
 - name: www
-  containerPort: {{ .Values.ports.default.internal }}
+  containerPort: {{ .Values.ports.internal }}
 - name: metrics
-  containerPort: {{ .Values.ports.default.prometheus }}
+  containerPort: {{ .Values.ports.prometheus }}
+{{- end -}}
+
+{{- define "common.appname" -}}
+{{- .Values.app | default (include "common.name" . ) -}}
 {{- end -}}
 
 {{- define "common.service.selectors" -}}
-{{- $project := .Values.project -}}
-app: {{ $project.app | default (include "common.name" . ) | quote }}
+app: {{ template "common.appname" . | quote }}
 release: {{ .Release.Name | quote }}
-stage: {{ $project.stage | default "unknown" | quote }}
 {{- end -}}
 
 {{- define "common.service.ports" -}}
 - name: http
   protocol: TCP
-  port: {{ .Values.ports.default.external }}
-  targetPort: {{ .Values.ports.default.internal }}
+  port: {{ .Values.ports.external }}
+  targetPort: {{ .Values.ports.internal }}
 - name: https
   protocol: TCP
-  port: {{ .Values.ports.default.tls_external }}
-  targetPort: {{ .Values.ports.default.tls_internal }}
+  port: {{ .Values.ports.tls_external }}
+  targetPort: {{ .Values.ports.tls_internal }}
 {{- end -}}
 
 {{- define "spark.jmxmonitoring" -}}
 exposeDriverMetrics: true
 exposeExecutorMetrics: true
-port: {{ .Values.ports.default.jmx }}
+port: {{ .Values.ports.jmx }}
 prometheus:
   jmxExporterJar: "/prometheus/jmx_prometheus_javaagent-0.11.0.jar"
 {{- end -}}
@@ -167,19 +169,70 @@ It does minimal escaping for use in Kubernetes labels.
 Example output:
   zookeeper-1.2.3
   wordpress-3.2.1_20170219
-
 */ -}}
 {{- define "common.chartref" -}}
 {{- replace "+" "_" .Chart.Version | printf "%s-%s" .Chart.Name -}}
 {{- end -}}
 
+{{- /*
+archetype.zonemap returns a short name for the zone.
+*/ -}}
+{{- define "archetype.zonemap" -}}
+{{- $zoneMap := index . 0 -}}
+{{- $zone := index . 1 -}}
+{{- if hasKey $zoneMap $zone }}
+{{- index $zoneMap $zone -}}
+{{- end }}
+{{- end -}}
+
+{{- /*
+archetype.ingressclassmap returns a short name for the zone.
+*/ -}}
+{{- define "archetype.ingressclassmap" -}}
+{{- $classMap := index . 0 -}}
+{{- $zone := index . 1 -}}
+{{- if hasKey $classMap $zone }}
+{{- index $classMap $zone -}}
+{{- end }}
+{{- end -}}
+
+{{- /*
+common.ingress.certissuer prints a derived ingress certmanager annotation based on zone
+*/ -}}
+{{- define "archetype.certissuer" -}}
+{{- $issuerMap := index . 0 -}}
+{{- $zone := index . 1 -}}
+{{- if hasKey $issuerMap $zone }}
+{{- with (index $issuerMap $zone)}}
+{{- toYaml . }}
+{{- end }}
+{{- end }}
+{{- end -}}
+
+{{- /*
+archetype.clusterdns prints a derived dns name based on zone
+*/ -}}
+{{- define "archetype.clusterdns" -}}
+{{- $zone := include "archetype.zonemap" (list .Values.zoneMap .Values.zone) -}}
+{{- printf "%s.%s" $zone .Values.dnsZone | trimPrefix "." -}}
+{{- end -}}
+
+{{- /*
+archetype.ingress.class prints a derived ingress class based on zone
+*/ -}}
+{{- define "archetype.ingress.class" -}}
+{{- $class := include "archetype.ingressclassmap" (list .Values.ingressClassMap .Values.zone) -}}
+{{- if $class -}}
+kubernetes.io/ingress.class: {{ $class | quote }}
+{{- end -}}
+{{- end -}}
+
 {{- define "common.fullname" -}}
-{{- $global := default (dict) .Values.global -}}
 {{- $base := default (printf "%s-%s" .Release.Name .Chart.Name) .Values.fullnameOverride -}}
-{{- $gpre := default "" $global.fullnamePrefix -}}
+{{- $gpre := default "" .Values.global.fullnamePrefix -}}
 {{- $pre := default "" .Values.fullnamePrefix -}}
 {{- $suf := default "" .Values.fullnameSuffix -}}
-{{- $gsuf := default "" $global.fullnameSuffix -}}
+{{- $gsuf := default "" .Values.global.fullnameSuffix -}}
 {{- $name := print $gpre $pre $base $suf $gsuf -}}
 {{- $name | lower | trunc 54 | trimSuffix "-" -}}
 {{- end -}}
@@ -193,41 +246,19 @@ This takes the same parameters as common.fullname
 {{- end }}
 
 {{- define "common.shortname" -}}
-{{- $global := default (dict) .Values.global -}}
 {{- $base := default (printf "%s" .Release.Name) .Values.fullnameOverride -}}
 {{- $name := print $base -}}
 {{- $name | lower | trunc 54 | trimSuffix "-" -}}
-{{- end -}}
-
-{{- define "ingress.int.annotations" -}}
-{{- $project := .Values.project -}}
-ingress.kubernetes.io/rewrite-target: "/"
-nginx.ingress.kubernetes.io/ssl-redirect: "{{ .Values.enableSSLRedirect }}"
-certmanager.k8s.io/cluster-issuer: "{{ .Values.internalCertIssuer }}"
-prometheus.io/scrape: {{ .Values.enablePrometheusScrape | default "false" | quote }}
-prometheus.io/port: {{ .Values.ports.default.prometheus | default "5555" | quote }}
-service.beta.kubernetes.io/azure-load-balancer-internal: {{ .Values.enableInternalIngress | default "true" | quote }}
-forecastle.stakater.com/expose: {{ .Values.ingress.forecastle | default "false" | quote }}
-{{- end -}}
-
-{{- define "ingress.ext.annotations" -}}
-{{- $project := .Values.project -}}
-ingress.kubernetes.io/rewrite-target: "/"
-certmanager.k8s.io/cluster-issuer: "{{ .Values.externalCertIssuer }}"
 {{- end -}}
 
 {{- /*
 standard labels for project deployments
 */ -}}
 {{- define "common.labels" -}}
-{{- $project := .Values.project -}}
-{{- $clusterdns :=  printf "%s.%s.%s" .Values.project.team .Values.project.target .Values.dnsZone -}}
-app: {{ $project.app | default (include "common.name" . ) | quote }}
+app: {{ include "common.appname" . | quote }}
 chart: {{ template "common.chartref" . }}
 heritage: {{ .Release.Service | quote }}
 release: {{ .Release.Name | quote }}
-stage: {{ $project.stage | default "unknown" | quote }}
-target: {{ $project.target | default "unknown" | quote }}
-zone: {{ $clusterdns | quote }}
-namespace: "{{ .Release.Namespace }}"
+zone: {{ .Values.zone | quote }}
+namespace: {{ .Release.Namespace | quote }}
 {{- end -}}

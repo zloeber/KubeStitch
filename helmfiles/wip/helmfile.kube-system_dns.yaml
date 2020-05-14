@@ -5,7 +5,7 @@ releases:
 - name: loadbalancer-coredns
   namespace: "kube-system"
   #version: 0.0.1
-  chart: "../charts/archtype/"
+  chart: "../charts/archetype/"
   labels:
     chart: "loadbalancer-coredns"
     component: "loadbalancer"
@@ -34,7 +34,7 @@ releases:
 
 - name: "config-corp-coredns"
   namespace: "kube-system"
-  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
   #version: 0.0.1
   labels:
     chart: "config-coredns"

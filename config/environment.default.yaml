@@ -1,6 +1,6 @@
 releaseName: default
 cloud: local
-archtypeChart: ../charts/archtype
+archetypeChart: ../charts/archetype
 kube:
   rbac: true
   helmVersion: "3"
@@ -25,8 +25,10 @@ stacks:
     installed: true
     namespace: cert-manager
     serviceaccountname: ""
-    email: zloeber@gmail.com
-    IAMRole: ""
+    email: someuser@realdomain.com
+    issuerDefault: default
+    issuerStaging: letsencrypt-staging
+    issuerProduction: letsencrypt-prod
   monitoring:
     installed: false
     namespace: monitoring

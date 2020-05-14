@@ -9,10 +9,10 @@ helmDefaults:
   force: true
 
 releases:
-## Deploy zipkin using archtype
+## Deploy zipkin using archetype
 - name: deployment-zipkin
   namespace: "database"
-  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
 #  version: 0.0.1
   labels:
     chart: "deployment-zipkin"

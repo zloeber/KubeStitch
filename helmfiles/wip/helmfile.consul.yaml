@@ -78,7 +78,7 @@ releases:
     
 - name: ingress-consul
   namespace: "consul"
-  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
   installed: {{ env "PLATFORM_CONSUL_INSTALLED" | default "true" }}
   labels:
     chart: "ingress-consul"

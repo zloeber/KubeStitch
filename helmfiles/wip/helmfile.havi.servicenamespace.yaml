@@ -19,7 +19,7 @@ repositories:
 releases:
 - name: 'service-namespace-{{ env "TEAM" | default "team1" }}-{{ env "STAGE" | default "dev" }}-{{ env "APP" | default "stream" }}'
   namespace: '{{ env "TEAM" | default "team1" }}-{{ env "STAGE" | default "dev" }}-{{ env "APP" | default "stream" }}'
-  chart: "baserepo/archtype"
+  chart: "baserepo/archetype"
   labels:
     name: 'service-namespace-{{ env "TEAM" | default "team1" }}-{{ env "STAGE" | default "dev" }}-{{ env "APP" | default "stream" }}'
     namespace: '{{ env "TEAM" | default "team1" }}-{{ env "STAGE" | default "dev" }}-{{ env "APP" | default "stream" }}'

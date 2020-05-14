@@ -12,7 +12,7 @@ helmDefaults:
 releases:
 - name: devops-exporter
   namespace: devopsexporter
-  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
   labels:
     chart: devops-exporter
     component: devopsexporter

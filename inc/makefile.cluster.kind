@@ -14,16 +14,15 @@ endif
 
 .PHONY: .kind/start
 .kind/start: ## Start a kind cluster
-	@echo "Starting local kind cluster then waiting a minute for things to warm up..."
+	@echo "Starting local kind cluster..."
 	$(kind) create cluster \
 		--name $(KUBE_CLUSTER) \
 		--image=kindest/node:v$(KUBE_VERSION) \
-		--config=$(ROOT_PATH)/deploy/kind/deploy.yaml
-		--wait 60s
+		--config=$(DEPLOY_PATH)/kind/kind-config-custom.yaml
 	$(kind) get kubeconfig --name $(KUBE_CLUSTER) > $(KUBE_CONFIG)
 
 .PHONY: cluster/start
-cluster/start: .kind/start kube/context kube/deploy/metallb ## Create local cicd cluster
+cluster/start: cluster/stop .kind/start kube/context kube/deploy/calico kube/deploy/metallb ## Create local cicd cluster
 
 .PHONY: cluster/ingress
 cluster/ingress: ## Start cluster ingress
@@ -33,7 +32,7 @@ cluster/ingress: ## Start cluster ingress
 
 .PHONY: cluster/stop
 cluster/stop: ## Delete local cicd cluster
-	$(kind) delete cluster --name $(KUBE_CLUSTER)
+	$(kind) delete cluster --name $(KUBE_CLUSTER) || true
 
 .PHONY: cluster/test
 cluster/test: ## Validate the kubernetes deployment

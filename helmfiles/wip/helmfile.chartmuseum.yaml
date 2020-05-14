@@ -43,7 +43,7 @@ releases:
 
 - name: ingress-chartmuseum
   namespace: "chartmuseum"
-  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
   labels:
     chart: "ingress-chartmuseum"
     component: "ingress"

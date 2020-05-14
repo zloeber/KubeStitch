@@ -1,19 +1,29 @@
 ROOT_PATH ?= $(abspath $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST))))))
 BIN_PATH ?= $(ROOT_PATH)/.local/bin
 
+METALLB_VERSION ?= 0.9.3
 KUBE_CLUSTER_CONTEXT ?= $(KUBE_CLUSTER)
 KUBE_CONFIG := $(ROOT_PATH)/.local/kube.$(PROFILE).conf
 
 kubectl := $(BIN_PATH)/kubectl
+kustomize := $(BIN_PATH)/kustomize
 kubecmd := KUBECONFIG=$(KUBE_CONFIG) $(kubectl)
 stern := $(BIN_PATH)/stern
 
 export KUBECONFIG=$(KUBE_CONFIG)
+
 .PHONY: .dep/stern
 .dep/stern: ## Install stern log watcher
 ifeq (,$(wildcard $(INSTALL_PATH)/stern))
 	@$(MAKE) --no-print-directory -C $(APP_PATH)/githubapp auto wercker/stern INSTALL_PATH=$(INSTALL_PATH)
 	@echo "Installed: $(stern)"
+endif
+
+.PHONY: .dep/kustomize
+.dep/kustomize: ## Install kustomize
+ifeq (,$(wildcard $(kustomize)))
+	@$(MAKE) --no-print-directory -C $(APP_PATH)/githubapp auto  kubernetes-sigs/kustomize INSTALL_PATH=$(BIN_PATH)
+	@echo "Installed: $(kustomize)"
 endif
 
 .PHONY: .dep/kubectl
@@ -26,7 +36,7 @@ ifeq (,$(wildcard $(INSTALL_PATH)/kubectl))
 endif
 
 .PHONY: .deps/kube
-.deps/kube: .dep/kubectl .dep/stern ## Install kube dependencies
+.deps/kube: .dep/kubectl .dep/stern .dep/kustomize ## Install kube dependencies
 
 .PHONY: kube/show/utilization
 kube/show/utilization: ## Show aks node utilization
@@ -60,15 +70,19 @@ kube/proxy/dashboard: ## Starts a proxy to the local cluster dashboard if it exi
 
 .PHONY: kube/deploy/metallb
 kube/deploy/metallb: .dep/kubectl .kube/get/configfile ## Deploy metallb on the cluster
-	@$(kubecmd) apply -f https://raw.githubusercontent.com/metallb/metallb/v0.9.3/manifests/namespace.yaml
-	@$(kubecmd) apply -f https://raw.githubusercontent.com/metallb/metallb/v0.9.3/manifests/metallb.yaml
-	@$(kubecmd) apply -f $(CONFIG_PATH)/metallb-config.yaml
+	@$(kubecmd) apply -f https://raw.githubusercontent.com/metallb/metallb/v$(METALLB_VERSION)/manifests/namespace.yaml
+	@$(kubecmd) apply -f https://raw.githubusercontent.com/metallb/metallb/v$(METALLB_VERSION)/manifests/metallb.yaml
+	@$(kubecmd) apply -f $(DEPLOY_PATH)/metallb/metallb-config.yaml
 	@$(kubecmd) create secret generic -n metallb-system memberlist --from-literal=secretkey="$(openssl rand -base64 128)" || true
 
 .PHONY: kube/delete/metallb
 kube/delete/metallb: ## Delete metallb deployment
-	@$(kubecmd) delete -f https://raw.githubusercontent.com/metallb/metallb/v0.9.3/manifests/metallb.yaml
-	@$(kubecmd) delete -f https://raw.githubusercontent.com/metallb/metallb/v0.9.3/manifests/namespace.yaml
+	@$(kubecmd) delete -f https://raw.githubusercontent.com/metallb/metallb/v$(METALLB_VERSION)/manifests/metallb.yaml
+	@$(kubecmd) delete -f https://raw.githubusercontent.com/metallb/metallb/v$(METALLB_VERSION)/manifests/namespace.yaml
+
+.PHONY: kube/deploy/calico
+kube/deploy/calico: ## Deploys the Calico CNI
+	@$(kubecmd) apply -f https://docs.projectcalico.org/manifests/calico.yaml
 
 .PHONY: kube/config
 kube/config: ## Exports a copy of the current kube config
@@ -85,3 +99,31 @@ kube/list/resources: ## Prints kubernetes resources
 .PHONY: kube/bearertoken
 kube/bearertoken: Return bearer token for cluster
 	@echo $(shell $(kubecmd) get secrets -o jsonpath="{.items[?(@.metadata.annotations['kubernetes\.io/service-account\.name']=='default')].data.token}"|base64 --decode))
+
+.PHONY: kube/loadbalancer/ip
+kube/loadbalancer/ip: ## Show external loadbalancer ip
+	@$(kubecmd) -n $(STACK_INGRESS_INTERNALNAMESPACE) get svc -o jsonpath='{.items[?(@.spec.type=="LoadBalancer")].status.loadBalancer.ingress[0].ip}'
+
+.PHONY: dnsforward/start
+dnsforward/start: dnsforward/stop ## Forwards all dns requests to a local dns-proxy-server
+	tmpdir=$$(mktemp -d) && echo "$${tmpdir}" && \
+	export STACK_INGRESS_INTERNALIP=$(shell $(MAKE) kube/loadbalancer/ip) && \
+	$(gomplate) \
+		-d config=$(CONFIG_PATH)/environment.$(ENVIRONMENT).yaml \
+		--file $(DEPLOY_PATH)/dnsproxy/config.json \
+		--out "$${tmpdir}/config.json" && \
+	docker run --rm -d \
+		--hostname $(STACK_INGRESS_INTERNALZONE) \
+		--name dns-proxy-server \
+		-p 5380:5380 \
+		-v $${tmpdir}:/app/conf \
+		-v /var/run/docker.sock:/var/run/docker.sock \
+		-v /etc/resolv.conf:/etc/resolv.conf \
+		defreitas/dns-proxy-server
+	@echo ""
+	@echo "STACK_INGRESS_INTERNALZONE=$(STACK_INGRESS_INTERNALZONE)"
+	@echo "View dnsforwarding admin page at: http://localhost:5380"
+
+.PHONY: dnsforward/stop
+dnsforward/stop: ## Stop the dns forwarding container
+	docker stop dns-proxy-server || true

@@ -15,7 +15,7 @@ repositories:
 releases:
 - name: database-kv-injection
   namespace: database
-  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archtype" }}
+  chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
   installed: {{ env "KEYVAULT_INJECTION_INSTALLED" | default "true" }}
   labels:
     name: database-kv-injection
