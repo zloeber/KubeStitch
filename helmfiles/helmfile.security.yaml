@@ -12,7 +12,7 @@ repositories:
 
 releases:
 - name: namespace-security
-  chart: ../charts/namespace/chart/namespace
+  chart: {{ .Values.archetypeChart }}
   namespace: kube-system
   labels:
     chart: namespace-security
@@ -21,12 +21,14 @@ releases:
   wait: true
   installed: true
   values:
-  - namespaces:
-    - {{ .Values.stacks.security.namespace | default "security" }}
-    helmResourcePolicy: keep
-    annotations:
-      certmanager.k8s.io/disable-validation: "true"
-      {{ .Values.cloud | default "local" }}-key-vault-env-injection: enabled
+  - app: security
+    namespace:
+      enabled: true
+      name: {{ .Values.stacks.security.namespace | default "security" }}
+      annotations:
+        helm.sh/resource-policy: "keep"
+        certmanager.k8s.io/disable-validation: "true"
+        {{ .Values.cloud | default "local" }}-key-vault-env-injection: enabled
 
 - name: rbac-manager
   namespace: {{ .Values.stacks.security.namespace | default "security" }}

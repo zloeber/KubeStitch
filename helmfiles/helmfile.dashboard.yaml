@@ -12,7 +12,7 @@ repositories:
 
 releases:
 - name: namespace-dashboard
-  chart: ../charts/namespace/chart/namespace
+  chart: {{ .Values.archetypeChart }}
   namespace: kube-system
   labels:
     chart: namespace-dashboard
@@ -21,8 +21,10 @@ releases:
   wait: true
   installed: true
   values:
-  - namespaces:
-    - kubernetes-dashboard
+  - app: kubernetes-dashboard
+    namespace:
+      enabled: true
+      name: kubernetes-dashboard
 
 - name: kubernetes-dashboard
   chart: incubator/raw

@@ -10,7 +10,7 @@ repositories:
 
 releases:
 - name: namespace-bookinfo
-  chart: ../charts/namespace/chart/namespace
+  chart: {{ .Values.archetypeChart }}
   namespace: kube-system
   labels:
     chart: namespace-bookinfo
@@ -19,10 +19,12 @@ releases:
   wait: true
   installed: true
   values:
-  - namespaces:
-    - bookinfo
-    labels:
-      istio-injection: enabled
+  - app: bookinfo
+    namespace:
+      enabled: true
+      name: bookinfo
+      labels:
+        istio-injection: enabled
 
 - name: bookinfo-deployment
   chart: incubator/raw

@@ -20,22 +20,22 @@ releases:
 # Instructions for installing and testing correct install are at
 # - https://docs.cert-manager.io/en/release-0.9/getting-started/install/kubernetes.html
 - name: namespace-cert-manager
-  # Helm 3 needs to put deployment info into a namespace. As this creates a namespace it will not exist yet so we use 'kube-system' 
-  #  which should exist in all clusters.
-  chart: ../charts/namespace/chart/namespace
+  chart: {{ .Values.archetypeChart }}
   namespace: kube-system
   labels:
     chart: namespace-cert-manager
     component: cert-manager
     namespace: {{ .Values.stacks.certmanager.namespace | default "cert-manager" }}
   wait: true
-  installed: {{ .Values.stacks.certmanager.installed | default "true" }}
+  installed: true
   values:
-  - namespaces:
-    - {{ .Values.stacks.certmanager.namespace | default "cert-manager" }}
-    helmResourcePolicy: keep
-    annotations:
-      certmanager.k8s.io/disable-validation: "true"
+  - app: cert-manager
+    namespace:
+      enabled: true
+      name: {{ .Values.stacks.certmanager.namespace | default "cert-manager" }}
+      annotations:
+        helm.sh/resource-policy: "keep"
+        certmanager.k8s.io/disable-validation: "true"
 
 - name: cert-manager
   namespace: {{ .Values.stacks.certmanager.namespace | default "cert-manager" }}

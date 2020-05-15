@@ -14,7 +14,7 @@ repositories:
 ## Hashicorp vault
 releases:
 - name: namespace-vault
-  chart: ../charts/namespace/chart/namespace
+  chart: {{ .Values.archetypeChart }}
   namespace: kube-system
   labels:
     chart: namespace-vault
@@ -23,8 +23,10 @@ releases:
   wait: true
   installed: true
   values:
-  - namespaces:
-    - vault
+  - app: vault
+    namespace:
+      enabled: true
+      name: vault
 
 ## vault Deployment
 - name: vault
@@ -38,13 +40,17 @@ releases:
   needs:
     - kube-system/namespace-vault
   values:
-  - dev:
-      enabled: true
-    dataStorage:
-      enabled: true
-      size: 2Gi
+  - server: 
+      service: 
+        type: LoadBalancer
+      dev:
+        enabled: true
+      dataStorage:
+        enabled: true
+        size: 2Gi
     ui:
       enabled: true
+      # serviceType: LoadBalancer
 
 - name: ingress-vault
   namespace: "vault"
@@ -78,5 +84,5 @@ releases:
             paths:
             - path: "/"
               backend:
-                serviceName: vault
+                serviceName: vault-ui
                 servicePort: 8200

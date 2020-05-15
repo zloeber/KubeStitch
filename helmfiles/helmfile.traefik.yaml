@@ -14,19 +14,19 @@ repositories:
 ## traefik
 releases:
 - name: namespace-traefik
-  # Helm 3 needs to put deployment info into a namespace. As this creates a namespace it will not exist yet so we use 'kube-system' 
-  #  which should exist in all clusters.
-  chart: ../charts/namespace/chart/namespace
+  chart: {{ .Values.archetypeChart }}
   namespace: kube-system
   labels:
     chart: namespace-traefik
-    component: traefik
-    namespace: {{ .Values.stacks.ingress.namespaceInternal }}
+    component: ingress
+    namespace: kube-system
   wait: true
   installed: true
   values:
-  - namespaces:
-    - {{ .Values.stacks.ingress.namespaceInternal }}
+  - app: traefik
+    namespace:
+      enabled: true
+      name: {{ .Values.stacks.ingress.namespaceInternal }}
 
 ## traefik Deployment
 - name: traefik

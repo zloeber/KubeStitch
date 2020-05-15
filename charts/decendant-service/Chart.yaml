@@ -1,9 +1,11 @@
 apiVersion: v2
-name: scala-service
-description: Scala service helm chart
+name: app-service
+description: Descendant service example chart
 type: application
+
 # Chart version
 version: 0.0.1
+
 # Application/service version
 appVersion: 0.0.1
 maintainers:
@@ -11,4 +13,4 @@ maintainers:
 dependencies:
   - name: archetype
     version: "0.0.1"
-    repository: https://mycontainerrepo.azurecr.io/helm/v1/repo
+    repository: file://../archetype
