@@ -17,6 +17,8 @@ Where required, stand-alone cli tools will be installed to a `./.local/` path wi
 
 ## Usage
 
+Standard usage is pretty simple. 
+
 ```bash
 # Show tasks
 make
@@ -30,15 +32,30 @@ make cluster/start
 # Run tests on the cluster and watch the output with stern (press ctrl+c to exit)
 make cluster/test
 
+# Perform a default deployment of helmfiles for the cluster definition
+make helmfile/sync
+
 # Destroy the cluster you just created
 make cluster/stop
 ```
 
-You can do a default deployment of some helmfiles as well:
+## Kube Clusters
+
+Before going into profiles, it is important to be aware that each cluster that gets created will create its own configuration file within the `./.local/` path in the form of `kube.<clustername>.conf`. This ensures your personal user kubernetes configuration does not get polluted with testing cluster detritus. But this also means that, by default, you will not be able to interface with the cluster without some additional work. The simple way around this is to just point your 'KUBECONFIG' env var to the config file that gets generated. This can be done easily with the following command after the cluster has been created:
 
 ```bash
-make deps cluster/start helmfile/sync
+export KUBECONFIG=`make kube/config/file` 
 ```
+
+You only need to do this once for any cluster you are working on (per console session). If you recreate the cluster in your journey (done easily via `make cluster/start`) this file may get recreated but it shouldn't matter so much.
+
+If you are tinkering with multiple versions of Kubernetes, then it may be useful to also set an alias for the kubectl binary as well.
+
+```bash
+alias kube=$(pwd)/.local/bin/kubectl
+```
+
+If you are changing between versions of Kubernetes using this framework you will have to clear out the kubectl binary when changing versions (between cluster builds) with `make clean`. Just ensure you also rerun the deps task to get the correct kubectl binary version afterwards.
 
 ## Profiles
 
@@ -111,7 +128,6 @@ Here is an example environment running istio on a kind cluster. It includes;
 **File:** ./config/vault.env
 
 This is another proof of concept environment that spins up a kind cluster running Hashicorp vault with a consul backend. It also includes installation of some dependencies for testing things out as well as vault-sync to test out seeding a base deployment via cli. This is a work in progress on how one might use mostly declarative configuration for a vault integrated kubernetes cluster.
-
 
 If you run this:
 
