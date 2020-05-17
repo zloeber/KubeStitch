@@ -1,0 +1,31 @@
+ROOT_PATH ?= $(abspath $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST))))))
+BIN_PATH ?= $(ROOT_PATH)/.local/bin
+
+vault := $(BIN_PATH)/vault
+vault-sync := $(BIN_PATH)/vault-sync
+
+.PHONY: .dep/vault
+.dep/vault: ## Install vault locally
+ifeq (,$(wildcard $(vault)))
+	@$(MAKE) --no-print-directory -C $(APP_PATH)/githubapp auto vault INSTALL_PATH=$(BIN_PATH)
+	@echo "Installed: $(vault)"
+endif
+
+.PHONY: .dep/vault-sync
+.dep/vault-sync: ## Install vault-sync
+ifeq (,$(wildcard $(vault-sync)))
+	@$(MAKE) --no-print-directory -C $(APP_PATH)/githubapp auto cloudwatt/vault-sync INSTALL_PATH=$(BIN_PATH)
+	@echo "Installed: $(vault-sync)"
+endif
+
+.PHONY: .deps/vault
+.deps/vault: .dep/vault .dep/vault-sync ## Install dependencies
+
+.PHONY: show/vault
+show/vault: ## Show vault env vars
+	@echo "export VAULT_TOKEN=$(shell $(kubecmd) -n vault logs vault-0 vault | grep 'Root Token' | cut -d ' ' -f 3)"
+	@echo "export VAULT_ADDR=http://$(shell $(kubecmd) -n vault get svc -o jsonpath='{.items[?(@.spec.type=="LoadBalancer")].status.loadBalancer.ingress[0].ip}'):8200"
+
+.PHONY: vault/addr
+vault/addr: ## Show vault address
+	@$(kubecmd) -n vault get svc -o jsonpath='{.items[?(@.spec.type=="LoadBalancer")].status.loadBalancer.ingress[0].ip}'

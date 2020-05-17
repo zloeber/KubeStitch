@@ -1,3 +1,4 @@
+## Install Hashicorp Vault with Consul backend
 ---
 bases:
 - ../config/environments.yaml
@@ -5,8 +6,6 @@ bases:
 ---
 
 repositories:
-- name: incubator
-  url: https://kubernetes-charts-incubator.storage.googleapis.com
 - name: vault
   url: "git+https://github.com/hashicorp/vault-helm@/"
 
@@ -28,7 +27,7 @@ releases:
       enabled: true
       name: vault
 
-## vault Deployment
+## Vault Deployment
 - name: vault
   namespace: vault
   installed: true
@@ -40,7 +39,10 @@ releases:
   needs:
     - kube-system/namespace-vault
   values:
-  - server: 
+  - server:
+      # affinity: ""
+      ha:
+        enabled: true
       service: 
         type: LoadBalancer
       dev:
@@ -50,7 +52,6 @@ releases:
         size: 2Gi
     ui:
       enabled: true
-      # serviceType: LoadBalancer
 
 - name: ingress-vault
   namespace: "vault"

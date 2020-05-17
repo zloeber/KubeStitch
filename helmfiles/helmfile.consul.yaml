@@ -1,0 +1,93 @@
+## Install Hashicorp Consul
+---
+bases:
+- ../config/environments.yaml
+- ../config/helmdefaults.yaml
+---
+
+repositories:
+- name: consul
+  url: "git+https://github.com/hashicorp/consul-helm@/"
+
+###############
+## Hashicorp consul
+releases:
+- name: namespace-consul
+  chart: {{ .Values.archetypeChart }}
+  namespace: kube-system
+  labels:
+    chart: namespace-consul
+    component: consul
+    namespace: kube-system
+  wait: true
+  installed: true
+  values:
+  - app: consul
+    namespace:
+      enabled: true
+      name: consul
+
+## consul Deployment
+- name: consul
+  namespace: consul
+  installed: true
+  chart: consul/consul
+  labels:
+    chart: consul
+    component: consul
+    namespace: consul
+  needs:
+    - kube-system/namespace-consul
+  values:
+  - dns:
+      enabled: false
+    client:
+      enabled: true
+    server:
+      replicas: 1
+      bootstrapExpect: 1
+      disruptionBudget:
+        maxUnavailable: 0
+      storage: 2Gi
+    ui:
+      enabled: true
+    service:
+      type: LoadBalancer
+    consulNamespaces:
+      consulDestinationNamespace: kube
+      mirroringK8S: false
+
+- name: ingress-consul
+  namespace: "consul"
+  chart: {{ .Values.archetypeChart }}
+  installed: true
+  needs:
+  - kube-system/namespace-consul
+  labels:
+    chart: ingress-consul
+    component: ingress
+    namespace: consul
+  values:
+  - zone: internal
+    app: consul-dashboard
+    ingressClassMap:
+      internal: {{ .Values.stacks.ingress.classInternal }}
+    # certificate:
+    #   enabled: true
+    #   name: dashboard-ingress-cert
+    #   selfSigned: true
+    #   commonName: dashboard.{{ .Values.stacks.ingress.zoneInternal }}
+    #   isCA: false
+    ingress:
+      enabled: true
+      tlsEnabled: true
+      hosts:
+      - name: consul.{{ .Values.stacks.ingress.zoneInternal }}
+        secretName: ingress-consul-dashboard
+        config:
+          http:
+            paths:
+            - path: "/"
+              backend:
+                serviceName: consul-consul-ui
+                servicePort: 80
