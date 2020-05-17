@@ -53,8 +53,8 @@ releases:
       type: LoadBalancer
       spec:
         externalTrafficPolicy: Cluster
-        {{- if .Values.stacks.ingress.ipInternal }}
-        loadBalancerIP: "{{ .Values.stacks.ingress.ipInternal }}"
+        {{- if .Values.stacks.ingress.ipInternal | default "" }}
+        loadBalancerIP: "{{ .Values.stacks.ingress.ipInternal | default "" }}"
         {{- end }}
       annotations:
         "prometheus.io/scrape": "true"

@@ -14,7 +14,7 @@ PROFILE ?= default
 yq := $(BIN_PATH)/yq
 
 # Import target deployment env vars
-ENVIRONMENT_VARS ?= $(CONFIG_PATH)/$(PROFILE).env
+ENVIRONMENT_VARS ?= $(CONFIG_PATH)/profile.$(PROFILE).env
 ifneq (,$(wildcard $(ENVIRONMENT_VARS)))
 include ${ENVIRONMENT_VARS}
 export $(shell sed 's/=.*//' ${ENVIRONMENT_VARS})

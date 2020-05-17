@@ -10,8 +10,7 @@ stacks:
     namespace: security
   ingress:
     installed: true
-    istio: false
-    istioIngressGateway: istio-ingressgateway
+    type: default
     namespaceInternal: ingress-int
     namespaceExternal: ingress-ext
     classStage: stage
@@ -20,7 +19,10 @@ stacks:
     zoneStage: stage.micro.svc
     zoneInternal: int.micro.svc
     zoneExternal: ext.micro.svc
-    ipInternal: "172.17.0.100"
+    ipInternal: ""
+  istio:
+    installed: false
+    ingressGateway: istio-ingressgateway
   certmanager:
     installed: true
     namespace: cert-manager
@@ -29,6 +31,12 @@ stacks:
     issuerDefault: default
     issuerStaging: letsencrypt-staging
     issuerProduction: letsencrypt-prod
+  vault:
+    installed: true
+  consul:
+    installed: true
+  dashboard:
+    installed: true
   monitoring:
     installed: false
     namespace: monitoring

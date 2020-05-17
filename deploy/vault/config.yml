@@ -17,7 +17,7 @@ auths:
   type: github
   attributes:
   - uri: config
-    organization: Cloudwatt
+    organization: zloeber
 - path: ldap
   type: ldap
   default_lease_ttl: "15m"

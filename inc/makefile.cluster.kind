@@ -45,9 +45,3 @@ cluster/test: ## Validate the kubernetes deployment
 kind/ingressip: ## Get an ingress IP to use
 	@echo `docker inspect --format '{{ .NetworkSettings.IPAddress }}' $$(docker ps -q) | cut -d"." -f1-3`".100"
 
-#kind/localstorage: ## Install local kind storage
-#	$(kubecmd) apply -f https://raw.githubusercontent.com/kudobuilder/operators/master/test/manifests/local-path-storage.yaml
-
-#kind/ingress/start: ## Start proxy to ingress IPs
-#	./scripts/cicd-ingress.sh
-
