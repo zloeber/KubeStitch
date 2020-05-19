@@ -201,3 +201,5 @@ make cluster/start istio/deploy istio/start/dnsforward helmfile/sync STACK=booki
 [Istio Practice Deployment](https://github.com/RothAndrew/istio-practice/tree/master/eks)
 
 [Fury Kubernetes Distribution](https://github.com/sighupio/fury-distribution) - The basic concept of 'stacks' that I have been putting together using helmfiles has been done in this distribution using kustomize instead. Inspiring work.
+
+[CloudPosse's Helmfiles](https://github.com/cloudposse/helmfiles) - A very impressive and well written set of helmfiles.

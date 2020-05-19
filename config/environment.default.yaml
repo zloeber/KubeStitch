@@ -23,6 +23,9 @@ stacks:
   istio:
     installed: false
     ingressGateway: istio-ingressgateway
+  rancher:
+    installed: true
+    
   certmanager:
     installed: true
     namespace: cert-manager

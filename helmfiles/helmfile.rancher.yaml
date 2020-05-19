@@ -10,20 +10,21 @@ repositories:
 
 ###############
 ## Rancher Deployment
-## Description: 
 releases:
 - name: namespace-rancher
-  chart: ../charts/namespace/chart/namespace
+  chart: {{ .Values.archetypeChart }}
   namespace: kube-system
   labels:
     chart: namespace-rancher
-    component: "rancher"
-    namespace: cattle-system
+    component: rancher
+    namespace: kube-system
   wait: true
   installed: true
   values:
-  - namespaces:
-    - cattle-system
+  - app: rancher
+    namespace:
+      enabled: true
+      name: cattle-system
 
 ## rancher Deployment
 - name: rancher
@@ -40,30 +41,30 @@ releases:
   - hostname: rancher.{{ .Values.stacks.ingress.zoneInternal }}
     ingress:
       extraAnnotations:
-        kubernetes.io/ingress.class: {{ .Values.stacks.ingress.classInternal | default "internal" }}
-        certmanager.k8s.io/cluster-issuer: default
+        kubernetes.io/ingress.class: {{ .Values.stacks.ingress.classInternal }}
+#        certmanager.k8s.io/cluster-issuer: {{ .Values.stacks.certmanager.issuerDefault }}
+
 # - name: ingress-rancher
 #   namespace: cattle-system
-#   chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
+#   chart: {{ .Values.archetypeChart }}
 #   installed: true
-#   labels:
-#     chart: "ingress-rancher"
-#     component: "ingress"
-#     namespace: cattle-system
 #   needs:
-#     - kube-system/namespace-rancher
+#   - kube-system/namespace-rancher
+#   labels:
+#     chart: ingress-rancher
+#     component: ingress
+#     namespace: cattle-system
 #   values:
-#   - project:
-#       team: {{ env "TEAM" | default "team1" }}
-#       stage: {{ env "STAGE" | default "dev" }}
-#       target: {{ env "TARGET" | default "cicd" }}
-#       client: {{ env "CLIENT" | default "client1" }}
-#     ingressInternalClass: {{ .Values.ingress.classInternal | default "internal" }}
-#     ingressTests: false
+#   - zone: internal
+#     app: rancher-dashboard
+#     ingressClassMap:
+#       internal: {{ .Values.stacks.ingress.classInternal }}
 #     ingress:
 #       enabled: true
+#       tlsEnabled: true
 #       hosts:
-#       - name: rancher.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+#       - name: rancher.{{ .Values.stacks.ingress.zoneInternal }}
+#         secretName: ingress-rancher-dashboard
 #         config:
 #           http:
 #             paths:

@@ -3,7 +3,7 @@ BIN_PATH ?= $(ROOT_PATH)/.local/bin
 
 CHART_PATH ?= $(ROOT_PATH)/charts
 HELMFILE_PATH ?= $(ROOT_PATH)/helmfiles
-STACK ?= cluster.$(PROFILE)
+STACK ?= cluster.$(KUBE_CLUSTER)
 HELMFILE_VERSION ?= 0.109.0
 HELM_VERSION ?= 3.2.0
 ENVIRONMENT ?= default

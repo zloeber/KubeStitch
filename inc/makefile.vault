@@ -3,6 +3,7 @@ BIN_PATH ?= $(ROOT_PATH)/.local/bin
 
 vault := $(BIN_PATH)/vault
 vault-sync := $(BIN_PATH)/vault-sync
+gonsul := $(BIN_PATH)/vault-sync
 
 .PHONY: .dep/vault
 .dep/vault: ## Install vault locally
@@ -16,6 +17,13 @@ endif
 ifeq (,$(wildcard $(vault-sync)))
 	@$(MAKE) --no-print-directory -C $(APP_PATH)/githubapp auto cloudwatt/vault-sync INSTALL_PATH=$(BIN_PATH)
 	@echo "Installed: $(vault-sync)"
+endif
+
+.PHONY: .dep/gonsul
+.dep/gonsul: ## Install gonsul
+ifeq (,$(wildcard $(gonsul)))
+	@$(MAKE) --no-print-directory -C $(APP_PATH)/githubapp auto miniclip/gonsul INSTALL_PATH=$(BIN_PATH)
+	@echo "Installed: $(gonsul)"
 endif
 
 .PHONY: .deps/vault
