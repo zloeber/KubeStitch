@@ -39,36 +39,7 @@ releases:
     - kube-system/namespace-rancher
   values:
   - hostname: rancher.{{ .Values.stacks.ingress.zoneInternal }}
-    ingress:
-      extraAnnotations:
-        kubernetes.io/ingress.class: {{ .Values.stacks.ingress.classInternal }}
-#        certmanager.k8s.io/cluster-issuer: {{ .Values.stacks.certmanager.issuerDefault }}
+    # ingress:
+    #   extraAnnotations:
+    #     kubernetes.io/ingress.class: {{ .Values.stacks.ingress.classInternal }}
 
-# - name: ingress-rancher
-#   namespace: cattle-system
-#   chart: {{ .Values.archetypeChart }}
-#   installed: true
-#   needs:
-#   - kube-system/namespace-rancher
-#   labels:
-#     chart: ingress-rancher
-#     component: ingress
-#     namespace: cattle-system
-#   values:
-#   - zone: internal
-#     app: rancher-dashboard
-#     ingressClassMap:
-#       internal: {{ .Values.stacks.ingress.classInternal }}
-#     ingress:
-#       enabled: true
-#       tlsEnabled: true
-#       hosts:
-#       - name: rancher.{{ .Values.stacks.ingress.zoneInternal }}
-#         secretName: ingress-rancher-dashboard
-#         config:
-#           http:
-#             paths:
-#             - path: "/"
-#               backend:
-#                 serviceName: rancher
-#                 servicePort: 9092

@@ -2,8 +2,8 @@ ROOT_PATH ?= $(abspath $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIS
 BIN_PATH ?= $(ROOT_PATH)/.local/bin
 
 METALLB_VERSION ?= 0.9.3
-KUBE_CLUSTER_CONTEXT ?= $(KUBE_CLUSTER)
-KUBE_CONFIG := $(ROOT_PATH)/.local/kube.$(PROFILE).conf
+CLUSTER_CONTEXT ?= $(CLUSTER)
+KUBE_CONFIG := $(ROOT_PATH)/.local/kube.$(CLUSTER).conf
 
 kubectl := $(BIN_PATH)/kubectl
 kustomize := $(BIN_PATH)/kustomize
@@ -14,7 +14,7 @@ export KUBECONFIG=$(KUBE_CONFIG)
 
 .PHONY: .dep/stern
 .dep/stern: ## Install stern log watcher
-ifeq (,$(wildcard $(INSTALL_PATH)/stern))
+ifeq (,$(wildcard $(stern)))
 	@$(MAKE) --no-print-directory -C $(APP_PATH)/githubapp auto wercker/stern INSTALL_PATH=$(INSTALL_PATH)
 	@echo "Installed: $(stern)"
 endif
@@ -28,7 +28,7 @@ endif
 
 .PHONY: .dep/kubectl
 .dep/kubectl: ## install kubectl for this project
-ifeq (,$(wildcard $(INSTALL_PATH)/kubectl))
+ifeq (,$(wildcard $(kubectl)))
 	@mkdir -p $(BIN_PATH)
 	@curl --retry 3 --retry-delay 5 --fail -sSL -o $(kubectl) https://storage.googleapis.com/kubernetes-release/release/v$(KUBE_VERSION)/bin/$(HOST_PLATFORM)/$(ARCH)/kubectl
 	@chmod +x $(kubectl)
@@ -53,9 +53,9 @@ kube/remove/pv/finalizers/%: ## removes finalizers from a namespace persistent v
 	$(kubecmd) get pv -n $(subst kube/remove/pv/finalizers/,,$@) | tail -n+2 | awk '{print $$1}' | xargs -I{} $(kubecmd) patch pv {} -p '{"metadata":{"finalizers": null}}'
 
 .PHONY: kube/context
-kube/context: ## Set kubectl config context to KUBE_CLUSTER
-	$(kubecmd) config set-context $(KUBE_CLUSTER_CONTEXT)
-	$(kubecmd) config use-context $(KUBE_CLUSTER_CONTEXT)
+kube/context: ## Set kubectl config context to CLUSTER
+	$(kubecmd) config set-context $(CLUSTER_CONTEXT)
+	$(kubecmd) config use-context $(CLUSTER_CONTEXT)
 
 .PHONY: kube/create/dockersecret
 kube/create/dockersecret: ## Create docker secret from current .docker/config.json

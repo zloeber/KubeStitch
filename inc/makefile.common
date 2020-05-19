@@ -54,7 +54,7 @@ help: ## Help
 .PHONY: show/env
 show/env: ## Show our environment settings
 	@echo "PROFILE: $(PROFILE)"
-	@echo "KUBE_CLUSTER: $(KUBE_CLUSTER)"
+	@echo "CLUSTER: $(CLUSTER)"
 	@echo "ENVIRONMENT: $(ENVIRONMENT)"
 	@echo "ARCH: $(ARCH)"
 	@echo "HOST_PLATFORM: $(HOST_PLATFORM)"
@@ -69,7 +69,7 @@ show/env: ## Show our environment settings
 .PHONY: show
 show: ## Show basic settings
 	@echo "PROFILE: $(PROFILE)"
-	@echo "KUBE_CLUSTER: $(KUBE_CLUSTER)"
+	@echo "CLUSTER: $(CLUSTER)"
 	@echo "ENVIRONMENT: $(ENVIRONMENT)"
 	@echo "ARCH: $(ARCH)"
 	@echo "HOST_PLATFORM: $(HOST_PLATFORM)"

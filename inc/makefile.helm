@@ -3,7 +3,7 @@ BIN_PATH ?= $(ROOT_PATH)/.local/bin
 
 CHART_PATH ?= $(ROOT_PATH)/charts
 HELMFILE_PATH ?= $(ROOT_PATH)/helmfiles
-STACK ?= cluster.$(KUBE_CLUSTER)
+STACK ?= cluster.$(CLUSTER)
 HELMFILE_VERSION ?= 0.109.0
 HELM_VERSION ?= 3.2.0
 ENVIRONMENT ?= default
@@ -17,8 +17,8 @@ helmfile := $(helmfile_binary) --environment $(ENVIRONMENT)
 helm_binary ?= $(BIN_PATH)/helm
 helm := $(helm_binary)
 gomplate := $(BIN_PATH)/gomplate
-yq := $(BIN_PATH)/yq
 ct := $(BIN_PATH)/ct
+
 
 ifneq (,$(wildcard $(yq)))
 STACK_INGRESS_INTERNALZONE := $(shell $(yq) r $(CONFIG_PATH)/environment.$(ENVIRONMENT).yaml stacks.ingress.zoneInternal)

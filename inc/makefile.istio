@@ -18,7 +18,7 @@ endif
 istio/verify: ## Verify istio install
 	$(istioctl) verify-install \
 	  --kubeconfig $(KUBE_CONFIG) \
-	  --context $(KUBE_CLUSTER_CONTEXT)
+	  --context $(CLUSTER_CONTEXT)
 
 .PHONY: istio/deploy
 istio/deploy: istio/verify ## Deploy istio
@@ -28,7 +28,7 @@ istio/deploy: istio/verify ## Deploy istio
 		-f=$(DEPLOY_PATH)/istio/profile.yaml \
 		--wait \
 		--kubeconfig $(KUBE_CONFIG) \
-		--context $(KUBE_CLUSTER_CONTEXT)
+		--context $(CLUSTER_CONTEXT)
 
 .PHONY: istio/generate
 istio/generate: ## Generate the istio operator manifest
@@ -47,7 +47,7 @@ istio/remove: ## Remove istio
 istio/dashboard/%: ## Access istio dashboard
 	$(istioctl) dashboard $(subst istio/dashboard/,,$@) \
 	  --kubeconfig $(KUBE_CONFIG) \
-	  --context $(KUBE_CLUSTER_CONTEXT)
+	  --context $(CLUSTER_CONTEXT)
 
 .PHONY: istio/start/dnsforward
 istio/start/dnsforward: dnsforward/stop dnsforward/start ## Forwards all dns requests to a local dns-proxy-server

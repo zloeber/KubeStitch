@@ -12,6 +12,7 @@ ENVIRONMENT ?= default
 PROFILE ?= default
 
 yq := $(BIN_PATH)/yq
+jq := $(BIN_PATH)/jq
 
 # Import target deployment env vars
 ENVIRONMENT_VARS ?= $(CONFIG_PATH)/profile.$(PROFILE).env
@@ -24,7 +25,7 @@ endif
 # Note: all values in here should be ?= in case they are already set upstream
 CLOUD ?= local
 KUBE_PROVIDER ?= kind
-KUBE_CLUSTER ?= cicd
+CLUSTER ?= cicd
 KUBE_VERSION ?= 1.18.0
 DOCKER_PROVIDER ?= dockerhub
 ADDITIONAL_TASKSETS ?=
@@ -43,10 +44,19 @@ ifeq (,$(wildcard $(APP_PATH)/githubapp))
 endif
 
 .PHONY: deps
-deps: .githubapps $(DEPTASKS) ## Install general dependencies
+deps: .githubapps $(DEPTASKS) .dep/yq .dep/jq ## Install general dependencies
 	@mkdir -p $(TEMP_PATH)
+
+.PHONY: .dep/yq
+.dep/yq: ## Install yq
 ifeq (,$(wildcard $(yq)))
-	@$(MAKE) --no-print-directory -C $(APP_PATH)/githubapp auto mikefarah/yq INSTALL_PATH=$(INSTALL_PATH)
+	@$(MAKE) --no-print-directory -C $(APP_PATH)/githubapp auto mikefarah/yq INSTALL_PATH=$(BIN_PATH)
+endif
+
+.PHONY: .dep/jq
+.dep/jq: ## Install jq
+ifeq (,$(wildcard $(jq)))
+	@$(MAKE) --no-print-directory -C $(APP_PATH)/githubapp install jq INSTALL_PATH=$(BIN_PATH)
 endif
 
 .PHONY: clean

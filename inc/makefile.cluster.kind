@@ -3,7 +3,7 @@ BIN_PATH ?= $(ROOT_PATH)/.local/bin
 KIND_VERSION ?= 0.7.0
 
 kind := $(BIN_PATH)/kind
-KUBE_CLUSTER_CONTEXT := kind-$(KUBE_CLUSTER)
+CLUSTER_CONTEXT := kind-$(CLUSTER)
 
 .PHONY: .deps/cluster.kind
 .deps/cluster.kind: ## Get kind binary dependency
@@ -16,10 +16,10 @@ endif
 .kind/start: ## Start a kind cluster
 	@echo "Starting local kind cluster..."
 	$(kind) create cluster \
-		--name $(KUBE_CLUSTER) \
+		--name $(CLUSTER) \
 		--image=kindest/node:v$(KUBE_VERSION) \
 		--config=$(DEPLOY_PATH)/kind/kind-config-custom.yaml
-	$(kind) get kubeconfig --name $(KUBE_CLUSTER) > $(KUBE_CONFIG)
+	$(kind) get kubeconfig --name $(CLUSTER) > $(KUBE_CONFIG)
 
 .PHONY: cluster/start
 cluster/start: cluster/stop .kind/start kube/context kube/deploy/calico kube/deploy/metallb ## Create local cicd cluster
@@ -32,7 +32,7 @@ cluster/ingress: ## Start cluster ingress
 
 .PHONY: cluster/stop
 cluster/stop: ## Delete local cicd cluster
-	$(kind) delete cluster --name $(KUBE_CLUSTER) || true
+	$(kind) delete cluster --name $(CLUSTER) || true
 
 .PHONY: cluster/test
 cluster/test: ## Validate the kubernetes deployment
