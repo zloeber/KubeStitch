@@ -5,10 +5,6 @@ LENS_CLUSTER_STORE := $(ROOT_PATH)/.local/Lens/lens-cluster-store.json
 lens := $(BIN_PATH)/lens
 
 
-.PHONY: .lens/init
-.lens/init: ## Install lens
-	$(lensctl) init --version v$(FURY_VERSION)
-
 .PHONY: .dep/lens
 .dep/lens: ## install lens
 ifeq (,$(wildcard $(lens)))

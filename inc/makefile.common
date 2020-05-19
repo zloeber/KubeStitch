@@ -65,6 +65,8 @@ show/env: ## Show our environment settings
 	@echo "STACK: $(STACK)"
 	@echo "CHART_PATH: $(CHART_PATH)"
 	@echo "ENVIRONMENT_VARS: $(ENVIRONMENT_VARS)"
+	@echo "ADDITIONAL_TASKSETS: $(ADDITIONAL_TASKSETS)"
+	@echo "TASKSETS: $(TASKSETS)"
 
 .PHONY: show
 show: ## Show basic settings

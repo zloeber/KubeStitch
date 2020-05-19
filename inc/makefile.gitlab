@@ -1,0 +1,20 @@
+ROOT_PATH ?= $(abspath $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST))))))
+BIN_PATH ?= $(ROOT_PATH)/.local/bin
+gitlab-runner := $(BIN_PATH)/gitlab-runner
+
+.PHONY: .dep/gitlab-runner
+.dep/gitlab-runner: ## install gitlab-runner
+ifeq (,$(wildcard $(gitlab-runner)))
+	@mkdir -p $(BIN_PATH)
+	@curl --retry 3 --retry-delay 5 --fail -sSL -o $(gitlab-runner) https://gitlab-runner-downloads.s3.amazonaws.com/latest/binaries/gitlab-runner-$(HOST_PLATFORM)-$(ARCH)
+	@chmod +x $(gitlab-runner)
+	@echo "Installed: $(gitlab-runner)"
+endif
+
+.PHONY: .deps/gitlab
+.deps/gitlab: .dep/gitlab-runner ## Install dependencies
+
+.PHONY: gitlab-runner
+gitlab-runner: ## Launch gitlab-runner
+	$(gitlab-runner)
+
