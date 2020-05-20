@@ -1,6 +1,6 @@
 # Archetype
 
-A declarative helm chart for deploying common types of services on Kubernetes for the Nextgen platform.
+A declarative helm chart for deploying common types of services on Kubernetes
 
 ## Requirements
 

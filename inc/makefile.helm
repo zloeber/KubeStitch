@@ -8,6 +8,7 @@ HELMFILE_VERSION ?= 0.109.0
 HELM_VERSION ?= 3.2.0
 ENVIRONMENT ?= default
 
+## This is to home helm configuration and plugins within the ./.local path.
 export XDG_CACHE_HOME=$(ROOT_PATH)/.local
 export XDG_CONFIG_HOME=$(ROOT_PATH)/.local
 export XDG_DATA_HOME=$(ROOT_PATH)/.local
@@ -16,6 +17,7 @@ helmfile_binary ?= $(BIN_PATH)/helmfile
 helmfile := $(helmfile_binary) --environment $(ENVIRONMENT)
 helm_binary ?= $(BIN_PATH)/helm
 helm := $(helm_binary)
+helm-x := $(BIN_PATH)/helm-x
 gomplate := $(BIN_PATH)/gomplate
 ct := $(BIN_PATH)/ct
 
@@ -28,22 +30,29 @@ endif
 .PHONY: .dep/helmfile
 .dep/helmfile: ## Install helmfile
 ifeq (,$(wildcard $(helmfile_binary)))
-	@$(MAKE) --no-print-directory -C $(APP_PATH)/githubapp reset helmfile INSTALL_PATH=$(INSTALL_PATH)
-	@$(MAKE) --no-print-directory -C $(APP_PATH)/githubapp auto roboll/helmfile INSTALL_PATH=$(INSTALL_PATH)
+	@$(MAKE) --no-print-directory -C $(APP_PATH)/githubapp reset helmfile INSTALL_PATH=$(BIN_PATH)
+	@$(MAKE) --no-print-directory -C $(APP_PATH)/githubapp auto roboll/helmfile INSTALL_PATH=$(BIN_PATH)
 	@echo "Installed: $(helmfile_binary)"
+endif
+
+.PHONY: .dep/helm-x
+.dep/helm-x: ## Install helm-x locally
+ifeq (,$(wildcard $(helm-x)))
+	@$(MAKE) --no-print-directory -C $(APP_PATH)/githubapp auto mumoshu/helm-x INSTALL_PATH=$(BIN_PATH)
+	@echo "Installed: $(helm-x)"
 endif
 
 .PHONY: .dep/ct
 .dep/ct: ## Install ct locally
 ifeq (,$(wildcard $(ct)))
-	@$(MAKE) --no-print-directory -C $(APP_PATH)/githubapp auto helm/chart-testing PACKAGE_EXE=ct INSTALL_PATH=$(INSTALL_PATH)
+	@$(MAKE) --no-print-directory -C $(APP_PATH)/githubapp auto helm/chart-testing PACKAGE_EXE=ct INSTALL_PATH=$(BIN_PATH)
 	@echo "Installed: $(ct)"
 endif
 
 .PHONY: .dep/gomplate
 .dep/gomplate: ## Install gomplate locally
 ifeq (,$(wildcard $(BIN_PATH)/gomplate))
-	@$(MAKE) --no-print-directory -C $(APP_PATH)/githubapp auto hairyhenderson/gomplate INSTALL_PATH=$(INSTALL_PATH)
+	@$(MAKE) --no-print-directory -C $(APP_PATH)/githubapp auto hairyhenderson/gomplate INSTALL_PATH=$(BIN_PATH)
 	@echo "Installed: $(gomplate)"
 endif
 
@@ -62,13 +71,13 @@ endif
 .helm/plugins: ## Installs helm plugins
 	@$(helm) plugin install https://github.com/databus23/helm-diff --version master 2> /dev/null || true
 	@$(helm) plugin install https://github.com/futuresimple/helm-secrets 2> /dev/null || true
-#	@$(helm) plugin install https://github.com/mumoshu/helm-x 2> /dev/null || true
+	@$(helm) plugin install https://github.com/mumoshu/helm-x 2> /dev/null || true
 	@$(helm) plugin install https://github.com/aslafy-z/helm-git.git 2> /dev/null || true
 #	@$(helm) plugin install https://github.com/thomastaylor312/helm-namespace 2> /dev/null || true
 
 
 .PHONY: .deps/helm
-.deps/helm: .dep/helm .dep/ct .dep/helmfile .helm/plugins ## Install yq, ct, helm, helmfile, and plugins locally
+.deps/helm: .dep/helm .dep/ct .dep/helmfile .dep/helm-x .helm/plugins ## Install yq, ct, helm, helmfile, helm-x, and plugins locally
 
 .PHONY: helmfile/list
 helmfile/list: ## Lists all available helmfiles

@@ -1,6 +1,5 @@
 chart-dirs:
   - ./
-remote: archetype
 target-branch: master
 debug: true
 check-version-increment: true
