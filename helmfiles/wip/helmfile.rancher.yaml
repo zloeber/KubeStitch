@@ -1,0 +1,73 @@
+---
+bases:
+- ../config/environments.yaml
+- ../config/helmdefaults.yaml
+---
+
+repositories:
+- name: rancher
+  url: https://releases.rancher.com/server-charts/latest
+
+###############
+## Rancher Deployment
+## Description: 
+releases:
+- name: namespace-rancher
+  chart: ../charts/namespace/chart/namespace
+  namespace: kube-system
+  labels:
+    chart: namespace-rancher
+    component: "rancher"
+    namespace: cattle-system
+  wait: true
+  installed: true
+  values:
+  - namespaces:
+    - cattle-system
+
+## rancher Deployment
+- name: rancher
+  namespace: cattle-system
+  installed: true
+  chart: rancher/rancher
+  labels:
+    chart: rancher
+    component: rancher
+    namespace: cattle-system
+  needs:
+    - kube-system/namespace-rancher
+  values:
+  - hostname: rancher.{{ .Values.stacks.ingress.zoneInternal }}
+    ingress:
+      extraAnnotations:
+        kubernetes.io/ingress.class: {{ .Values.stacks.ingress.classInternal | default "internal" }}
+        certmanager.k8s.io/cluster-issuer: default
+# - name: ingress-rancher
+#   namespace: cattle-system
+#   chart: {{ env "ARCHTYPE_CHART" | default "../charts/archetype" }}
+#   installed: true
+#   labels:
+#     chart: "ingress-rancher"
+#     component: "ingress"
+#     namespace: cattle-system
+#   needs:
+#     - kube-system/namespace-rancher
+#   values:
+#   - project:
+#       team: {{ env "TEAM" | default "team1" }}
+#       stage: {{ env "STAGE" | default "dev" }}
+#       target: {{ env "TARGET" | default "cicd" }}
+#       client: {{ env "CLIENT" | default "client1" }}
+#     ingressInternalClass: {{ .Values.ingress.classInternal | default "internal" }}
+#     ingressTests: false
+#     ingress:
+#       enabled: true
+#       hosts:
+#       - name: rancher.{{ .Environment.Values.overrides.fqdn | default "micro.svc" }}
+#         config:
+#           http:
+#             paths:
+#             - path: "/"
+#               backend:
+#                 serviceName: rancher
+#                 servicePort: 9092

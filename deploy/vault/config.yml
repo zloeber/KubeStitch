@@ -8,9 +8,12 @@ auths:
     disallowed_policies: "admin"
     orphan: true
     period: 1h
-    path_suffix: jan2017
+    path_suffix: "_2020"
 - path: userpass
   type: userpass
+- path: kubernetes
+  type: kubernetes
+  
 - path: extra/userpass
   type: userpass
 - path: github
@@ -18,51 +21,46 @@ auths:
   attributes:
   - uri: config
     organization: zloeber
-- path: ldap
-  type: ldap
-  default_lease_ttl: "15m"
-  max_lease_ttl: "60m"
-  attributes:
-  - uri: config
-    binddn: "uid=vault,ou=users,dc=infra,dc=cloudwatt,dc=net"
-    bindpass: "youplaboum"
-    certificate: ""
-    deny_null_bind: true
-    discoverdn: false
-    groupattr: "cn"
-    groupdn: "ou=applications,dc=infra,dc=cloudwatt,dc=net"
-    groupfilter: "(uniqueMember={{.UserDN}})"
-    insecure_tls: true
-    starttls: false
-    tls_max_version: "tls12"
-    tls_min_version: "tls12"
-    upndomain: ""
-    url: "ldaps://ldap.int4.aub.cloudwatt.net:636"
-    userattr: "uid"
-    userdn: "ou=users,dc=infra,dc=cloudwatt,dc=net"
+# - path: ldap
+#   type: ldap
+#   default_lease_ttl: "15m"
+#   max_lease_ttl: "60m"
+#   attributes:
+#   - uri: config
+#     binddn: "uid=vault,ou=users,dc=infra,dc=cloudwatt,dc=net"
+#     bindpass: "youplaboum"
+#     certificate: ""
+#     deny_null_bind: true
+#     discoverdn: false
+#     groupattr: "cn"
+#     groupdn: "ou=applications,dc=infra,dc=cloudwatt,dc=net"
+#     groupfilter: "(uniqueMember={{.UserDN}})"
+#     insecure_tls: true
+#     starttls: false
+#     tls_max_version: "tls12"
+#     tls_min_version: "tls12"
+#     upndomain: ""
+#     url: "ldaps://ldap.int4.aub.cloudwatt.net:636"
+#     userattr: "uid"
+#     userdn: "ou=users,dc=infra,dc=cloudwatt,dc=net"
 
 users:
 - userpass:
-    username: rohithj
-    password: password1
-  policies:
-    - common
-    - platform_tls
-- userpass:
-    username: alex
-    password: password1
-  policies:
-    - root
-- userpass:
-    username: rohith
+    username: testuser1
     password: password1
   policies:
     - common
     - platform_tls
     - platform
+- userpass:
+    username: testuser2
+    password: password1
+  policies:
+    - root
+
 - usertoken:
-    id: dskdjksjdksjdksjdksjdksd
-    display_name: password1
+    id: testuser1token
+    display_name: testuser1 token
     ttl: 1h
   policies:
     - common
@@ -86,11 +84,11 @@ backends:
   description: Platform PKI backend
   attributes:
   - uri: root/generate/internal
-    common_name: example.com
+    common_name: int.micro.svc
     ttl: 3h
     oneshot: true
   - uri: roles/example-dot-com
-    allowed_domains: example.com
+    allowed_domains: int.micro.svc
     allow_subdomains: true
     max_ttl: 1h
 # one of the annoying things about the mysql backend is it attempts to connect to the db when
@@ -112,8 +110,8 @@ backends:
     access_key: TEST
     secret_key: TEST
     region: us-east-1
-- path: mattermost/secrets
-  description: Mattermost Secrets
+- path: kube/secrets
+  description: Kubernetes Secrets
   type: generic
 
 secrets:
@@ -130,6 +128,11 @@ secrets:
       hello: world
       rohith: yes
   - path: platform/secrets/se3
+    values:
+      hello: world
+      rohith: yes
+
+  - path: platform/secrets/project1/staging/se1
     values:
       hello: world
       rohith: yes

@@ -1,0 +1,62 @@
+---
+bases:
+- ../config/environments.yaml
+- ../config/helmdefaults.yaml
+---
+
+repositories:
+- name: traefik
+  url: "git+https://github.com/containous/traefik-helm-chart@/traefik"
+
+###############
+## traefik
+releases:
+- name: namespace-traefik
+  # Helm 3 needs to put deployment info into a namespace. As this creates a namespace it will not exist yet so we use 'kube-system' 
+  #  which should exist in all clusters.
+  chart: ../charts/namespace/chart/namespace
+  namespace: kube-system
+  labels:
+    chart: namespace-traefik
+    component: "traefik"
+    namespace: {{ .Values.stacks.ingress.namespaceInternal }}
+  wait: true
+  installed: true
+  values:
+  - namespaces:
+    - {{ .Values.stacks.ingress.namespaceInternal }}
+
+## traefik Deployment
+- name: traefik
+  namespace: {{ .Values.stacks.ingress.namespaceInternal }}
+  installed: {{ .Values.stacks.ingress.installed }}
+  chart: traefik/traefik
+  labels:
+    chart: traefik
+    component: traefik
+    namespace: "{{ .Values.stacks.ingress.namespaceInternal }}"
+  needs:
+    - kube-system/namespace-traefik
+  values:
+  - additional:
+      sendAnonymousUsage: false
+  - service:
+      annotations:
+        "prometheus.io/scrape": "true"
+        "prometheus.io/port": "9913"
+        "service.beta.kubernetes.io/{{ .Values.cloud }}-load-balancer-internal": "true"
+      type: LoadBalancer
+      spec:
+        externalTrafficPolicy: Cluster
+        loadBalancerIP: "{{ .Values.stacks.ingress.ipInternal }}"
+    additionalArguments:
+      - "--providers.kubernetesingress"
+      - "--providers.kubernetesingress.ingressclass={{ .Values.stacks.ingress.classInternal }}"
+    dashboard:
+      enable: true
+      ingressRoute: true
+      domain: traefik.{{ .Values.stacks.ingress.zoneInternal }}
+    web:
+      nodePort: 32080
+    websecure:
+      nodePort: 32443

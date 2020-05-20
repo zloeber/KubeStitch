@@ -87,3 +87,24 @@ releases:
               backend:
                 serviceName: vault-ui
                 servicePort: 8200
+
+## Role binding needed to do vault auth
+- name: vault-sa-rolebinding
+  chart: incubator/raw
+  namespace: vault
+  needs:
+  - vault/vault
+  values:
+  - resources:
+    - apiVersion: rbacmanager.reactiveops.io/v1beta1
+      kind: RBACDefinition
+      metadata:
+        name: vault-sa-rolebinding
+      rbacBindings:
+      - name: example-service-account
+        subjects:
+          - kind: ServiceAccount
+            name: vault
+            namespace: vault
+        clusterRoleBindings:
+          - clusterRole: system:auth-delegator

@@ -1,6 +1,8 @@
 ROOT_PATH ?= $(abspath $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST))))))
 BIN_PATH ?= $(ROOT_PATH)/.local/bin
+
 gitlab-runner := $(BIN_PATH)/gitlab-runner
+gitlab := $(BIN_PATH)/gitlab
 
 .PHONY: .dep/gitlab-runner
 .dep/gitlab-runner: ## install gitlab-runner
@@ -11,8 +13,19 @@ ifeq (,$(wildcard $(gitlab-runner)))
 	@echo "Installed: $(gitlab-runner)"
 endif
 
+.PHONY: .dep/gitlab-cli
+.dep/gitlab-cli: ## install gitlab-cli
+ifeq (,$(wildcard $(gitlab)))
+	@$(MAKE) --no-print-directory -C $(APP_PATH)/githubapp auto makkes/gitlab-cli PACKAGE_EXE=gitlab INSTALL_PATH=$(BIN_PATH)
+	@echo "Installed: $(gitlab)"
+endif
+
 .PHONY: .deps/gitlab
-.deps/gitlab: .dep/gitlab-runner ## Install dependencies
+.deps/gitlab: .dep/gitlab-runner .dep/gitlab-cli ## Install dependencies
+
+.PHONY: gitlab/login
+gitlab/login: ## Login to gitlab cli
+	@$(gitlab) login $(GITLAB_TOKEN)
 
 .PHONY: gitlab-runner
 gitlab-runner: ## Launch gitlab-runner
