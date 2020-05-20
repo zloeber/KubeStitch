@@ -138,7 +138,7 @@ make deps cluster/start helmfile/sync dnsforward/start
 
 Then you can access both [http://consul.int.micro.svc](http://consul.int.micro.svc) and [http://vault.int.micro.svc](http://vault.int.micro.svc) to immediately start exploring these cool products.
 
-## Task Sets
+## Tasksets
 
 Sometimes there are additional commands required to vet out a solution. To accommodate for this need, you can add a new makefile directly in the 'inc' folder as `./inc/makefile.<taskset>` and then add the `<taskset>` into your profile's `ADDITIONAL_TASKSETS` definition (space delimited if there is more than one). This will source in your new script tasks automatically only when the profile is used.
 
@@ -154,7 +154,9 @@ To target another environment for helmfile follow a few extra steps.
 
 > **NOTE** I try to keep all settings in the default helmfile environment yaml definition with each helmfile 'stack' as its own section. This suits me. You can modify this but will also have to modify the helmfiles that use these yaml paths as well.
 
-## Example Usage
+## Usage
+
+Here is an example of using a profile to start up a local istio cluster.
 
 ```bash
 # Ensure we get the correct profile for the remaining commands
