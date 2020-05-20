@@ -138,7 +138,7 @@ make deps cluster/start helmfile/sync dnsforward/start
 
 Then you can access both [http://consul.int.micro.svc](http://consul.int.micro.svc) and [http://vault.int.micro.svc](http://vault.int.micro.svc) to immediately start exploring these cool products.
 
-## Tasksets
+## Task Sets
 
 Sometimes there are additional commands required to vet out a solution. To accommodate for this need, you can add a new makefile directly in the 'inc' folder as `./inc/makefile.<taskset>` and then add the `<taskset>` into your profile's `ADDITIONAL_TASKSETS` definition (space delimited if there is more than one). This will source in your new script tasks automatically only when the profile is used.
 
@@ -188,15 +188,23 @@ If k3d is more your style then you can repeat this entire set of directions with
 ```bash
 make cluster/start istio/deploy istio/start/dnsforward helmfile/sync STACK=bookinfo PROFILE=istio-k3d
 ```
+## Secrets
 
-## Additional Notes
+Any secrets should be put into your environment for use in tasksets that require them. For this I personally use direnv with a local .envrc file. 
+
+```bash
+## Example direnv file for exporting a gitlab token used to login to the gitlab cli
+export GITLAB_TOKEN=<your token>
+```
+
+# Additional Notes
 
 - The `cluster/start` tasks will always first try to destroy the cluster before starting it.
 - There is a ton of extra 'stuff' in this repo that still needs to be cleaned out or revisited, not all files serve a purpose (yet)
 - Along the same lines as the prior statement, there are a ton eof 'helmfiles' in the helmfile/wip folder that worked with env vars at one point. I'll slowly move these out of wip when I'm able to do so or the need comes up.
 - MetalLB is used when a loadbalancer is required. Currently the deployment will use IP addresses between 172.17.0.100 and 172.17.0.110. This is the bridge IP subnet of docker on my workstation. You can modify this range in the config file within `./deploy/metallb/metallb-config.yaml`.
 
-## Links/Inspiration
+# Links/Inspiration
 
 [Istio Practice Deployment](https://github.com/RothAndrew/istio-practice/tree/master/eks)
 
