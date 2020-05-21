@@ -23,7 +23,7 @@ lens: ## Launch lens
 	$(lens)
 
 .PHONY: lens/addcluster
-lens/addcluster: ## Add current kube cluster configuration to lens
+lens/addcluster: lens/clearclusters ## Add current kube cluster configuration to lens
 	@tmpconfig=`cat $(KUBE_CONFIG) | sed -e ':a' -e 'N' -e '$$!ba' -e 's/\n/\\n/g'`; \
 	$(jq) --arg clusterconfig "$$tmpconfig" \
 		--arg clustername $(CLUSTER) \

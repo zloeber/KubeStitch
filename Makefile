@@ -4,6 +4,7 @@ ROOT_PATH := $(abspath $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIS
 CONFIG_PATH := $(ROOT_PATH)/config
 HOME_PATH ?= $(ROOT_PATH)/.local
 BIN_PATH := $(HOME_PATH)/bin
+PROFILE_PATH ?= $(ROOT_PATH)/profiles
 INSTALL_PATH := $(BIN_PATH)
 TEMP_PATH := $(HOME_PATH)/tmp
 APP_PATH := $(HOME_PATH)/apps
@@ -16,7 +17,7 @@ yq := $(BIN_PATH)/yq
 jq := $(BIN_PATH)/jq
 
 # Import target deployment env vars
-ENVIRONMENT_VARS ?= $(CONFIG_PATH)/profile.$(PROFILE).env
+ENVIRONMENT_VARS ?= $(PROFILE_PATH)/profile.$(PROFILE).env
 ifneq (,$(wildcard $(ENVIRONMENT_VARS)))
 include ${ENVIRONMENT_VARS}
 export $(shell sed 's/=.*//' ${ENVIRONMENT_VARS})

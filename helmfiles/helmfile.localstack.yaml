@@ -1,0 +1,205 @@
+---
+bases:
+- ../config/environments.yaml
+- ../config/helmdefaults.yaml
+---
+
+repositories:
+- name: incubator
+  url: https://kubernetes-charts-incubator.storage.googleapis.com
+
+releases:
+- name: namespace-localstack
+  chart: {{ .Values.archetypeChart }}
+  namespace: kube-system
+  labels:
+    chart: namespace-localstack
+    component: localstack
+    namespace: kube-system
+  wait: true
+  installed: true
+  values:
+  - app: localstack
+    namespace:
+      enabled: true
+      name: localstack
+
+- name: localstack-deployment
+  chart: incubator/raw
+  namespace: localstack
+  labels:
+    chart: localstack-deployment
+    component: localstack
+    namespace: localstack
+  needs:
+  - kube-system/namespace-localstack
+  values:
+  - resources:
+    - apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
+        creationTimestamp: null
+        labels:
+          io.kompose.service: localstack-claim0
+        name: localstack-claim0
+      spec:
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: 100Mi
+    - apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
+        creationTimestamp: null
+        labels:
+          io.kompose.service: localstack-claim1
+        name: localstack-claim1
+      spec:
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: 100Mi
+    - apiVersion: v1
+      kind: Service
+      metadata:
+        annotations:
+          kompose.cmd: kompose convert
+          kompose.version: 1.21.0 (992df58d8)
+        creationTimestamp: null
+        labels:
+          io.kompose.service: localstack
+        name: localstack
+      spec:
+        ports:
+        - name: "4566"
+          port: 4566
+          targetPort: 4566
+        - name: "8080"
+          port: 8080
+          targetPort: 8080
+        selector:
+          io.kompose.service: localstack
+    - apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        annotations:
+          kompose.cmd: kompose convert
+          kompose.version: 1.21.0 (992df58d8)
+        creationTimestamp: null
+        labels:
+          io.kompose.service: localstack
+        name: localstack
+      spec:
+        replicas: 1
+        selector:
+          matchLabels:
+            io.kompose.service: localstack
+        strategy:
+          type: Recreate
+        template:
+          metadata:
+            annotations:
+              kompose.cmd: kompose convert
+              kompose.version: 1.21.0 (992df58d8)
+            creationTimestamp: null
+            labels:
+              io.kompose.service: localstack
+          spec:
+            containers:
+            - env:
+              - name: DATA_DIR
+                value: ' '
+              - name: DEBUG
+                value: ' '
+              - name: DOCKER_HOST
+                value: unix:///var/run/docker.sock
+              - name: HOST_TMP_FOLDER
+              - name: KINESIS_ERROR_PROBABILITY
+                value: ' '
+              - name: LAMBDA_EXECUTOR
+                value: ' '
+              - name: PORT_WEB_UI
+                value: ' '
+              - name: SERVICES
+                value: ' '
+              image: localstack/localstack
+              imagePullPolicy: ""
+              name: localstack-main
+              ports:
+              - containerPort: 4566
+              - containerPort: 8080
+              resources: {}
+              volumeMounts:
+              - mountPath: /tmp/localstack
+                name: localstack-claim0
+              - mountPath: /var/run/docker.sock
+                name: localstack-claim1
+            restartPolicy: Always
+            serviceAccountName: ""
+            volumes:
+            - name: localstack-claim0
+              persistentVolumeClaim:
+                claimName: localstack-claim0
+            - name: localstack-claim1
+              persistentVolumeClaim:
+                claimName: localstack-claim1
+
+- name: ingress-localstack-dashboard
+  namespace: localstack
+  chart: {{ .Values.archetypeChart }}
+  installed: true
+  needs:
+  - kube-system/namespace-localstack
+  labels:
+    chart: ingress-localstack-dashboard
+    component: ingress
+    namespace: localstack
+  values:
+  - zone: internal
+    app: localstack
+    ingressClassMap:
+      internal: {{ .Values.stacks.ingress.classInternal }}
+    ingress:
+      enabled: true
+      tlsEnabled: true
+      hosts:
+      - name: localstack-dashboard.{{ .Values.stacks.ingress.zoneInternal }}
+        secretName: ingress-localstack-dashboard
+        config:
+          http:
+            paths:
+            - path: "/"
+              backend:
+                serviceName: localstack
+                servicePort: 8080
+
+- name: ingress-localstack-api
+  namespace: localstack
+  chart: {{ .Values.archetypeChart }}
+  installed: true
+  needs:
+  - kube-system/namespace-localstack
+  labels:
+    chart: ingress-localstack-api
+    component: ingress
+    namespace: localstack
+  values:
+  - zone: internal
+    app: localstack
+    ingressClassMap:
+      internal: {{ .Values.stacks.ingress.classInternal }}
+    ingress:
+      enabled: true
+      tlsEnabled: true
+      hosts:
+      - name: localstack.{{ .Values.stacks.ingress.zoneInternal }}
+        secretName: ingress-localstack-api
+        config:
+          http:
+            paths:
+            - path: "/"
+              backend:
+                serviceName: localstack
+                servicePort: 4566

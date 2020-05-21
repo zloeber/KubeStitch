@@ -59,9 +59,9 @@ If you are changing between versions of Kubernetes using this framework you will
 
 ## Profiles
 
-This project was originally created to support multiple clusters and teams. I've since pulled it back to simply targeting 'profiles'. This means all top level settings that you may want to overwrite are able to be put in a single file: `./config/<profilename>.env`. To see the current profile, helmfile environment, and some additional variables, use `make show`.  
+This project was originally created to support multiple clusters and teams. I've since pulled it back to simply targeting 'profiles'. This means all top level settings that you may want to overwrite are able to be put in a single file: `./profiles/<profilename>.env`. To see the current profile, helmfile environment, and some additional variables, use `make show`.  
 
-To create a whole new target environment you can copy and modify the `./config/default.env` to `./config/<newprofile>.env` then pass in `PROFILE=<newprofile>` to all make commands (or export it at the start of your session). If you need a separate environment or helmfile cluster deployment then further files will need to be created to accommodate.
+To create a whole new target environment you can copy and modify the `./profiles/default.env` to `./profiles/<newprofile>.env` then pass in `PROFILE=<newprofile>` to all make commands (or export it at the start of your session). If you need a separate environment or helmfile cluster deployment then further files will need to be created to accommodate.
 
 > **NOTE** `PROFILE` is for using different cluster types and configurations. Testing the same set of helm charts to both k3d and kind (or any other target for that matter) might be facilitated by using a profile. An `ENVIRONMENT` is what you would use to create helmfile deployment environment configuration. `ENVIRONMENT` is always 'default' unless manually passed in and is only used in the helmfile/* tasks. You can set `ENVIRONMENT` within the profile definition or overwrite it when calling the tasks via the command line. The istio example uses an Environment to define a set of istio specific helm settings to deploy.
 
@@ -89,7 +89,7 @@ make cluster/stop  ## Default environment is 'default'
 
 ### Profile - Kind (default)
 
-**File:** ./config/default.env
+**File:** ./profiles/default.env
 
 This profile is what we use for default deployments. It includes;
 
@@ -100,7 +100,7 @@ This profile is what we use for default deployments. It includes;
 
 ### PROFILE - k3d
 
-**File:** ./config/k3d.env
+**File:** ./profiles/k3d.env
 
 - A 2 node k3d cluster
 - Kubernetes 1.18.3
@@ -110,11 +110,11 @@ This is a k3d cluster that is similar to the kind environment
 
 ### PROFILE - istio
 
-**File:** ./config/istio.env
+**File:** ./profiles/istio.env
 
 Here is an example environment running istio on a kind cluster. It includes;
 
-- A separate 'istio' profile (`./config/istio.env`) 
+- A separate 'istio' profile (`./profiles/istio.env`) 
 - An additional plugin to include istio specific commands (found in inc/makefile.istio)
 - An istioctl based istio operator deployment
 - Some istio tasks for monitoring ingress and such
@@ -125,7 +125,7 @@ Here is an example environment running istio on a kind cluster. It includes;
 
 ### PROFILE - vault
 
-**File:** ./config/vault.env
+**File:** ./profiles/vault.env
 
 This is another proof of concept environment that spins up a kind cluster running Hashicorp vault with a consul backend. It also includes installation of some dependencies for testing things out as well as vault-sync to test out seeding a base deployment via cli. This is a work in progress on how one might use mostly declarative configuration for a vault integrated kubernetes cluster.
 
@@ -137,6 +137,14 @@ make deps cluster/start helmfile/sync dnsforward/start
 ```
 
 Then you can access both [http://consul.int.micro.svc](http://consul.int.micro.svc) and [http://vault.int.micro.svc](http://vault.int.micro.svc) to immediately start exploring these cool products.
+
+### PROFILE - localstack
+
+**File:** ./profiles/localstack.env
+
+This profile is for setting up the venerable [localstack](https://github.com/localstack/localstack) AWS API simulation environment in kubernetes. The deployment was a 10 minute effort proof of concept done by converting the project's docker-compose file via kompose then plugging in the output into a custom helmfile.
+
+This can be a great way to vet out terraform manifests or test out AWS based pipelines without any cloud access required.
 
 ## Tasksets
 
@@ -197,6 +205,26 @@ Any secrets should be put into your environment for use in tasksets that require
 ```bash
 ## Example direnv file for exporting a gitlab token used to login to the gitlab cli
 export GITLAB_TOKEN=<your token>
+```
+
+## Lens (GUI Console)
+
+Lens is a particularly useful GUI app for rucking about in Kubernetes. It is also cross-platform. If you are running a linux host you can use this framework to automatically download the app and access clusters with it. I've added some scriptwork to automatically clear the lens clusters and add new configuration in a few commands. Here is how it works.
+
+> **NOTE** the lens taskset is not in all profiles.
+
+```bash
+# First download lens and run it at least once
+make deps lens
+
+# Then, assuming your cluster has been started (make cluster/start) you can add it to the lens cluster store/config. By default, this will first clear any added clusters in the configuration (localized in the ./.local/Lens/lens-cluster-store.json file)
+make lens/addcluster
+```
+
+That is it, then start lens again and your running cluster will be the first one in the list (at the upper left).
+
+```bash
+make lens
 ```
 
 # Additional Notes
