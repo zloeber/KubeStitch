@@ -211,7 +211,7 @@ export GITLAB_TOKEN=<your token>
 
 Lens is a particularly useful GUI app for rucking about in Kubernetes. It is also cross-platform. If you are running a linux host you can use this framework to automatically download the app and access clusters with it. I've added some scriptwork to automatically clear the lens clusters and add new configuration in a few commands. Here is how it works.
 
-> **NOTE** the lens taskset is not in all profiles.
+> **NOTE** the lens taskset is targeted towards linux hosts. For a cross-platform console dashboard you can also use the `make k9s` task!
 
 ```bash
 # First download lens and run it at least once

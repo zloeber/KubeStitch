@@ -1,0 +1,18 @@
+ROOT_PATH ?= $(abspath $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST))))))
+BIN_PATH ?= $(ROOT_PATH)/.local/bin
+
+k9s := $(BIN_PATH)/k9s
+
+.PHONY: .dep/k9s
+.dep/k9s: ## Install k9s locally
+ifeq (,$(wildcard $(k9s)))
+	@$(MAKE) --no-print-directory -C $(APP_PATH)/githubapp auto k9s INSTALL_PATH=$(BIN_PATH)
+	@echo "Installed: $(k9s)"
+endif
+
+.PHONY: .deps/k9s
+.deps/k9s: .dep/k9s ## Install dependencies
+
+.PHONY: k9s
+k9s: ## Run k9s against current cluster
+	$(k9s) -A --kubeconfig $(KUBE_CONFIG)
