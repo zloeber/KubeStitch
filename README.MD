@@ -129,14 +129,7 @@ Here is an example environment running istio on a kind cluster. It includes;
 
 This is another proof of concept environment that spins up a kind cluster running Hashicorp vault with a consul backend. It also includes installation of some dependencies for testing things out as well as vault-sync to test out seeding a base deployment via cli. This is a work in progress on how one might use mostly declarative configuration for a vault integrated kubernetes cluster.
 
-If you run this:
-
-```bash
-export PROFILE=vault
-make deps cluster/start helmfile/sync dnsforward/start
-```
-
-Then you can access both [http://consul.int.micro.svc](http://consul.int.micro.svc) and [http://vault.int.micro.svc](http://vault.int.micro.svc) to immediately start exploring these cool products.
+You can access both [http://consul.int.micro.svc](http://consul.int.micro.svc) and [http://vault.int.micro.svc](http://vault.int.micro.svc) to immediately start exploring these cool products after bringing up the cluster.
 
 ### PROFILE - localstack
 
@@ -146,11 +139,21 @@ This profile is for setting up the venerable [localstack](https://github.com/loc
 
 This can be a great way to vet out terraform manifests or test out AWS based pipelines without any cloud access required.
 
+### PROFILE - argocd
+
+**File:** ./profiles/argocd.env
+
+Create a local argocd cluster for testing out GitOps. Includes customization to allow for helmfile use in the application definitions.
+
+To access the GUI interface (https://argocd.int.micro.svc/) the default ID is `admin` and the password can be retrieved by running `make argocd/get/password` (typically ends up being the argocd-server pod name)
+
 ## Tasksets
 
 Sometimes there are additional commands required to vet out a solution. To accommodate for this need, you can add a new makefile directly in the 'inc' folder as `./inc/makefile.<taskset>` and then add the `<taskset>` into your profile's `ADDITIONAL_TASKSETS` definition (space delimited if there is more than one). This will source in your new script tasks automatically only when the profile is used.
 
-## Helmfile Environments
+## Helmfile
+
+I use helmfile extensively to declaratively stitch together my deployments from other helm charts, my own monochart, and the raw helm chart. Helmfile uses 'environments' to help breakdown multiple configuration paths.
 
 Configuration for the default helmfile environment is in `config/environment.default.yaml`. These values get sourced into the various helmfiles I am working with at the time. I'll add/remove/change these values as I please depending on the lab I'm working with at the time. The idea is that I can create new, non-local, environments from this and make simple changes to target them from a pipeline when the time comes.
 
@@ -198,6 +201,8 @@ If k3d is more your style then you can repeat this entire set of directions with
 ```bash
 make cluster/start istio/deploy istio/start/dnsforward helmfile/sync STACK=bookinfo PROFILE=istio-k3d
 ```
+
+> **NOTE** If you are rapidly creating a cluster you can do so idempotently via one command that will delete any running cluster defined in the profile, create it again, then apply a helmfile/sync for the cluster's default helmfile stack (example - `make cluster PROFILE=argocd`)
 ## Secrets
 
 Any secrets should be put into your environment for use in tasksets that require them. For this I personally use direnv with a local .envrc file. 

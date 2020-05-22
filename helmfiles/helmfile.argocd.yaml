@@ -1,0 +1,100 @@
+## Install Hashicorp argocd with Consul backend
+---
+bases:
+- ../config/environments.yaml
+- ../config/helmdefaults.yaml
+---
+
+repositories:
+- name: argocd
+  url: "git+https://github.com/argoproj/argo-helm@/charts/argo-cd"
+
+###############
+## Hashicorp argocd
+releases:
+- name: namespace-argocd
+  chart: {{ .Values.archetypeChart }}
+  namespace: kube-system
+  labels:
+    chart: namespace-argocd
+    component: argocd
+    namespace: kube-system
+  wait: true
+  installed: true
+  values:
+  - app: argocd
+    namespace:
+      enabled: true
+      name: argocd
+
+## argocd Deployment
+# Values: https://github.com/argoproj/argo-helm/blob/master/charts/argo-cd/values.yaml
+- name: argo-cd
+  namespace: argocd
+  installed: true
+  chart: argocd/argo-cd
+  labels:
+    chart: argocd
+    component: argocd
+    namespace: argocd
+  needs:
+    - kube-system/namespace-argocd
+  values:
+  - server:
+      # Setup server as insecure so that we can use traefik to expose ingress
+      # https://argoproj.github.io/argo-cd/operator-manual/ingress/
+      extraArgs:
+      - --insecure
+      # Additional configmap entry for helmfile custom plugin
+      # https://hub.docker.com/r/chatwork/argocd-helmfile
+      config:
+        # Argo CD's externally facing base URL (optional). Required when configuring SSO
+        url: https://argocd.{{ .Values.stacks.ingress.zoneInternal }}
+        # Argo CD instance label key
+        application.instanceLabelKey: argocd.argoproj.io/instance
+        configManagementPlugins: |
+          - name: helmfile
+            generate:
+              command: ["/bin/sh", "-c"]
+              args: ["helmfile --namespace $ARGOCD_APP_NAMESPACE template | sed -e '1,/---/d' | sed -e 's|apiregistration.k8s.io/v1beta1|apiregistration.k8s.io/v1|g'"]
+    repoServer:
+      image:
+        repository: chatwork/argocd-helmfile
+        tag: edge
+        imagePullPolicy: IfNotPresent
+
+- name: ingress-argocd
+  namespace: "argocd"
+  chart: {{ .Values.archetypeChart }}
+  installed: true
+  needs:
+  - kube-system/namespace-argocd
+  - argocd/argo-cd
+  labels:
+    chart: ingress-argocd
+    component: ingress
+    namespace: argocd
+  values:
+  - zone: internal
+    app: argocd-dashboard
+    ingressClassMap:
+      internal: {{ .Values.stacks.ingress.classInternal }}
+    # certificate:
+    #   enabled: true
+    #   name: dashboard-ingress-cert
+    #   selfSigned: true
+    #   commonName: dashboard.{{ .Values.stacks.ingress.zoneInternal }}
+    #   isCA: false
+    ingress:
+      enabled: true
+      tlsEnabled: true
+      hosts:
+      - name: argocd.{{ .Values.stacks.ingress.zoneInternal }}
+        secretName: ingress-argocd-dashboard
+        config:
+          http:
+            paths:
+            - path: "/"
+              backend:
+                serviceName: argo-cd-argocd-server
+                servicePort: 80

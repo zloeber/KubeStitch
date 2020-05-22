@@ -25,25 +25,25 @@ releases:
   labels:
     chart: namespace-cert-manager
     component: cert-manager
-    namespace: {{ .Values.stacks.certmanager.namespace | default "cert-manager" }}
+    namespace: kube-system
   wait: true
   installed: true
   values:
   - app: cert-manager
     namespace:
       enabled: true
-      name: {{ .Values.stacks.certmanager.namespace | default "cert-manager" }}
+      name: cert-manager
       annotations:
-        helm.sh/resource-policy: "keep"
+        #helm.sh/resource-policy: "keep"
         certmanager.k8s.io/disable-validation: "true"
 
 - name: cert-manager
-  namespace: {{ .Values.stacks.certmanager.namespace | default "cert-manager" }}
+  namespace: cert-manager
   labels:
     chart: cert-manager
     repo: stable
     component: "cert-manager"
-    namespace: {{ .Values.stacks.certmanager.namespace | default "cert-manager" }}
+    namespace: cert-manager
     vendor: "jetstack"
   chart: jetstack/cert-manager
   # version: "v0.15.0"
@@ -66,7 +66,7 @@ releases:
         defaultIssuerKind: Issuer
       serviceAccount:
         create: true
-        name: '{{ .Values.stacks.certmanager.serviceaccountname | default "" }}'
+        name: ""
       prometheus:
         enabled: {{ .Values.stacks.monitoring.installed | default "false" }}
         servicemonitor:
@@ -86,10 +86,10 @@ releases:
 {{- if .Values.stacks.monitoring.installed }}
 - name: cert-manager-metricsservice
   chart: incubator/raw
-  namespace: {{ .Values.stacks.certmanager.namespace | default "cert-manager" }}
+  namespace: cert-manager
   labels:
     component: "cert-manager-metricsservice"
-    namespace: {{ .Values.stacks.certmanager.namespace | default "cert-manager" }}
+    namespace: cert-manager
     default: "true"
   installed: {{ .Values.stacks.monitoring.installed | default "true" }}
   needs:
@@ -102,9 +102,9 @@ releases:
         name: cert-manager
         labels:
           app: cert-manager
-          app.kubernetes.io/name: cert-manager
-          app.kubernetes.io/instance: cert-manager
-          app.kubernetes.io/managed-by: Helm
+          # app.kubernetes.io/name: cert-manager
+          # app.kubernetes.io/instance: cert-manager
+          # app.kubernetes.io/managed-by: Helm
       spec:
         type: ClusterIP
         ports:
@@ -139,7 +139,7 @@ releases:
         jobLabel: cert-manager
         namespaceSelector:
           matchNames:
-          - {{ .Values.stacks.certmanager.namespace | default "cert-manager" }}
+          - cert-manager
         selector:
           matchLabels:
             app: cert-manager
@@ -153,10 +153,10 @@ releases:
 
 - name: cert-manager-issuers
   chart: incubator/raw
-  namespace: {{ .Values.stacks.certmanager.namespace | default "cert-manager" }}
+  namespace: cert-manager
   labels:
     component: "cert-manager"
-    namespace: {{ .Values.stacks.certmanager.namespace | default "cert-manager" }}
+    namespace: cert-manager
     default: "true"
   installed: true
   wait: false
