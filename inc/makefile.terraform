@@ -1,0 +1,39 @@
+ROOT_PATH ?= $(abspath $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST))))))
+BIN_PATH ?= $(ROOT_PATH)/.local/bin
+
+TF_VERSION ?= 0.12.23
+
+terraform := $(BIN_PATH)/terraform
+
+.PHONY: .dep/terraform
+.dep/terraform: ## Install local terraform binary
+ifeq (,$(wildcard $(terraform)))
+	@echo "Attempting to install terraform - $(TF_VERSION)"
+	@mkdir -p $(BIN_PATH)
+	@wget -O /tmp/terraform.zip https://releases.hashicorp.com/terraform/$(TF_VERSION)/terraform_$(TF_VERSION)_$(OS)_$(ARCH).zip
+	@unzip -d $(BIN_PATH) /tmp/terraform.zip && rm /tmp/terraform.zip
+endif
+
+.PHONY: .deps/terraform
+.deps/terraform: .dep/terraform ## Install dependencies
+
+.PHONY: terraform/clean
+terraform/clean: ## Clean local terraform state and cached files
+	rm -rf ./.terraform
+	rm terraform.tfstate*
+
+.PHONY: terraform/init
+terraform/init: ## Terraform init
+	$(terraform) init
+
+.PHONY: terraform/plan
+terraform/plan: ## Terraform plan
+	$(terraform) plan
+
+.PHONY: terraform/apply
+terraform/apply: ## Terraform apply
+	$(terraform) apply
+
+.PHONY: terraform/destroy
+terraform/destroy: kube/clean ## Terraform destroy
+	$(terraform) destroy

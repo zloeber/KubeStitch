@@ -15,7 +15,6 @@ YELLOW=$(shell tput setaf 3)
 RESET=$(shell tput sgr0)
 
 ## Other environment specific nice things
-OS := $(shell uname|tr A-Z a-z)
 ifeq ($(shell uname -m),x86_64)
 ARCH ?= amd64
 endif
@@ -27,8 +26,10 @@ ARCH ?= arm
 endif
 ifeq ($(OS),Windows_NT)
 HOST_PLATFORM := Windows
+OS := Windows
 else
 HOST_PLATFORM := $(shell sh -c 'uname -s 2>/dev/null || echo not supported' | tr '[:upper:]' '[:lower:]')
+OS := $(shell sh -c 'uname -s 2>/dev/null || echo not supported' | tr '[:upper:]' '[:lower:]')
 endif
 
 $(BIN_PATH): ## Stage build directory if it does not exist
