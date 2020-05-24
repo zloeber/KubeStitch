@@ -261,4 +261,7 @@ heritage: {{ .Release.Service | quote }}
 release: {{ .Release.Name | quote }}
 zone: {{ .Values.zone | quote }}
 namespace: {{ .Release.Namespace | quote }}
+{{- if .Values.argocd }}
+app.kubernetes.io/part-of: argocd
+{{- end }}
 {{- end -}}

@@ -72,7 +72,7 @@ endif
 .helm/plugins: ## Installs helm plugins
 	@$(helm) plugin install https://github.com/databus23/helm-diff --version master 2> /dev/null || true
 	@$(helm) plugin install https://github.com/futuresimple/helm-secrets 2> /dev/null || true
-	@$(helm) plugin install https://github.com/mumoshu/helm-x 2> /dev/null || true
+#	@$(helm) plugin install https://github.com/mumoshu/helm-x 2> /dev/null || true
 	@$(helm) plugin install https://github.com/aslafy-z/helm-git.git 2> /dev/null || true
 #	@$(helm) plugin install https://github.com/thomastaylor312/helm-namespace 2> /dev/null || true
 

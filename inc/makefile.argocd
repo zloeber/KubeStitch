@@ -3,19 +3,9 @@ BIN_PATH ?= $(ROOT_PATH)/.local/bin
 
 argocd := $(BIN_PATH)/argocd
 
-.PHONY: argocd/install
-argocd/install: ## Install argocd
-	$(kubecmd) create namespace argocd
-	$(kubecmd) apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
-
-.PHONY: argocd/remove
-argocd/remove: ## Remove argocd
-	$(kubecmd) delete -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
-	$(kubecmd) delete namespace argocd
-
 .PHONY: argocd/get/password
 argocd/get/password: ## Pull the argocd password
-	$(kubecmd) get pods -n argocd -l app.kubernetes.io/name=argocd-server -o name | cut -d'/' -f 2
+	@$(kubecmd) get pods -n argocd -l app.kubernetes.io/name=argocd-server -o name | cut -d'/' -f 2
 
 .PHONY: .dep/argocd
 .dep/argocd: ## Install argocd locally
@@ -26,3 +16,7 @@ endif
 
 .PHONY: .deps/argocd
 .deps/argocd: .dep/argocd ## Install dependencies
+
+.PHONY: argocd/cmd
+argocd/login: ## login via argocd cli
+	$(argocd) login argocd.int.micro.svc #--username admin --password $(shell $(MAKE) argocd/get/password)

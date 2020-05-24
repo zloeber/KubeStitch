@@ -1,3 +1,4 @@
+{{- $config := (datasource "config") -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -9,4 +10,4 @@ data:
     - name: default
       protocol: layer2
       addresses:
-      - 172.17.0.100-172.17.0.110
+      - {{ if (has $config.stacks.ingress "internalLBSubnet") }}{{ $config.stacks.ingress.internalLBSubnet }}{{ else }}{{ env.Getenv "STACK_INGRESS_INTERNALLBSUBNET" "172.17.1.0/24" }}{{ end }}

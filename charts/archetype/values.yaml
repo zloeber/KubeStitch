@@ -1,5 +1,5 @@
 ## Top level default settings
-app: 
+app: appname
 cloud: local # Can be used to implement cloud specific internal loadbalancers (for example)
 zone: internal # Used by various lookups
 dnsZone: micro.svc # root level dns zone for this cluster
@@ -12,6 +12,7 @@ keyvaultInjection: false
 injectionEnabled: false
 serviceTests: false ## Used to enable service post helm deployment testing pods
 ingressTests: false ## used to enable ingress post helm deployment testing pods
+argocd: true ## adds label to configmaps (app.kubernetes.io/part-of: argocd)
 
 ## Global overrides (primarily affects release names)
 global:

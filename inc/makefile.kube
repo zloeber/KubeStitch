@@ -3,6 +3,7 @@ BIN_PATH ?= $(ROOT_PATH)/.local/bin
 
 METALLB_VERSION ?= 0.9.3
 CLUSTER_CONTEXT ?= $(CLUSTER)
+DOCKER_NETWORK ?= bridge
 KUBE_CONFIG := $(ROOT_PATH)/.local/kube.$(CLUSTER).conf
 
 kubectl := $(BIN_PATH)/kubectl
@@ -72,8 +73,14 @@ kube/proxy/dashboard: ## Starts a proxy to the local cluster dashboard if it exi
 kube/deploy/metallb: .dep/kubectl .kube/get/configfile ## Deploy metallb on the cluster
 	@$(kubecmd) apply -f https://raw.githubusercontent.com/metallb/metallb/v$(METALLB_VERSION)/manifests/namespace.yaml
 	@$(kubecmd) apply -f https://raw.githubusercontent.com/metallb/metallb/v$(METALLB_VERSION)/manifests/metallb.yaml
-	@$(kubecmd) apply -f $(DEPLOY_PATH)/metallb/metallb-config.yaml
 	@$(kubecmd) create secret generic -n metallb-system memberlist --from-literal=secretkey="$(openssl rand -base64 128)" || true
+	@tmpdir=$$(mktemp -d) && \
+	export STACK_INGRESS_INTERNALLBSUBNET=$(shell $(MAKE) kube/loadbalancer/subnet) && \
+	$(gomplate) \
+		-d config=$(CONFIG_PATH)/environment.$(ENVIRONMENT).yaml \
+		--file $(DEPLOY_PATH)/metallb/metallb-config.yaml \
+		--out "$${tmpdir}/metallb-config.yaml" && \
+	$(kubecmd) apply -f "$${tmpdir}/metallb-config.yaml"
 
 .PHONY: kube/delete/metallb
 kube/delete/metallb: ## Delete metallb deployment
@@ -103,6 +110,10 @@ kube/bearertoken: Return bearer token for cluster
 .PHONY: kube/loadbalancer/ip
 kube/loadbalancer/ip: ## Show external loadbalancer ip
 	@$(kubecmd) -n $(STACK_INGRESS_INTERNALNAMESPACE) get svc -o jsonpath='{.items[?(@.spec.type=="LoadBalancer")].status.loadBalancer.ingress[0].ip}'
+
+.PHONY: kube/loadbalancer/subnet
+kube/loadbalancer/subnet: ## Show docker bridge subnet
+	@docker network inspect $(DOCKER_NETWORK) | $(jq) '.[0].IPAM.Config[0].Gateway' | sed -e 's/\0.1/1\.0\/24/g'
 
 .PHONY: dnsforward/start
 dnsforward/start: dnsforward/stop ## Forwards all dns requests to a local dns-proxy-server

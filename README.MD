@@ -232,12 +232,17 @@ That is it, then start lens again and your running cluster will be the first one
 make lens
 ```
 
-# Additional Notes
+# Additional Info
 
 - The `cluster/start` tasks will always first try to destroy the cluster before starting it.
 - There is a ton of extra 'stuff' in this repo that still needs to be cleaned out or revisited, not all files serve a purpose (yet)
 - Along the same lines as the prior statement, there are a ton eof 'helmfiles' in the helmfile/wip folder that worked with env vars at one point. I'll slowly move these out of wip when I'm able to do so or the need comes up.
-- MetalLB is used when a loadbalancer is required. Currently the deployment will use IP addresses between 172.17.0.100 and 172.17.0.110. This is the bridge IP subnet of docker on my workstation. You can modify this range in the config file within `./deploy/metallb/metallb-config.yaml`.
+- MetalLB is used when a loadbalancer is required.
+- Currently the loadbalancer deployment will use IP addresses between 172.17.0.100 and 172.17.0.110. This is the bridge IP subnet of docker on my workstation. You can modify this range in the config file within `./deploy/metallb/metallb-config.yaml`.
+
+## Why Makefiles?
+
+Great question! One which I sometimes struggle to answer. There are dozens of other taskers out there but make is probably one of the older ones that is well supported across a number of different systems. I personally use it when I might use bash scripts otherwise. It allows me to quickly view the commands being run (if I've not purposefully hidden them with a prepended @ symbol). Plus I'm sort of used to slinging makefiles so why not? Besides, most repos worth their salt have at least one of these things to bootstrap things in some manner so it doesn't hurt to get to know them a bit I'd say.
 
 # Links/Inspiration
 

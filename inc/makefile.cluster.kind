@@ -1,6 +1,9 @@
 ROOT_PATH ?= $(abspath $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST))))))
 BIN_PATH ?= $(ROOT_PATH)/.local/bin
-KIND_VERSION ?= 0.7.0
+KIND_VERSION ?= 0.8.1
+KIND_CONFIG ?= kind-config.yaml
+KIND_VERBOSITY ?= 1
+KIND_IMAGE_POSTFIX ?=
 
 kind := $(BIN_PATH)/kind
 CLUSTER_CONTEXT := kind-$(CLUSTER)
@@ -17,8 +20,9 @@ endif
 	@echo "Starting local kind cluster..."
 	$(kind) create cluster \
 		--name $(CLUSTER) \
-		--image=kindest/node:v$(KUBE_VERSION) \
-		--config=$(DEPLOY_PATH)/kind/kind-config-custom.yaml
+		--image=kindest/node:v$(KUBE_VERSION)$(KIND_IMAGE_POSTFIX) \
+		--config=$(DEPLOY_PATH)/kind/$(KIND_CONFIG) \
+		-v $(KIND_VERBOSITY)
 	$(kind) get kubeconfig --name $(CLUSTER) > $(KUBE_CONFIG)
 
 .PHONY: cluster/start

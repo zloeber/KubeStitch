@@ -8,6 +8,9 @@ bases:
 repositories:
 - name: argocd
   url: "git+https://github.com/argoproj/argo-helm@/charts/argo-cd"
+- name: incubator
+  url: https://kubernetes-charts-incubator.storage.googleapis.com
+
 
 ###############
 ## Hashicorp argocd
@@ -46,26 +49,76 @@ releases:
       extraArgs:
       - --insecure
       # Additional configmap entry for helmfile custom plugin
-      # https://hub.docker.com/r/chatwork/argocd-helmfile
+      # https://github.com/travisghansen/argo-cd-helmfile
       config:
         # Argo CD's externally facing base URL (optional). Required when configuring SSO
         url: https://argocd.{{ .Values.stacks.ingress.zoneInternal }}
-        # Argo CD instance label key
         application.instanceLabelKey: argocd.argoproj.io/instance
         configManagementPlugins: |
           - name: helmfile
+            init:
+              command: ["argo-cd-helmfile.sh"]
+              args: ["init"]
             generate:
-              command: ["/bin/sh", "-c"]
-              args: ["helmfile --namespace $ARGOCD_APP_NAMESPACE template | sed -e '1,/---/d' | sed -e 's|apiregistration.k8s.io/v1beta1|apiregistration.k8s.io/v1|g'"]
+              command: ["argo-cd-helmfile.sh"]
+              args: ["generate"]
     repoServer:
-      image:
-        repository: chatwork/argocd-helmfile
-        tag: edge
-        imagePullPolicy: IfNotPresent
+      volumes:
+      - name: custom-tools
+        emptyDir: {}
+      initContainers:
+      - name: download-tools
+        image: alpine:3.8
+        command: [sh, -c]
+        args:
+          - wget -qO /custom-tools/argo-cd-helmfile.sh https://raw.githubusercontent.com/travisghansen/argo-cd-helmfile/master/src/argo-cd-helmfile.sh &&
+            chmod +x /custom-tools/argo-cd-helmfile.sh &&
+            wget -qO /custom-tools/helmfile https://github.com/roboll/helmfile/releases/download/v0.116.0/helmfile_linux_amd64 &&
+            chmod +x /custom-tools/helmfile
+        volumeMounts:
+          - mountPath: /custom-tools
+            name: custom-tools
+      volumeMounts:
+      - mountPath: /usr/local/bin/argo-cd-helmfile.sh
+        name: custom-tools
+        subPath: argo-cd-helmfile.sh
+      - mountPath: /usr/local/bin/helmfile
+        name: custom-tools
+        subPath: helmfile
+
+# - name: ingress-argocd
+#   namespace: "argocd"
+#   chart: {{ .Values.archetypeChart }}
+#   installed: true
+#   needs:
+#   - kube-system/namespace-argocd
+#   - argocd/argo-cd
+#   labels:
+#     chart: ingress-argocd
+#     component: ingress
+#     namespace: argocd
+#   values:
+#   - zone: internal
+#     app: argocd-dashboard
+#     ingressClassMap:
+#       internal: {{ .Values.stacks.ingress.classInternal }}
+#     ingress:
+#       enabled: true
+#       tlsEnabled: true
+#       hosts:
+#       - name: argocd.{{ .Values.stacks.ingress.zoneInternal }}
+#         secretName: ingress-argocd-dashboard
+#         config:
+#           http:
+#             paths:
+#             - path: "/"
+#               backend:
+#                 serviceName: argo-cd-argocd-server
+#                 servicePort: 80
 
 - name: ingress-argocd
-  namespace: "argocd"
-  chart: {{ .Values.archetypeChart }}
+  namespace: argocd
+  chart: incubator/raw
   installed: true
   needs:
   - kube-system/namespace-argocd
@@ -75,26 +128,20 @@ releases:
     component: ingress
     namespace: argocd
   values:
-  - zone: internal
-    app: argocd-dashboard
-    ingressClassMap:
-      internal: {{ .Values.stacks.ingress.classInternal }}
-    # certificate:
-    #   enabled: true
-    #   name: dashboard-ingress-cert
-    #   selfSigned: true
-    #   commonName: dashboard.{{ .Values.stacks.ingress.zoneInternal }}
-    #   isCA: false
-    ingress:
-      enabled: true
-      tlsEnabled: true
-      hosts:
-      - name: argocd.{{ .Values.stacks.ingress.zoneInternal }}
-        secretName: ingress-argocd-dashboard
-        config:
-          http:
-            paths:
-            - path: "/"
-              backend:
-                serviceName: argo-cd-argocd-server
-                servicePort: 80
+  - resources:
+    - apiVersion: traefik.containo.us/v1alpha1
+      kind: IngressRoute
+      metadata:
+        name: argocd-server-ingress
+      spec:
+        entryPoints:
+          - websecure
+        routes:
+          - match: Host(`argocd.{{ .Values.stacks.ingress.zoneInternal }}`)
+            kind: Rule
+            services:
+              - name: argo-cd-argocd-server
+                port: 80
+        tls:
+          certResolver: default
+          options: {}
