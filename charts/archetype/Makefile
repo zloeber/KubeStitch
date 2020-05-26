@@ -27,10 +27,15 @@ unit-test: helm-unittest ## Execute Unit Testing
 	@helm unittest --color --update-snapshot ./traefik
 	@echo "== Unit Tests Finished..."
 
-build: global-requirements $(DIST_DIR) ## Generates an artefact containing the Helm Chart in the distribution directory
+build: global-requirements dependency $(DIST_DIR) ## Generates an artefact containing the Helm Chart in the distribution directory
 	@echo "== Building Chart..."
 	@helm package $(CHART_DIR) --destination=$(DIST_DIR)
 	@echo "== Building Finished"
+
+dependency: ## Build dependencies
+	@echo "== Building chart dependencies..."
+	@helm dependency update
+	@echo "== Building chart dependencies finished"
 
 deploy: global-requirements $(DIST_DIR) $(HELM_REPO) ## Prepare the Helm repository with the latest packaged charts
 	@echo "== Deploying Chart..."

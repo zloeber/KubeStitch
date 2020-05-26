@@ -1,8 +1,13 @@
-## Possible environments. default would be a locally hosted kubernetes instance
 environments:
   default:
     values:
-      - ../config/environment.default.yaml
+    - ../config/default/values.yaml
+    - monitoring:
+        enabled: false
   istio:
     values:
-      - ../config/environment.istio.yaml
+    - ../config/istio/values.yaml
+    - monitoring:
+        enabled: false
+    - traefik:
+        enabled: false

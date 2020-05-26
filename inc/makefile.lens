@@ -23,13 +23,15 @@ lens: ## Launch lens
 	$(lens)
 
 .PHONY: lens/addcluster
-lens/addcluster: lens/clearclusters ## Add current kube cluster configuration to lens
+lens/addcluster: lens/clearclusters ## Adds current kube cluster to lens
 	@tmpconfig=`cat $(KUBE_CONFIG) | sed -e ':a' -e 'N' -e '$$!ba' -e 's/\n/\\n/g'`; \
 	$(jq) --arg clusterconfig "$$tmpconfig" \
 		--arg clustername $(CLUSTER) \
 		'.clusters += [{id: $$clustername, kubeConfig: $$clusterconfig, preferences: {clusterName: $$clustername}, workspace: "default"}]' \
 		<$(LENS_CLUSTER_STORE) >$(LENS_CLUSTER_STORE).tmp
 	@cp $(LENS_CLUSTER_STORE).tmp $(LENS_CLUSTER_STORE)
+	@echo "Added cluster configuration ($(KUBE_CONFIG)) to lens config: $(CLUSTER)"
+	@echo "Start lens with either 'make lens' or '$(lens)'"
 
 .PHONY: lens/clearclusters
 lens/clearclusters: ## Remove all clusters from lens

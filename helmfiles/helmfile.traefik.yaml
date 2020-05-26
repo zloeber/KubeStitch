@@ -1,95 +1,101 @@
 ---
 bases:
 - ../config/environments.yaml
-- ../config/helmdefaults.yaml
+- ../config/{{ .Environment.Name }}/helmdefaults.yaml
+- ../config/{{ .Environment.Name }}/repositories.yaml
 ---
 
-repositories:
-- name: incubator
-  url: https://kubernetes-charts-incubator.storage.googleapis.com
-- name: traefik
-  url: "git+https://github.com/containous/traefik-helm-chart@/traefik"
-
-###############
-## traefik
 releases:
 - name: namespace-traefik
-  chart: {{ .Values.archetypeChart }}
+  chart: {{ .Values.archetype.chart }}
+  version: {{ .Values.archetype.version }}
   namespace: kube-system
+  wait: true
+  condition: ingress.enabled
+  installed: true
   labels:
     chart: namespace-traefik
     component: ingress
     namespace: kube-system
-  wait: true
-  installed: true
   values:
   - app: traefik
     namespace:
       enabled: true
-      name: {{ .Values.stacks.ingress.namespaceInternal }}
+      name: {{ .Values.ingress.internal.namespace }}
 
 ## traefik Deployment
 - name: traefik
-  namespace: {{ .Values.stacks.ingress.namespaceInternal }}
+  chart: {{ .Values.traefik.chart }}
+  version: {{ .Values.traefik.version }}
+  namespace: {{ .Values.ingress.internal.namespace }}
+  condition: ingress.enabled
   installed: true
-  chart: traefik/traefik
   labels:
     chart: traefik
     component: traefik
-    namespace: "{{ .Values.stacks.ingress.namespaceInternal }}"
+    namespace: {{ .Values.ingress.internal.namespace }}
   needs:
-    - kube-system/namespace-traefik
+  - kube-system/namespace-traefik
   values:
   - globalArguments:
     - "--global.checknewversion=false"
     - "--global.sendanonymoususage=false"
+    - "--api.dashboard=true"
+    - "--api.insecure=true"
     additionalArguments:
       - "--providers.kubernetesingress=true"
-      - "--providers.kubernetesingress.ingressclass={{ .Values.stacks.ingress.classInternal }}"
+      - "--providers.kubernetesingress.ingressclass={{ .Values.ingress.internal.class }}"
     ingressRoute:
       dashboard:
         enabled: false
+        annotations:
+          "cert-manager.io/cluster-issuer": "default"
+          "kubernetes.io/ingress.class": "internal"
+          "service.beta.kubernetes.io/local-load-balancer-internal": "true"
     service:
       type: LoadBalancer
       spec:
         externalTrafficPolicy: Cluster
-        {{- if .Values.stacks.ingress.ipInternal | default "" }}
-        loadBalancerIP: "{{ .Values.stacks.ingress.ipInternal | default "" }}"
+        {{- if (ne .Values.ingress.internal.ip "") | default "" }}
+        loadBalancerIP: "{{ .Values.ingress.internal.ip }}"
         {{- end }}
       annotations:
-        "prometheus.io/scrape": "true"
+        "prometheus.io/scrape": "{{ .Values.monitoring.enabled }}"
         "prometheus.io/port": "9913"
         "service.beta.kubernetes.io/{{ .Values.cloud }}-load-balancer-internal": "true"
     ports:
       traefik:
         expose: true
 
-- name: ingress-traefik
-  namespace: "{{ .Values.stacks.ingress.namespaceInternal }}"
-  chart: {{ .Values.archetypeChart }}
+- name: ingress-traefik-dashboard
+  chart: {{ .Values.archetype.chart }}
+  version: {{ .Values.archetype.version }}
+  namespace: {{ .Values.ingress.internal.namespace }}
+  condition: traefik.enabled
   installed: true
   needs:
   - kube-system/namespace-traefik
+  - {{ .Values.ingress.internal.namespace }}/traefik
   labels:
     chart: ingress-dashboard
     component: ingress
-    namespace: "{{ .Values.stacks.ingress.namespaceInternal }}"
+    namespace: "{{ .Values.ingress.internal.namespace }}"
   values:
   - zone: internal
     app: traefik-dashboard
     ingressClassMap:
-      internal: {{ .Values.stacks.ingress.classInternal }}
+      internal: {{ .Values.ingress.internal.class }}
     # certificate:
     #   enabled: true
     #   name: dashboard-ingress-cert
     #   selfSigned: true
-    #   commonName: dashboard.{{ .Values.stacks.ingress.zoneInternal }}
+    #   commonName: dashboard.{{ .Values.ingress.internal.zone }}
     #   isCA: false
     ingress:
       enabled: true
       tlsEnabled: true
       hosts:
-      - name: traefik.{{ .Values.stacks.ingress.zoneInternal }}
+      - name: traefik.{{ .Values.ingress.internal.zone }}
         secretName: ingress-traefik-dashboard
         config:
           http:
@@ -97,18 +103,18 @@ releases:
             - path: "/dashboard"
               backend:
                 serviceName: traefik
-                servicePort: 443
+                servicePort: 8080
 
 # - name: traefik-dashboard
-#   namespace: {{ .Values.stacks.ingress.namespaceInternal }}
+#   namespace: {{ .Values.ingress.internal.namespace }}
 #   chart: incubator/raw
 #   installed: true
 #   labels:
 #     chart: traefik-dashboard
 #     component: ingress
-#     namespace: {{ .Values.stacks.ingress.namespaceInternal }}
+#     namespace: {{ .Values.ingress.internal.namespace }}
 #   needs:
-#   - "{{ .Values.stacks.ingress.namespaceInternal }}/traefik"
+#   - "{{ .Values.ingress.internal.namespace }}/traefik"
 #   values:
 #   - resources:
 #     - apiVersion: traefik.containo.us/v1alpha1
@@ -119,7 +125,7 @@ releases:
 #         entryPoints:
 #           - web
 #         routes:
-#           - match: Host(`traefik.{{ .Values.stacks.ingress.zoneInternal }}`) && (PathPrefix(`/dashboard`) || PathPrefix(`/api`))
+#           - match: Host(`traefik.{{ .Values.ingress.internal.zone }}`) && (PathPrefix(`/dashboard`) || PathPrefix(`/api`))
 #             kind: Rule
 #             services:
 #               - name: api@internal

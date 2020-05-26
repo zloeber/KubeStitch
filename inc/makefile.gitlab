@@ -30,4 +30,3 @@ gitlab/login: ## Login to gitlab cli
 .PHONY: gitlab-runner
 gitlab-runner: ## Launch gitlab-runner
 	$(gitlab-runner)
-

@@ -8,6 +8,7 @@ STACK ?= cluster.$(CLUSTER)
 HELMFILE_VERSION ?= 0.109.0
 HELM_VERSION ?= 3.2.0
 ENVIRONMENT ?= default
+HELMFILE_VALUES=$(CONFIG_PATH)/$(ENVIRONMENT)/values.yaml
 
 ## This is to home helm configuration and plugins within the ./.local path.
 export XDG_CACHE_HOME=$(HOME_PATH)
@@ -24,8 +25,8 @@ ct := $(BIN_PATH)/ct
 
 
 ifneq (,$(wildcard $(yq)))
-STACK_INGRESS_INTERNALZONE := $(shell $(yq) r $(CONFIG_PATH)/environment.$(ENVIRONMENT).yaml stacks.ingress.zoneInternal)
-STACK_INGRESS_INTERNALNAMESPACE := $(shell $(yq) r $(CONFIG_PATH)/environment.$(ENVIRONMENT).yaml stacks.ingress.namespaceInternal)
+STACK_INGRESS_INTERNALZONE := $(shell $(yq) r $(HELMFILE_VALUES) ingress.internal.zone)
+STACK_INGRESS_INTERNALNAMESPACE := $(shell $(yq) r $(HELMFILE_VALUES) ingress.internal.namespace)
 endif
 
 .PHONY: .dep/helmfile
@@ -72,10 +73,8 @@ endif
 .helm/plugins: ## Installs helm plugins
 	@$(helm) plugin install https://github.com/databus23/helm-diff --version master 2> /dev/null || true
 	@$(helm) plugin install https://github.com/futuresimple/helm-secrets 2> /dev/null || true
-#	@$(helm) plugin install https://github.com/mumoshu/helm-x 2> /dev/null || true
 	@$(helm) plugin install https://github.com/aslafy-z/helm-git.git 2> /dev/null || true
-#	@$(helm) plugin install https://github.com/thomastaylor312/helm-namespace 2> /dev/null || true
-
+#	@$(helm) plugin install https://github.com/mumoshu/helm-x 2> /dev/null || true
 
 .PHONY: .deps/helm
 .deps/helm: .dep/helm .dep/ct .dep/helmfile .dep/helm-x .helm/plugins ## Install yq, ct, helm, helmfile, helm-x, and plugins locally

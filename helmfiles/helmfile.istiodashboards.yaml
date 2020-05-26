@@ -1,12 +1,9 @@
 ---
 bases:
 - ../config/environments.yaml
-- ../config/helmdefaults.yaml
+- ../config/{{ .Environment.Name }}/helmdefaults.yaml
+- ../config/{{ .Environment.Name }}/repositories.yaml
 ---
-
-repositories:
-- name: incubator
-  url: https://kubernetes-charts-incubator.storage.googleapis.com
 
 releases:
 - name: istio-dashboard-kiali
@@ -40,7 +37,7 @@ releases:
         gateways:
         - istio-dashboard-gateway
         hosts:
-        - 'kiali.{{ .Values.stacks.ingress.zoneInternal }}'
+        - 'kiali.{{ .Values.ingress.internal.zone }}'
         http:
         - match:
           - uri:

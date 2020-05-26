@@ -1,37 +1,35 @@
-## Install Hashicorp Vault with Consul backend
 ---
 bases:
 - ../config/environments.yaml
-- ../config/helmdefaults.yaml
+- ../config/{{ .Environment.Name }}/helmdefaults.yaml
+- ../config/{{ .Environment.Name }}/repositories.yaml
 ---
 
-repositories:
-- name: vault
-  url: "git+https://github.com/hashicorp/vault-helm@/"
-
-###############
-## Hashicorp vault
 releases:
 - name: namespace-vault
-  chart: {{ .Values.archetypeChart }}
+  chart: {{ .Values.archetype.chart }}
+  version: {{ .Values.archetype.version }}
   namespace: kube-system
+  wait: true
+  condition: vault.enabled
+  installed: true
   labels:
     chart: namespace-vault
     component: vault
     namespace: kube-system
-  wait: true
-  installed: true
   values:
   - app: vault
     namespace:
       enabled: true
-      name: vault
+      name: {{ .Values.vault.namespace }}
 
 ## Vault Deployment
 - name: vault
-  namespace: vault
+  chart: {{ .Values.vault.chart }}
+  version: {{ .Values.vault.version }}
+  namespace: {{ .Values.vault.namespace }}
+  condition: vault.enabled
   installed: true
-  chart: vault/vault
   labels:
     chart: vault
     component: vault
@@ -54,8 +52,10 @@ releases:
       enabled: true
 
 - name: ingress-vault
-  namespace: "vault"
-  chart: {{ .Values.archetypeChart }}
+  chart: {{ .Values.archetype.chart }}
+  version: {{ .Values.archetype.version }}
+  namespace: {{ .Values.vault.namespace }}
+  condition: ingress.enabled
   installed: true
   needs:
   - kube-system/namespace-vault
@@ -67,18 +67,12 @@ releases:
   - zone: internal
     app: vault-dashboard
     ingressClassMap:
-      internal: {{ .Values.stacks.ingress.classInternal }}
-    # certificate:
-    #   enabled: true
-    #   name: dashboard-ingress-cert
-    #   selfSigned: true
-    #   commonName: dashboard.{{ .Values.stacks.ingress.zoneInternal }}
-    #   isCA: false
+      internal: {{ .Values.ingress.internal.class }}
     ingress:
       enabled: true
       tlsEnabled: true
       hosts:
-      - name: vault.{{ .Values.stacks.ingress.zoneInternal }}
+      - name: vault.{{ .Values.ingress.internal.zone }}
         secretName: ingress-vault-dashboard
         config:
           http:
@@ -92,6 +86,8 @@ releases:
 - name: vault-sa-rolebinding
   chart: incubator/raw
   namespace: vault
+  condition: vault.enabled
+  installed: true
   needs:
   - vault/vault
   values:

@@ -1,122 +1,61 @@
 ---
 bases:
 - ../config/environments.yaml
-- ../config/helmdefaults.yaml
+- ../config/{{ .Environment.Name }}/helmdefaults.yaml
+- ../config/{{ .Environment.Name }}/repositories.yaml
 ---
-
-repositories:
-- name: reactiveops-stable
-  url: https://charts.reactiveops.com/stable
-- name: incubator
-  url: https://kubernetes-charts-incubator.storage.googleapis.com
 
 releases:
 - name: namespace-security
-  chart: {{ .Values.archetypeChart }}
+  chart: {{ .Values.archetype.chart }}
+  version: {{ .Values.archetype.version }}
   namespace: kube-system
+  installed: true
+  wait: true
   labels:
     chart: namespace-security
     component: security
     namespace: kube-system
-  wait: true
-  installed: true
   values:
   - app: security
     namespace:
       enabled: true
-      name: {{ .Values.stacks.security.namespace | default "security" }}
+      name: {{ .Values.security.namespace }}
       annotations:
-        helm.sh/resource-policy: "keep"
         certmanager.k8s.io/disable-validation: "true"
-        {{ .Values.cloud | default "local" }}-key-vault-env-injection: enabled
+#        {{ .Values.cloud }}-key-vault-env-injection: enabled
 
 - name: rbac-manager
-  namespace: {{ .Values.stacks.security.namespace | default "security" }}
-  labels:
-    chart: "rbac-manager"
-    repo: "stable"
-    component: "security"
-    namespace: "security"
-    vendor: "reactiveops"
-    default: "false"
-    certmanager.k8s.io/disable-validation: "true"
-  version: "1.4.1"
+  chart: {{ .Values.rbacmanager.chart }}
+  namespace: {{ .Values.security.namespace }}
+  version: {{ .Values.rbacmanager.version }}
+  condition: rbacmanager.enabled
   installed: true
-  chart: reactiveops-stable/rbac-manager
+  labels:
+    chart: rbac-manager
+    component: security
+    namespace: {{ .Values.security.namespace }}
   needs:
   - kube-system/namespace-security
 
 - name: config-security
-  namespace: {{ .Values.stacks.security.namespace | default "security" }}
-  chart: {{ .Values.archetypeChart | default "../charts/archetype" }}
+  namespace: {{ .Values.security.namespace }}
+  chart: {{ .Values.archetype.chart }}
+  version: {{ .Values.archetype.version }}
+  installed: true
   labels:
     chart: config-security
     component: security
-    namespace: {{ .Values.stacks.security.namespace | default "security" }}
-    {{ .Values.cloud | default "local" }}-key-vault-env-injection: enabled
+    namespace: {{ .Values.security.namespace }}
   needs:
-  - security/rbac-manager
+  - {{ .Values.security.namespace }}/rbac-manager
   values:
-  - project:
-      team: platform
-      target: {{ .Values.cloud | default "local" }}
-      client: mcd
-      workload: rbac
-      app: security
+  - app: config-security
     clusterRole:
       enabled: true
       name: security-namespace-cluster-admin
     clusterRoleBinding:
       enabled: true
       roleName: security-namespace-cluster-admin
-      serviceAccountNamespace: {{ .Values.stacks.security.namespace | default "security" }}
+      serviceAccountNamespace: {{ .Values.security.namespace }}
       serviceAccountName: default
-
-- name: security-roles
-  chart: incubator/raw
-  namespace: kube-system
-  needs:
-  - security/rbac-manager
-  values:
-  - resources:
-    - kind: ServiceAccount
-      apiVersion: v1
-      metadata:
-        name: platform-admin
-        namespace: kube-system
-    - kind: ClusterRoleBinding
-      apiVersion: rbac.authorization.k8s.io/v1beta1
-      metadata:
-        name: platform-admin
-      roleRef:
-        apiGroup: rbac.authorization.k8s.io
-        kind: ClusterRole
-        name: cluster-admin
-      subjects:
-      - kind: ServiceAccount
-        name: platform-admin
-        namespace: kube-system
-    # - kind: ClusterRoleBinding
-    #   apiVersion: rbac.authorization.k8s.io/v1beta1
-    #   metadata:
-    #     name: kubernetes-dashboard
-    #   roleRef:
-    #     apiGroup: rbac.authorization.k8s.io
-    #     kind: ClusterRole
-    #     name: cluster-admin
-    #   subjects:
-    #   - kind: ServiceAccount
-    #     name: kubernetes-dashboard
-    #     namespace: kube-system
-    - kind: ClusterRoleBinding
-      apiVersion: rbac.authorization.k8s.io/v1beta1
-      metadata:
-        name: kubernetes-platform-admin
-      roleRef:
-        apiGroup: rbac.authorization.k8s.io
-        kind: ClusterRole
-        name: cluster-admin
-      subjects:
-      - kind: ServiceAccount
-        name: default
-        namespace: platform

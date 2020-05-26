@@ -1,6 +1,5 @@
 {{- $root := . -}}
 {{- $common := dict "Values" .Values.common -}}
-{{- $project := .Values.project -}}
 {{- $noCommon := omit .Values "common" -}}
 {{- $overrides := dict "Values" $noCommon -}}
 {{- $noValues := omit . "Values" -}}

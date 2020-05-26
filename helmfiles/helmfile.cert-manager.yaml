@@ -1,99 +1,82 @@
 ---
 bases:
 - ../config/environments.yaml
-- ../config/helmdefaults.yaml
+- ../config/{{ .Environment.Name }}/helmdefaults.yaml
+- ../config/{{ .Environment.Name }}/repositories.yaml
 ---
 
-repositories:
-- name: jetstack
-  url: https://charts.jetstack.io
-- name: incubator
-  url: https://kubernetes-charts-incubator.storage.googleapis.com
-
 releases:
-###############################################################################
-## CERT-MANAGER - Automatic Let's Encrypt for Ingress  ########################
-##   Also provides local CA for issuing locally valid TLS certificates  #######
-###############################################################################
-# References:
-# - https://github.com/jetstack/cert-manager/blob/v0.11.0/deploy/charts/cert-manager/values.yaml
-# Instructions for installing and testing correct install are at
-# - https://docs.cert-manager.io/en/release-0.9/getting-started/install/kubernetes.html
 - name: namespace-cert-manager
-  chart: {{ .Values.archetypeChart }}
+  chart: {{ .Values.archetype.chart }}
+  version: {{ .Values.archetype.version }}
   namespace: kube-system
+  condition: certmanager.enabled
+  installed: true
+  wait: true
   labels:
     chart: namespace-cert-manager
     component: cert-manager
     namespace: kube-system
-  wait: true
-  installed: true
   values:
   - app: cert-manager
     namespace:
       enabled: true
-      name: cert-manager
+      name: {{ .Values.certmanager.namespace }}
       annotations:
-        #helm.sh/resource-policy: "keep"
         certmanager.k8s.io/disable-validation: "true"
 
 - name: cert-manager
-  namespace: cert-manager
+  chart: {{ .Values.certmanager.chart }}
+  namespace: {{ .Values.certmanager.namespace }}
+  version: {{ .Values.certmanager.version }}
+  wait: true
+  condition: certmanager.enabled
+  installed: true
   labels:
     chart: cert-manager
-    repo: stable
-    component: "cert-manager"
-    namespace: cert-manager
-    vendor: "jetstack"
-  chart: jetstack/cert-manager
-  # version: "v0.15.0"
-  wait: true
-  installed: true
+    component: cert-manager
+    namespace: {{ .Values.certmanager.namespace }}
   needs:
-    - kube-system/namespace-cert-manager
-  # hooks:
-  #   - events: ["presync"]
-  #     showlogs: true
-  #     command: "/bin/sh"
-  #     args: ["-c", "kubectl apply -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.9/deploy/manifests/00-crds.yaml"]
+  - kube-system/namespace-cert-manager
   values:
-    - installCRDs: true
-      fullnameOverride: cert-manager
-      rbac:
-        create: true
-      ingressShim:
-        defaultIssuerName: default
-        defaultIssuerKind: Issuer
-      serviceAccount:
-        create: true
-        name: ""
-      prometheus:
-        enabled: {{ .Values.stacks.monitoring.installed | default "false" }}
-        servicemonitor:
-          enabled: false
-      webhook:
-        enabled: true
-      cainjector:
-        enabled: true
-      resources:
-        limits:
-          cpu: "200m"
-          memory: "256Mi"
-        requests:
-          cpu: "50m"
-          memory: "128Mi"
+  - installCRDs: true
+    fullnameOverride: cert-manager
+    rbac:
+      create: true
+    ingressShim:
+      defaultIssuerName: default
+      defaultIssuerKind: Issuer
+    serviceAccount:
+      create: true
+      name: ""
+    prometheus:
+      enabled: {{ .Values.monitoring.enabled }}
+      servicemonitor:
+        enabled: false
+    webhook:
+      enabled: true
+    cainjector:
+      enabled: true
+    resources:
+      limits:
+        cpu: "200m"
+        memory: "256Mi"
+      requests:
+        cpu: "50m"
+        memory: "128Mi"
 
-{{- if .Values.stacks.monitoring.installed }}
 - name: cert-manager-metricsservice
-  chart: incubator/raw
-  namespace: cert-manager
+  chart: {{ .Values.raw.chart }}
+  namespace: {{ .Values.certmanager.namespace }}
+  version: {{ .Values.raw.version }}
+  condition: monitoring.enabled
+  installed: true
   labels:
-    component: "cert-manager-metricsservice"
-    namespace: cert-manager
-    default: "true"
-  installed: {{ .Values.stacks.monitoring.installed | default "true" }}
+    chart: cert-manager-metricsservice
+    component: cert-manager
+    namespace: {{ .Values.certmanager.namespace }}
   needs:
-    - kube-system/namespace-cert-manager
+  - kube-system/namespace-cert-manager
   values:
   - resources:
     - apiVersion: v1
@@ -102,9 +85,6 @@ releases:
         name: cert-manager
         labels:
           app: cert-manager
-          # app.kubernetes.io/name: cert-manager
-          # app.kubernetes.io/instance: cert-manager
-          # app.kubernetes.io/managed-by: Helm
       spec:
         type: ClusterIP
         ports:
@@ -116,25 +96,28 @@ releases:
           app.kubernetes.io/instance: cert-manager
 
 - name: cert-manager-servicemonitor
-  chart: incubator/raw
-  namespace: {{ .Values.stacks.monitoring.namespace | default "monitoring" }}
+  chart: {{ .Values.raw.chart }}
+  namespace: {{ .Values.certmanager.namespace }}
+  version: {{ .Values.raw.version }}
+  condition: monitoring.enabled
+  installed: true
   labels:
+    chart: cert-manager-servicemonitor
     component: cert-manager
-    namespace: {{ .Values.stacks.monitoring.namespace | default "monitoring" }}
-  installed: {{ .Values.stacks.monitoring.installed | default "false" }}
+    namespace: {{ .Values.monitoring.namespace }}
+  needs:
+  - {{ .Values.monitoring.namespace }}/prometheus-operator
   values:
   - resources:
     - apiVersion: monitoring.coreos.com/v1
       kind: ServiceMonitor
       metadata:
         name: cert-manager
-        namespace: {{ .Values.stacks.monitoring.namespace | default "monitoring" }}
+        namespace: {{ .Values.monitoring.namespace }}
         labels:
-          app: cert-manager
-          chart: cert-manager-v0.9.0
-          release: cert-manager
-          heritage: Helm
-          prometheus: {{ .Values.stacks.monitoring.prometheusInstance | default "kube-prometheus" }}
+          app: cert-manager-servicemonitor
+          release: cert-manager-servicemonitor
+          prometheus: {{ .Values.prometheus.instance }}
       spec:
         jobLabel: cert-manager
         namespaceSelector:
@@ -149,53 +132,53 @@ releases:
           path: /metrics
           interval: 60s
           scrapeTimeout: 30s
-{{- end }}
 
 - name: cert-manager-issuers
-  chart: incubator/raw
-  namespace: cert-manager
-  labels:
-    component: "cert-manager"
-    namespace: cert-manager
-    default: "true"
+  chart: {{ .Values.raw.chart }}
+  namespace: {{ .Values.certmanager.namespace }}
+  version: {{ .Values.raw.version }}
+  condition: certmanager.enabled
   installed: true
-  wait: false
+  labels:
+    chart: cert-manager-issuers
+    component: cert-manager
+    namespace: {{ .Values.certmanager.namespace }}
   needs:
-    - cert-manager/cert-manager
-    - kube-system/namespace-cert-manager
+  - cert-manager/cert-manager
+  - kube-system/namespace-cert-manager
   values:
   - resources:
-    - apiVersion: cert-manager.io/v1alpha2
+    - apiVersion: cert-manager.io/v1alpha3
       kind: ClusterIssuer
       metadata:
-        name: {{ .Values.stacks.certmanager.issuerStaging | default "letsencrypt-staging" }}
+        name: {{ .Values.certmanager.issuerStaging }}
       spec:
         acme:
           server: https://acme-staging-v02.api.letsencrypt.org/directory
-          email: {{ .Values.stacks.certmanager.email | default "some.user@yourdomain.com" }}
+          email: {{ .Values.certmanager.email }}
           privateKeySecretRef:
-            name: {{ .Values.stacks.certmanager.issuerStaging | default "letsencrypt-staging" }}
+            name: {{ .Values.certmanager.issuerStaging }}
           solvers:
             - http01:
                 ingress:
-                  class: {{ .Values.stacks.ingress.classStage | default "stage" }}
-    - apiVersion: cert-manager.io/v1alpha2
+                  class: {{ .Values.ingress.stage.class }}
+    - apiVersion: cert-manager.io/v1alpha3
       kind: ClusterIssuer
       metadata:
-        name: {{ .Values.stacks.certmanager.issuerProduction | default "letsencrypt-prod" }}
+        name: {{ .Values.certmanager.issuerProduction }}
       spec:
         acme:
           server: https://acme-v02.api.letsencrypt.org/directory
-          email: {{ .Values.stacks.certmanager.email | default "someuser@somedomain.com" }}
+          email: {{ .Values.certmanager.email }}
           privateKeySecretRef:
             name: letsencrypt-prod
           solvers:
             - http01:
                 ingress:
-                  class: {{ .Values.stacks.ingress.classExternal | default "external" }}
-    - apiVersion: cert-manager.io/v1alpha2
+                  class: {{ .Values.ingress.external.class }}
+    - apiVersion: cert-manager.io/v1alpha3
       kind: ClusterIssuer
       metadata:
-        name: {{ .Values.stacks.certmanager.issuerDefault | default "default" }}
+        name: {{ .Values.certmanager.issuerDefault }}
       spec:
         selfSigned: {}

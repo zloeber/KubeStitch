@@ -1,0 +1,75 @@
+cloud: local
+archetype:
+  version: "0.0.1"
+  chart: zloeber/archetype
+raw:
+  version: "0.2.3"
+  chart: incubator/raw
+security:
+  enabled: true
+  namespace: security
+ingress:
+  enabled: true
+  dashboard: true
+  type: default
+  internal:
+    namespace: ingress-int
+    class: internal
+    zone: int.micro.svc
+    ip: ""
+  external:
+    namespace: ingress-ext
+    class: external
+    zone: ext.micro.svc
+    ip: ""
+  stage:
+    namespace: ingress-stage
+    class: stage
+    zone: stage.micro.svc
+    ip: ""
+traefik:
+  enabled: true
+  version: "8.2.1"
+  chart: traefik/traefik
+  dashboard: true
+istio:
+  enabled: true
+  ingressGateway: istio-ingressgateway
+certmanager:
+  enabled: true
+  version: "v0.15.0"
+  chart: jetstack/cert-manager
+  namespace: cert-manager
+  serviceaccountname: ""
+  email: someuser@realdomain.com
+  issuerDefault: default
+  issuerStaging: letsencrypt-staging
+  issuerProduction: letsencrypt-prod
+monitoring:
+  enabled: true
+  namespace: monitoring
+prometheus:
+  instance: kube-prometheus
+metricsserver:
+  enabled: true
+  version: "2.11.1"
+  chart: stable/metrics-server
+rbacmanager:
+  enabled: true
+  version: "1.5.4"
+  chart: reactiveops-stable/rbac-manager
+vault:
+  enabled: true
+  version: "0.5.0"
+  chart: vault/vault
+  namespace: vault
+consul:
+  enabled: true
+  version: "0.21.0"
+  chart: consul/consul
+  namespace: consul
+localstack:
+  enabled: true
+  version: ""
+  chart: localstack/localstack
+  namespace: localstack

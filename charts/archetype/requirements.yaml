@@ -1,8 +1,0 @@
-dependencies:
-- name: common
-  version: 0.0.4
-  repository: file://subcharts/common
-- name: dockercfg
-  version: 0.1.0
-  repository: file://subcharts/dockercfg
-  condition: dockercfg.enabled

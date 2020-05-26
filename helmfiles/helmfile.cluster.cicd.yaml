@@ -8,4 +8,3 @@ helmfiles:
 - ../helmfiles/helmfile.cert-manager.yaml
 - ../helmfiles/helmfile.security.yaml
 - ../helmfiles/helmfile.metricsserver.yaml
-#- ../helmfiles/helmfile.dashboard.yaml

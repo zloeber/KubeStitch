@@ -71,7 +71,7 @@ spec:
 {{- end }}
       imagePullSecrets:
 {{- if .Values.dockercfg.enabled }}
-        - name: {{ include "common.fullname" . }}
+        - name: {{ include "archetype.fullname" . }}-dockercfg
 {{- end }}
 {{- with .Values.image.pullSecrets }}
       {{- range . }}

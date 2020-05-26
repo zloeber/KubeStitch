@@ -10,3 +10,8 @@ version: 0.0.1
 
 # Application/service version
 appVersion: 0.0.1
+
+dependencies:
+  - name: common
+    version: "0.0.5"
+    repository: "https://kubernetes-charts-incubator.storage.googleapis.com"

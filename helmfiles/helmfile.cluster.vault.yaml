@@ -10,4 +10,3 @@ helmfiles:
 - ../helmfiles/helmfile.metricsserver.yaml
 - ../helmfiles/helmfile.consul.yaml
 - ../helmfiles/helmfile.vault.yaml
-#- ../helmfiles/helmfile.dashboard.yaml

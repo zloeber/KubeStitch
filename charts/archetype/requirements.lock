@@ -1,9 +1,0 @@
-dependencies:
-- name: common
-  repository: file://subcharts/common
-  version: 0.0.4
-- name: dockercfg
-  repository: file://subcharts/dockercfg
-  version: 0.1.0
-digest: sha256:ac13e993760502101a58341182d0b94e678bb2b7af42d32237f6d624e020f6e4
-generated: "2020-02-18T21:37:48.640902211-06:00"

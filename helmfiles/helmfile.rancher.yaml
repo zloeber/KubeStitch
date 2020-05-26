@@ -1,18 +1,16 @@
 ---
 bases:
 - ../config/environments.yaml
-- ../config/helmdefaults.yaml
+- ../config/{{ .Environment.Name }}/helmdefaults.yaml
+- ../config/{{ .Environment.Name }}/repositories.yaml
 ---
-
-repositories:
-- name: rancher
-  url: https://releases.rancher.com/server-charts/latest
 
 ###############
 ## Rancher Deployment
 releases:
 - name: namespace-rancher
-  chart: {{ .Values.archetypeChart }}
+  chart: {{ .Values.archetype.chart }}
+  version: {{ .Values.archetype.version }}
   namespace: kube-system
   labels:
     chart: namespace-rancher
@@ -38,8 +36,8 @@ releases:
   needs:
     - kube-system/namespace-rancher
   values:
-  - hostname: rancher.{{ .Values.stacks.ingress.zoneInternal }}
+  - hostname: rancher.{{ .Values.ingress.internal.zone }}
     # ingress:
     #   extraAnnotations:
-    #     kubernetes.io/ingress.class: {{ .Values.stacks.ingress.classInternal }}
+    #     kubernetes.io/ingress.class: {{ .Values.ingress.internal.class }}
 

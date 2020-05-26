@@ -2,21 +2,16 @@
 ---
 bases:
 - ../config/environments.yaml
-- ../config/helmdefaults.yaml
+- ../config/{{ .Environment.Name }}/helmdefaults.yaml
+- ../config/{{ .Environment.Name }}/repositories.yaml
 ---
-
-repositories:
-- name: argocd
-  url: "git+https://github.com/argoproj/argo-helm@/charts/argo-cd"
-- name: incubator
-  url: https://kubernetes-charts-incubator.storage.googleapis.com
-
 
 ###############
 ## Hashicorp argocd
 releases:
 - name: namespace-argocd
-  chart: {{ .Values.archetypeChart }}
+  chart: {{ .Values.archetype.chart }}
+  version: {{ .Values.archetype.version }}
   namespace: kube-system
   labels:
     chart: namespace-argocd
@@ -52,7 +47,7 @@ releases:
       # https://github.com/travisghansen/argo-cd-helmfile
       config:
         # Argo CD's externally facing base URL (optional). Required when configuring SSO
-        url: https://argocd.{{ .Values.stacks.ingress.zoneInternal }}
+        url: https://argocd.{{ .Values.ingress.internal.zone }}
         application.instanceLabelKey: argocd.argoproj.io/instance
         configManagementPlugins: |
           - name: helmfile
@@ -86,39 +81,10 @@ releases:
         name: custom-tools
         subPath: helmfile
 
-# - name: ingress-argocd
-#   namespace: "argocd"
-#   chart: {{ .Values.archetypeChart }}
-#   installed: true
-#   needs:
-#   - kube-system/namespace-argocd
-#   - argocd/argo-cd
-#   labels:
-#     chart: ingress-argocd
-#     component: ingress
-#     namespace: argocd
-#   values:
-#   - zone: internal
-#     app: argocd-dashboard
-#     ingressClassMap:
-#       internal: {{ .Values.stacks.ingress.classInternal }}
-#     ingress:
-#       enabled: true
-#       tlsEnabled: true
-#       hosts:
-#       - name: argocd.{{ .Values.stacks.ingress.zoneInternal }}
-#         secretName: ingress-argocd-dashboard
-#         config:
-#           http:
-#             paths:
-#             - path: "/"
-#               backend:
-#                 serviceName: argo-cd-argocd-server
-#                 servicePort: 80
-
 - name: ingress-argocd
   namespace: argocd
   chart: incubator/raw
+  condition: ingress.enabled
   installed: true
   needs:
   - kube-system/namespace-argocd
@@ -137,7 +103,7 @@ releases:
         entryPoints:
           - websecure
         routes:
-          - match: Host(`argocd.{{ .Values.stacks.ingress.zoneInternal }}`)
+          - match: Host(`argocd.{{ .Values.ingress.internal.zone }}`)
             kind: Rule
             services:
               - name: argo-cd-argocd-server

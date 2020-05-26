@@ -124,12 +124,12 @@ http:
   containerPort: {{ .Values.ports.prometheus }}
 {{- end -}}
 
-{{- define "common.appname" -}}
+{{- define "archetype.appname" -}}
 {{- .Values.app | default (include "common.name" . ) -}}
 {{- end -}}
 
 {{- define "common.service.selectors" -}}
-app: {{ template "common.appname" . | quote }}
+app: {{ template "archetype.appname" . | quote }}
 release: {{ .Release.Name | quote }}
 {{- end -}}
 
@@ -237,6 +237,16 @@ kubernetes.io/ingress.class: {{ $class | quote }}
 {{- $name | lower | trunc 54 | trimSuffix "-" -}}
 {{- end -}}
 
+{{- define "archetype.fullname" -}}
+{{- $base := default (printf "%s-%s" .Release.Name .Chart.Name) .Values.fullnameOverride -}}
+{{- $gpre := default "" .Values.global.fullnamePrefix -}}
+{{- $pre := default "" .Values.fullnamePrefix -}}
+{{- $suf := default "" .Values.fullnameSuffix -}}
+{{- $gsuf := default "" .Values.global.fullnameSuffix -}}
+{{- $name := print $gpre $pre $base $suf $gsuf -}}
+{{- $name | lower | trunc 54 | trimSuffix "-" -}}
+{{- end -}}
+
 {{- /*
 common.fullname.unique adds a random suffix to the unique name.
 This takes the same parameters as common.fullname
@@ -255,7 +265,7 @@ This takes the same parameters as common.fullname
 standard labels for project deployments
 */ -}}
 {{- define "common.labels" -}}
-app: {{ include "common.appname" . | quote }}
+app: {{ include "archetype.appname" . | quote }}
 chart: {{ template "common.chartref" . }}
 heritage: {{ .Release.Service | quote }}
 release: {{ .Release.Name | quote }}
@@ -265,3 +275,10 @@ namespace: {{ .Release.Namespace | quote }}
 app.kubernetes.io/part-of: argocd
 {{- end }}
 {{- end -}}
+
+{{- /*
+Create an image pull secret string
+*/ -}}
+{{- define "archetype.imagePullSecret" }}
+{{- printf "{\"auths\": {\"%s\": {\"auth\": \"%s\"}}}" .Values.dockercfg.image.pullSecret.registry (printf "%s:%s" .Values.dockercfg.image.pullSecret.username .Values.dockercfg.image.pullSecret.password | b64enc) | b64enc }}
+{{- end }}

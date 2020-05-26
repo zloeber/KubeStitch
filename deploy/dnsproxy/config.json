@@ -11,8 +11,8 @@
 			"hostnames": [
 				{
 					"id": 1,
-					"hostname": ".{{ if (has $config.stacks.ingress "zoneInternal") }}{{ $config.stacks.ingress.zoneInternal }}{{ else }}localhost{{ end }}",
-					"ip": "{{ if (has $config.stacks.ingress "zoneInternalIP") }}{{ $config.stacks.ingress.zoneInternalIP }}{{ else }}{{ env.Getenv "STACK_INGRESS_INTERNALIP" "127.0.0.1" }}{{ end }}",
+					"hostname": ".{{ if (has $config.ingress.internal "zone") }}{{ $config.ingress.internal.zone }}{{ else }}localhost{{ end }}",
+					"ip": "{{ env.Getenv "STACK_INGRESS_INTERNALIP" "127.0.0.1" }}",
 					"target": "acme.com",
 					"ttl": 60,
 					"type": "A"

@@ -6,3 +6,10 @@ Key Vault Injection Enabled on Namespace: {{ .Release.Namespace }}
 {{- if .Values.serviceAdmin.enabled -}}
 Service account admin enabled: {{ .Values.serviceAdmin.serviceAccount }}
 {{- end -}}
+
+{{- if .Values.dockercfg.enabled }}
+Created docker pull secret named `{{ include "archetype.fullname" . }}-dockercfg`. 
+Refer to the following resources for usage:
+  - https://github.com/kubernetes/helm/blob/master/docs/charts_tips_and_tricks.md
+  - https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
+{{- end -}}

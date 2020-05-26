@@ -77,7 +77,7 @@ kube/deploy/metallb: .dep/kubectl .kube/get/configfile ## Deploy metallb on the 
 	@tmpdir=$$(mktemp -d) && \
 	export STACK_INGRESS_INTERNALLBSUBNET=$(shell $(MAKE) kube/loadbalancer/subnet) && \
 	$(gomplate) \
-		-d config=$(CONFIG_PATH)/environment.$(ENVIRONMENT).yaml \
+		-d config=$(HELMFILE_VALUES) \
 		--file $(DEPLOY_PATH)/metallb/metallb-config.yaml \
 		--out "$${tmpdir}/metallb-config.yaml" && \
 	$(kubecmd) apply -f "$${tmpdir}/metallb-config.yaml"
@@ -117,10 +117,11 @@ kube/loadbalancer/subnet: ## Show docker bridge subnet
 
 .PHONY: dnsforward/start
 dnsforward/start: dnsforward/stop ## Forwards all dns requests to a local dns-proxy-server
-	tmpdir=$$(mktemp -d) && echo "$${tmpdir}" && \
+	@tmpdir=$$(mktemp -d) && \
 	export STACK_INGRESS_INTERNALIP=$(shell $(MAKE) kube/loadbalancer/ip) && \
+	echo "STACK_INGRESS_INTERNALIP=$${STACK_INGRESS_INTERNALIP}" && \
 	$(gomplate) \
-		-d config=$(CONFIG_PATH)/environment.$(ENVIRONMENT).yaml \
+		-d config=$(HELMFILE_VALUES) \
 		--file $(DEPLOY_PATH)/dnsproxy/config.json \
 		--out "$${tmpdir}/config.json" && \
 	docker run --rm -d \
@@ -137,4 +138,4 @@ dnsforward/start: dnsforward/stop ## Forwards all dns requests to a local dns-pr
 
 .PHONY: dnsforward/stop
 dnsforward/stop: ## Stop the dns forwarding container
-	docker stop dns-proxy-server || true
+	@docker stop dns-proxy-server || true

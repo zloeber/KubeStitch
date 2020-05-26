@@ -10,4 +10,4 @@ data:
     - name: default
       protocol: layer2
       addresses:
-      - {{ if (has $config.stacks.ingress "internalLBSubnet") }}{{ $config.stacks.ingress.internalLBSubnet }}{{ else }}{{ env.Getenv "STACK_INGRESS_INTERNALLBSUBNET" "172.17.1.0/24" }}{{ end }}
+      - {{ if (has $config.ingress.internal "subnet") }}{{ $config.ingress.internal.subnet }}{{ else }}{{ env.Getenv "STACK_INGRESS_INTERNALLBSUBNET" "172.17.1.0/24" }}{{ end }}

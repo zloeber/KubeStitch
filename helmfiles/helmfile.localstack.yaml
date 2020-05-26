@@ -1,36 +1,38 @@
 ---
 bases:
 - ../config/environments.yaml
-- ../config/helmdefaults.yaml
+- ../config/{{ .Environment.Name }}/helmdefaults.yaml
+- ../config/{{ .Environment.Name }}/repositories.yaml
 ---
-
-repositories:
-- name: incubator
-  url: https://kubernetes-charts-incubator.storage.googleapis.com
 
 releases:
 - name: namespace-localstack
-  chart: {{ .Values.archetypeChart }}
+  chart: {{ .Values.archetype.chart }}
+  version: {{ .Values.archetype.version }}
   namespace: kube-system
+  condition: localstack.enabled
+  installed: true
+  wait: true
   labels:
     chart: namespace-localstack
     component: localstack
     namespace: kube-system
-  wait: true
-  installed: true
   values:
   - app: localstack
     namespace:
       enabled: true
-      name: localstack
+      name: {{ .Values.localstack.namespace }}
 
 - name: localstack-deployment
-  chart: incubator/raw
-  namespace: localstack
+  chart: {{ .Values.raw.chart }}
+  namespace: {{ .Values.localstack.namespace }}
+  version: {{ .Values.raw.version }}
+  condition: localstack.enabled
+  installed: true
   labels:
     chart: localstack-deployment
     component: localstack
-    namespace: localstack
+    namespace: {{ .Values.localstack.namespace }}
   needs:
   - kube-system/namespace-localstack
   values:
@@ -38,9 +40,6 @@ releases:
     - apiVersion: v1
       kind: PersistentVolumeClaim
       metadata:
-        creationTimestamp: null
-        labels:
-          io.kompose.service: localstack-claim0
         name: localstack-claim0
       spec:
         accessModes:
@@ -51,9 +50,6 @@ releases:
     - apiVersion: v1
       kind: PersistentVolumeClaim
       metadata:
-        creationTimestamp: null
-        labels:
-          io.kompose.service: localstack-claim1
         name: localstack-claim1
       spec:
         accessModes:
@@ -64,13 +60,10 @@ releases:
     - apiVersion: v1
       kind: Service
       metadata:
-        annotations:
-          kompose.cmd: kompose convert
-          kompose.version: 1.21.0 (992df58d8)
         creationTimestamp: null
+        name: localstack
         labels:
           io.kompose.service: localstack
-        name: localstack
       spec:
         ports:
         - name: "4566"
@@ -84,12 +77,6 @@ releases:
     - apiVersion: apps/v1
       kind: Deployment
       metadata:
-        annotations:
-          kompose.cmd: kompose convert
-          kompose.version: 1.21.0 (992df58d8)
-        creationTimestamp: null
-        labels:
-          io.kompose.service: localstack
         name: localstack
       spec:
         replicas: 1
@@ -100,10 +87,6 @@ releases:
           type: Recreate
         template:
           metadata:
-            annotations:
-              kompose.cmd: kompose convert
-              kompose.version: 1.21.0 (992df58d8)
-            creationTimestamp: null
             labels:
               io.kompose.service: localstack
           spec:
@@ -147,25 +130,27 @@ releases:
                 claimName: localstack-claim1
 
 - name: ingress-localstack-dashboard
-  namespace: localstack
-  chart: {{ .Values.archetypeChart }}
+  namespace: {{ .Values.localstack.namespace }}
+  chart: {{ .Values.archetype.chart }}
+  version: {{ .Values.archetype.version }}
+  condition: ingress.enabled
   installed: true
   needs:
   - kube-system/namespace-localstack
   labels:
     chart: ingress-localstack-dashboard
     component: ingress
-    namespace: localstack
+    namespace: {{ .Values.localstack.namespace }}
   values:
   - zone: internal
     app: localstack
     ingressClassMap:
-      internal: {{ .Values.stacks.ingress.classInternal }}
+      internal: {{ .Values.ingress.internal.class }}
     ingress:
       enabled: true
       tlsEnabled: true
       hosts:
-      - name: localstack-dashboard.{{ .Values.stacks.ingress.zoneInternal }}
+      - name: localstack-dashboard.{{ .Values.ingress.internal.zone }}
         secretName: ingress-localstack-dashboard
         config:
           http:
@@ -176,25 +161,27 @@ releases:
                 servicePort: 8080
 
 - name: ingress-localstack-api
-  namespace: localstack
-  chart: {{ .Values.archetypeChart }}
+  namespace: {{ .Values.localstack.namespace }}
+  chart: {{ .Values.archetype.chart }}
+  version: {{ .Values.archetype.version }}
+  condition: ingress.enabled
   installed: true
   needs:
   - kube-system/namespace-localstack
   labels:
     chart: ingress-localstack-api
     component: ingress
-    namespace: localstack
+    namespace: {{ .Values.localstack.namespace }}
   values:
   - zone: internal
     app: localstack
     ingressClassMap:
-      internal: {{ .Values.stacks.ingress.classInternal }}
+      internal: {{ .Values.ingress.internal.class }}
     ingress:
       enabled: true
       tlsEnabled: true
       hosts:
-      - name: localstack.{{ .Values.stacks.ingress.zoneInternal }}
+      - name: localstack.{{ .Values.ingress.internal.zone }}
         secretName: ingress-localstack-api
         config:
           http:

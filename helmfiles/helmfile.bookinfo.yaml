@@ -1,16 +1,14 @@
 ---
 bases:
 - ../config/environments.yaml
-- ../config/helmdefaults.yaml
+- ../config/{{ .Environment.Name }}/helmdefaults.yaml
+- ../config/{{ .Environment.Name }}/repositories.yaml
 ---
-
-repositories:
-- name: incubator
-  url: https://kubernetes-charts-incubator.storage.googleapis.com
 
 releases:
 - name: namespace-bookinfo
-  chart: {{ .Values.archetypeChart }}
+  chart: {{ .Values.archetype.chart }}
+  version: {{ .Values.archetype.version }}
   namespace: kube-system
   labels:
     chart: namespace-bookinfo

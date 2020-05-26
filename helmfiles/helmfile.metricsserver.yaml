@@ -1,25 +1,22 @@
 ---
 bases:
 - ../config/environments.yaml
-- ../config/helmdefaults.yaml
+- ../config/{{ .Environment.Name }}/helmdefaults.yaml
+- ../config/{{ .Environment.Name }}/repositories.yaml
 ---
-
-repositories:
-- name: stable
-  url: https://kubernetes-charts.storage.googleapis.com
 
 releases:
 - name: metrics-server
-  chart: stable/metrics-server
-  wait: true
-  installed: true
+  chart: {{ .Values.metricsserver.chart }}
   namespace: kube-system
+  version: {{ .Values.metricsserver.version }}
+  wait: true
+  condition: metricsserver.enabled
+  installed: true
   labels:
     chart: metrics-server
-    repo: "stable"
-    component: "monitoring"
-    namespace: "kube-system"
-    vendor: "kubernetes"
+    component: monitoring
+    namespace: kube-system
   values:
   - args:
     - '--kubelet-insecure-tls'

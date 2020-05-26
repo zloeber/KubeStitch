@@ -153,17 +153,66 @@ Sometimes there are additional commands required to vet out a solution. To accom
 
 ## Helmfile
 
-I use helmfile extensively to declaratively stitch together my deployments from other helm charts, my own monochart, and the raw helm chart. Helmfile uses 'environments' to help breakdown multiple configuration paths.
+I use helmfile extensively to declaratively stitch together my deployments from other helm charts, my own monochart (called archetype), and the raw helm chart. Helmfile uses 'environments' to help breakdown multiple configuration paths.
 
-Configuration for the default helmfile environment is in `config/environment.default.yaml`. These values get sourced into the various helmfiles I am working with at the time. I'll add/remove/change these values as I please depending on the lab I'm working with at the time. The idea is that I can create new, non-local, environments from this and make simple changes to target them from a pipeline when the time comes.
+The per-environment values files are defined in `config/environments.yaml`. This just points to the individual values files that reside in ther own per-environment folder. This environment folder also includes relevant helm repositories and helm default values. These values get sourced into the various helmfiles using a common block at the top of each helmfile. 
+
+The idea is that I can create new environments from copying this folder and make simple changes to target them from a pipeline when the time comes.
 
 To target another environment for helmfile follow a few extra steps.
 
-1. copy/modify `config/environment.default.yaml` to `config/environment.<your_environment>.yaml`
-2. Add the new environment name and have it point to the file you created in `config/environments.yaml`
-3. Then whenever you are targeting a helmfile to the environment commands include `ENVIRONMENT=<your_environment>` ()
+1. Modify `config/environments.yaml` to add a new environment and values file
+2. Copy the `config/default` folder to `config/<your_environment>`
+3. Update any files in `config/<your_environment>` to suit your needs
+3. Then whenever you are targeting a helmfile to the environment commands include `ENVIRONMENT=<your_environment>` (or set ENVIRONMENT in your top level profile)
 
-> **NOTE** I try to keep all settings in the default helmfile environment yaml definition with each helmfile 'stack' as its own section. This suits me. You can modify this but will also have to modify the helmfiles that use these yaml paths as well.
+I try to keep all settings in the default helmfile environment yaml definition and overwrite their installation in the environment level file when I need to do so.
+In this example, I disable monitoring elements from being deployed to the default environment even though the same setting in the `./config/default/values.yaml` file is enabled.
+
+```yaml
+# ./config/environments.yaml
+environments:
+  default:
+    values:
+    - ../config/default/values.yaml
+    - monitoring:
+        enabled: false
+```
+
+This effectively makes the `../config/default/values.yaml` the default settings with anything under `./config/environments.yaml` being the overrides.
+
+### Helmfile Stacks
+
+For lack of better terminology I use 'stack' to define a set of helm charts that I've stitched together as a deployable unit. Typically this is a handful of charts all targeting a single namespace by the same name. I attempt to create helmfiles in a manner which can be deployed individually but there may be some cross dependencies for more complex stacks (like if I use cert manager CRDs for instance). 
+
+A set of stacks can be applied, in order, via a single helmfile. This is how I deploy whole cluster configurations in fact. Here is the default cluster helmfile for example. As it is simply another helmfile I keep the cluster helmfile definitions right alongside the rest of the stacks. Here is `/helmfiles/helmfile.cluster.cicd.yaml`
+
+```bash
+---
+bases:
+- ../config/environments.yaml
+---
+
+helmfiles:
+- ../helmfiles/helmfile.traefik.yaml
+- ../helmfiles/helmfile.cert-manager.yaml
+- ../helmfiles/helmfile.security.yaml
+- ../helmfiles/helmfile.metricsserver.yaml
+```
+
+What makes this fun is that I have a whole other profile called 'vault' that creates its own cluster (aptly named 'vault') that I put together simply for the convenience of bringing up a full cluster configured with consul and vault in a single command. But I don't need to use the vault profile to run consul and vault either. I can also simply add helmfile stacks or the entire cluster helmfile definition afterwards as well.
+
+```bash
+unset PROFILE   # Use the default profile
+make deps cluster/start helmfile/sync # Setup a default cluster
+make helmfile/sync STACK=consul # Install only the consul stack
+make helmfile/destroy STACK=consul # Now remove it
+make helmfile/sync STACK=cluster.vault # Or apply the cluster stack entirely outside of the vault profile!
+```
+
+Using this is pretty powerful for quickly working on various deployments and allows for layering of stacks to get the results you are looking for.
+
+> **NOTE** Sometimes you may have to wait for the initial cluster to fully come up before running the helmfile/apply for the entire cluster.
 
 ## Usage
 
@@ -234,17 +283,27 @@ make lens
 
 # Additional Info
 
-- The `cluster/start` tasks will always first try to destroy the cluster before starting it.
+- `cluster/start` will always first try to destroy the cluster before starting it.
+- `cluster/start` always spins up a bare deployment (no helmfile stacks applied)
+- `helmfile/sync` will default to `STACK=cluster.$(CLUSTER)`
+- The above information means `make cluster/start helmfile/sync` will always recreate a cluster from scratch then install the default cluster helmfile stack of charts for the current profile's cluster.
 - There is a ton of extra 'stuff' in this repo that still needs to be cleaned out or revisited, not all files serve a purpose (yet)
 - Along the same lines as the prior statement, there are a ton eof 'helmfiles' in the helmfile/wip folder that worked with env vars at one point. I'll slowly move these out of wip when I'm able to do so or the need comes up.
 - MetalLB is used when a loadbalancer is required.
 - ~~Currently the loadbalancer deployment will use IP addresses between 172.17.0.100 and 172.17.0.110. This is the bridge IP subnet of docker on my workstation. You can modify this range in the config file within `./deploy/metallb/metallb-config.yaml`.~~ This is/was only for kind and is now automatically determined when metallb is deployed to the cluster. You can still override this in the `./config/environment.default.yaml` file by adding `stacks.ingress.internalLBSubnet` and assigning it a CIDR subnet instead. Otherwise it grabs the `DOCKER_NETWORK` subnet and replaces the last digits with 1.0/24 (in my case it now ends up being 172.21.1.0/24 since I kept screwing around with the bridge network...whoops.)
+- Currently I source in all used repositories regardless if they are used or not, this slows down initial syncing and probably can be improved upon somehow.
 
 ## Why Makefiles?
 
 Great question! One which I sometimes struggle to answer. There are dozens of other taskers out there but make is probably one of the older ones that is well supported across a number of different systems. I personally use it when I might use bash scripts otherwise. It allows me to quickly view the commands being run (if I've not purposefully hidden them with a prepended @ symbol). Plus I'm sort of used to slinging makefiles so why not? Besides, most repos worth their salt have at least one of these things to bootstrap things in some manner so it doesn't hurt to get to know them a bit I'd say.
 
-# Links/Inspiration
+# Resources
+
+[Helmfile](https://github.com/roboll/helmfile) - The ultimate helm chart stitcher
+
+[Manage Helm Charts With Helmfile](https://www.arthurkoziel.com/managing-helm-charts-with-helmfile/) - Good article on some techniques to implement DRY helmfile deployments
+
+[Helm Secrets Plugin](https://github.com/zendesk/helm-secrets) - Helm plugin for secrets management
 
 [Istio Practice Deployment](https://github.com/RothAndrew/istio-practice/tree/master/eks)
 
