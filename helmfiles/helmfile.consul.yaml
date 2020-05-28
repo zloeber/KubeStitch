@@ -6,7 +6,7 @@ bases:
 ---
 
 releases:
-- name: namespace-consul
+- name: namespace-{{ .Values.consul.name }}
   chart: {{ .Values.archetype.chart }}
   version: {{ .Values.archetype.version }}
   namespace: kube-system
@@ -14,28 +14,28 @@ releases:
   installed: true
   wait: true
   labels:
-    chart: namespace-consul
-    component: consul
+    chart: namespace-{{ .Values.consul.name }}
+    component: {{ .Values.consul.name }}
     namespace: kube-system
   values:
-  - app: consul
+  - app: {{ .Values.consul.name }}
     namespace:
       enabled: true
       name: {{ .Values.consul.namespace }}
 
 ## consul Deployment
-- name: consul
+- name: {{ .Values.consul.name }}
   chart: {{ .Values.consul.chart }}
   version: {{ .Values.consul.version }}
   namespace: {{ .Values.consul.namespace }}
   condition: consul.enabled
   installed: true
   labels:
-    chart: consul
-    component: consul
+    chart: {{ .Values.consul.name }}
+    component: {{ .Values.consul.name }}
     namespace: {{ .Values.consul.namespace }}
   needs:
-    - kube-system/namespace-consul
+    - kube-system/namespace-{{ .Values.consul.name }}
   values:
   - dns:
       enabled: false
@@ -55,15 +55,16 @@ releases:
       consulDestinationNamespace: kube
       mirroringK8S: false
 
-- name: ingress-consul
+- name: ingress-{{ .Values.consul.name }}
   namespace: {{ .Values.consul.namespace }}
   chart: {{ .Values.archetype.chart }}
   version: {{ .Values.archetype.version }}
+  condition: consul.enabled
   installed: true
   needs:
-  - kube-system/namespace-consul
+  - kube-system/namespace-{{ .Values.consul.name }}
   labels:
-    chart: ingress-consul
+    chart: ingress-{{ .Values.consul.name }}
     component: ingress
     namespace: {{ .Values.consul.namespace }}
   values:

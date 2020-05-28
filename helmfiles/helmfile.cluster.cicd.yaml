@@ -5,6 +5,6 @@ bases:
 
 helmfiles:
 - ../helmfiles/helmfile.traefik.yaml
-- ../helmfiles/helmfile.cert-manager.yaml
-- ../helmfiles/helmfile.security.yaml
+- ../helmfiles/helmfile.certmanager.yaml
+- ../helmfiles/helmfile.rbacmanager.yaml
 - ../helmfiles/helmfile.metricsserver.yaml

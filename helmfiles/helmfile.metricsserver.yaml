@@ -6,7 +6,7 @@ bases:
 ---
 
 releases:
-- name: metrics-server
+- name: {{ .Values.metricsserver.name }}
   chart: {{ .Values.metricsserver.chart }}
   namespace: kube-system
   version: {{ .Values.metricsserver.version }}
@@ -14,8 +14,8 @@ releases:
   condition: metricsserver.enabled
   installed: true
   labels:
-    chart: metrics-server
-    component: monitoring
+    chart: {{ .Values.metricsserver.name }}
+    component: {{ .Values.metricsserver.name }}
     namespace: kube-system
   values:
   - args:

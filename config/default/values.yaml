@@ -5,9 +5,9 @@ archetype:
 raw:
   version: "0.2.3"
   chart: incubator/raw
-security:
+monitoring:
   enabled: true
-  namespace: security
+  namespace: monitoring
 ingress:
   enabled: true
   dashboard: true
@@ -27,17 +27,20 @@ ingress:
     class: stage
     zone: stage.micro.svc
     ip: ""
+istio:
+  enabled: true
+  ingressGateway: istio-ingressgateway
 traefik:
+  name: traefik
   enabled: true
   version: "8.2.1"
   chart: traefik/traefik
   dashboard: true
-istio:
-  enabled: true
-  ingressGateway: istio-ingressgateway
+  zone: internal
 certmanager:
+  name: certmanager
   enabled: true
-  version: "v0.15.0"
+  version: "0.15.0"
   chart: jetstack/cert-manager
   namespace: cert-manager
   serviceaccountname: ""
@@ -45,31 +48,60 @@ certmanager:
   issuerDefault: default
   issuerStaging: letsencrypt-staging
   issuerProduction: letsencrypt-prod
-monitoring:
-  enabled: true
-  namespace: monitoring
 prometheus:
   instance: kube-prometheus
 metricsserver:
+  name: metricsserver
   enabled: true
   version: "2.11.1"
   chart: stable/metrics-server
+  zone: internal
 rbacmanager:
+  name: rbacmanager
   enabled: true
   version: "1.5.4"
   chart: reactiveops-stable/rbac-manager
+  namespace: rbacmanager
+  zone: internal
 vault:
+  name: vault
   enabled: true
   version: "0.5.0"
   chart: vault/vault
   namespace: vault
+  zone: internal
 consul:
+  name: consul
   enabled: true
   version: "0.21.0"
   chart: consul/consul
   namespace: consul
+  zone: internal
 localstack:
+  name: localstack
   enabled: true
   version: ""
   chart: localstack/localstack
   namespace: localstack
+  zone: internal
+argocd:
+  name: argocd
+  enabled: true
+  version: ""
+  chart: argocd/argo-cd
+  namespace: argocd
+  zone: internal
+rancher:
+  name: rancher
+  enabled: true
+  version: ""
+  chart: rancher/rancher
+  namespace: cattle-system
+  zone: internal
+kubefledged:
+  name: kubefledged
+  enabled: true
+  version: "0.7.0"
+  chart: kubefledged/kubefledged
+  namespace: kubefledged
+  zone: internal

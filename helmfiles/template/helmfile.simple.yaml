@@ -1,0 +1,74 @@
+---
+bases:
+- ../config/environments.yaml
+- ../config/{{ .Environment.Name }}/helmdefaults.yaml
+- ../config/{{ .Environment.Name }}/repositories.yaml
+---
+
+releases:
+- name: namespace-{{ .Values.simple.name }}
+  chart: {{ .Values.archetype.chart }}
+  version: {{ .Values.archetype.version }}
+  namespace: kube-system
+  condition: simple.enabled
+  installed: true
+  wait: true
+  labels:
+    chart: namespace-{{ .Values.simple.name }}
+    component: {{ .Values.simple.name }}
+    namespace: kube-system
+  values:
+  - app: {{ .Values.simple.name }}
+    namespace:
+      enabled: true
+      name: {{ .Values.simple.namespace }}
+
+- name: {{ .Values.simple.name }}
+  chart: {{ .Values.simple.chart }}
+  version: {{ .Values.simple.version }}
+  namespace: {{ .Values.simple.namespace }}
+  condition: simple.enabled
+  installed: true
+  labels:
+    chart: {{ .Values.simple.name }}
+    component: {{ .Values.simple.name }}
+    namespace: {{ .Values.simple.namespace }}
+  needs:
+    - kube-system/namespace-{{ .Values.simple.name }}
+  values:
+  - somevalues:
+      somevalue1: value
+
+- name: ingress-{{ .Values.simple.name }}
+  namespace: {{ .Values.simple.namespace }}
+  chart: {{ .Values.archetype.chart }}
+  version: {{ .Values.archetype.version }}
+  condition: ingress.enabled
+  installed: true
+  needs:
+  - kube-system/namespace-{{ .Values.simple.name }}
+  - {{ .Values.simple.namespace }}/{{ .Values.simple.name }}
+  labels:
+    chart: ingress-{{ .Values.simple.name }}
+    component: ingress
+    namespace: {{ .Values.simple.namespace }}
+  values:
+  - zone: internal
+    app: simple-dashboard
+    ingressClassMap:
+      internal: {{ .Values.ingress.internal.class }}
+      external: {{ .Values.ingress.external.class }}
+      stage: {{ .Values.ingress.stage.class }}
+    ingress:
+      enabled: true
+      tlsEnabled: true
+      hosts:
+      - name: simple.{{ .Values.ingress.internal.zone }}
+        secretName: ingress-simple-dashboard
+        config:
+          http:
+            paths:
+            - path: "/"
+              backend:
+                serviceName: simple-simple-ui
+                servicePort: 80

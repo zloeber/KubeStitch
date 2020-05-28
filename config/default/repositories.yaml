@@ -1,21 +1,23 @@
 repositories:
-- name: argocd
-  url: "git+https://github.com/argoproj/argo-helm@/charts/argo-cd"
-- name: zloeber
-  url: "git+https://github.com/zloeber/archetype-chart@/"
+- name: stable
+  url: https://kubernetes-charts.storage.googleapis.com
 - name: incubator
   url: https://kubernetes-charts-incubator.storage.googleapis.com
+- name: zloeber
+  url: git+https://github.com/zloeber/archetype-chart@/
 - name: traefik
-  url: "git+https://github.com/containous/traefik-helm-chart@/traefik"
+  url: git+https://github.com/containous/traefik-helm-chart@/traefik
 - name: jetstack
   url: https://charts.jetstack.io
 - name: vault
-  url: "git+https://github.com/hashicorp/vault-helm@/"
+  url: git+https://github.com/hashicorp/vault-helm@/
 - name: reactiveops-stable
   url: https://charts.reactiveops.com/stable
 - name: consul
-  url: "git+https://github.com/hashicorp/consul-helm@/"
+  url: git+https://github.com/hashicorp/consul-helm@/
 - name: rancher
   url: https://releases.rancher.com/server-charts/latest
-- name: stable
-  url: https://kubernetes-charts.storage.googleapis.com
+- name: argocd
+  url: git+https://github.com/argoproj/argo-helm@/charts/argo-cd
+- name: kubefledged
+  url: git+https://github.com/senthilrch/kube-fledged@/deploy/kubefledged-operator/helm-charts/kubefledged

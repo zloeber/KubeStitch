@@ -6,35 +6,36 @@ bases:
 - ../config/{{ .Environment.Name }}/repositories.yaml
 ---
 
-###############
-## Hashicorp argocd
 releases:
 - name: namespace-argocd
   chart: {{ .Values.archetype.chart }}
   version: {{ .Values.archetype.version }}
   namespace: kube-system
+  condition: argocd.enabled
+  installed: true
+  wait: true
   labels:
     chart: namespace-argocd
     component: argocd
     namespace: kube-system
-  wait: true
-  installed: true
   values:
   - app: argocd
     namespace:
       enabled: true
-      name: argocd
+      name: {{ .Values.argocd.namespace }}
 
 ## argocd Deployment
 # Values: https://github.com/argoproj/argo-helm/blob/master/charts/argo-cd/values.yaml
 - name: argo-cd
-  namespace: argocd
+  chart: {{ .Values.argocd.chart }}
+  namespace: {{ .Values.argocd.namespace }}
+  #version: {{ .Values.argocd.version }}
+  condition: argocd.enabled
   installed: true
-  chart: argocd/argo-cd
   labels:
     chart: argocd
     component: argocd
-    namespace: argocd
+    namespace: {{ .Values.argocd.namespace }}
   needs:
     - kube-system/namespace-argocd
   values:
@@ -82,17 +83,18 @@ releases:
         subPath: helmfile
 
 - name: ingress-argocd
-  namespace: argocd
-  chart: incubator/raw
+  chart: {{ .Values.raw.chart }}
+  version: {{ .Values.raw.version }}
+  namespace: {{ .Values.argocd.namespace }}
   condition: ingress.enabled
   installed: true
   needs:
   - kube-system/namespace-argocd
-  - argocd/argo-cd
+  - {{ .Values.argocd.namespace }}/argo-cd
   labels:
     chart: ingress-argocd
     component: ingress
-    namespace: argocd
+    namespace: {{ .Values.argocd.namespace }}
   values:
   - resources:
     - apiVersion: traefik.containo.us/v1alpha1

@@ -87,7 +87,7 @@ make cluster/stop  ## Default environment is 'default'
 
 > **NOTE** While you can run multiple clusters at once that really wasn't what this project was meant for and you will likely run into port or other conflicts. It is best to run each cluster then destroy it before changing and using another profile.
 
-### Profile - Kind (default)
+### Profile - default
 
 **File:** ./profiles/default.env
 
@@ -137,7 +137,7 @@ You can access both [http://consul.int.micro.svc](http://consul.int.micro.svc) a
 
 This profile is for setting up the venerable [localstack](https://github.com/localstack/localstack) AWS API simulation environment in kubernetes. The deployment was a 10 minute effort proof of concept done by converting the project's docker-compose file via kompose then plugging in the output into a custom helmfile.
 
-This can be a great way to vet out terraform manifests or test out AWS based pipelines without any cloud access required.
+This can be a great way to vet out terraform manifests or test out AWS based pipelines.
 
 ### PROFILE - argocd
 
@@ -295,7 +295,9 @@ make lens
 
 ## Why Makefiles?
 
-Great question! One which I sometimes struggle to answer. There are dozens of other taskers out there but make is probably one of the older ones that is well supported across a number of different systems. I personally use it when I might use bash scripts otherwise. It allows me to quickly view the commands being run (if I've not purposefully hidden them with a prepended @ symbol). Plus I'm sort of used to slinging makefiles so why not? Besides, most repos worth their salt have at least one of these things to bootstrap things in some manner so it doesn't hurt to get to know them a bit I'd say.
+Great question! One which I sometimes struggle to answer. There are dozens of other taskers out there but make is probably one of the older ones that is well supported across a number of different systems. I personally use it when I might use bash scripts otherwise. It allows me to quickly view the commands being run (if I've not purposefully hidden them with a well placed prepended @ symbol). Plus I'm sort of used to slinging makefiles so why not? Besides, most repos worth their salt have at least one of these things to bootstrap things in some manner so it doesn't hurt to get to know them a bit I'd say.
+
+> **NOTE** If you are copying task definitions out for stand alone scripts remember to replace '$$' for '$' where ever you see them.
 
 # Resources
 

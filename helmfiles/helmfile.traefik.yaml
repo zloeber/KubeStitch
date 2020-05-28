@@ -5,8 +5,11 @@ bases:
 - ../config/{{ .Environment.Name }}/repositories.yaml
 ---
 
+## Traefik
+# Dashboard - http://traefik.int.micro.svc/dashboard/#/
+
 releases:
-- name: namespace-traefik
+- name: namespace-{{ .Values.traefik.name }}
   chart: {{ .Values.archetype.chart }}
   version: {{ .Values.archetype.version }}
   namespace: kube-system
@@ -14,7 +17,7 @@ releases:
   condition: ingress.enabled
   installed: true
   labels:
-    chart: namespace-traefik
+    chart: namespace-{{ .Values.traefik.name }}
     component: ingress
     namespace: kube-system
   values:
@@ -24,7 +27,7 @@ releases:
       name: {{ .Values.ingress.internal.namespace }}
 
 ## traefik Deployment
-- name: traefik
+- name: {{ .Values.traefik.name }}
   chart: {{ .Values.traefik.chart }}
   version: {{ .Values.traefik.version }}
   namespace: {{ .Values.ingress.internal.namespace }}
@@ -35,12 +38,11 @@ releases:
     component: traefik
     namespace: {{ .Values.ingress.internal.namespace }}
   needs:
-  - kube-system/namespace-traefik
+  - kube-system/namespace-{{ .Values.traefik.name }}
   values:
   - globalArguments:
     - "--global.checknewversion=false"
     - "--global.sendanonymoususage=false"
-    - "--api.dashboard=true"
     - "--api.insecure=true"
     additionalArguments:
       - "--providers.kubernetesingress=true"
@@ -67,66 +69,30 @@ releases:
       traefik:
         expose: true
 
-- name: ingress-traefik-dashboard
-  chart: {{ .Values.archetype.chart }}
-  version: {{ .Values.archetype.version }}
+- name: {{ .Values.traefik.name }}-dashboard
+  chart: {{ .Values.raw.chart }}
+  version: {{ .Values.raw.version }}
   namespace: {{ .Values.ingress.internal.namespace }}
   condition: traefik.enabled
   installed: true
-  needs:
-  - kube-system/namespace-traefik
-  - {{ .Values.ingress.internal.namespace }}/traefik
   labels:
-    chart: ingress-dashboard
+    chart: traefik-dashboard
     component: ingress
-    namespace: "{{ .Values.ingress.internal.namespace }}"
+    namespace: {{ .Values.ingress.internal.namespace }}
+  needs:
+  - "{{ .Values.ingress.internal.namespace }}/{{ .Values.traefik.name }}"
   values:
-  - zone: internal
-    app: traefik-dashboard
-    ingressClassMap:
-      internal: {{ .Values.ingress.internal.class }}
-    # certificate:
-    #   enabled: true
-    #   name: dashboard-ingress-cert
-    #   selfSigned: true
-    #   commonName: dashboard.{{ .Values.ingress.internal.zone }}
-    #   isCA: false
-    ingress:
-      enabled: true
-      tlsEnabled: true
-      hosts:
-      - name: traefik.{{ .Values.ingress.internal.zone }}
-        secretName: ingress-traefik-dashboard
-        config:
-          http:
-            paths:
-            - path: "/dashboard"
-              backend:
-                serviceName: traefik
-                servicePort: 8080
-
-# - name: traefik-dashboard
-#   namespace: {{ .Values.ingress.internal.namespace }}
-#   chart: incubator/raw
-#   installed: true
-#   labels:
-#     chart: traefik-dashboard
-#     component: ingress
-#     namespace: {{ .Values.ingress.internal.namespace }}
-#   needs:
-#   - "{{ .Values.ingress.internal.namespace }}/traefik"
-#   values:
-#   - resources:
-#     - apiVersion: traefik.containo.us/v1alpha1
-#       kind: IngressRoute
-#       metadata:
-#         name: traefik-dashboard
-#       spec:
-#         entryPoints:
-#           - web
-#         routes:
-#           - match: Host(`traefik.{{ .Values.ingress.internal.zone }}`) && (PathPrefix(`/dashboard`) || PathPrefix(`/api`))
-#             kind: Rule
-#             services:
-#               - name: api@internal
-#                 kind: TraefikService
+  - resources:
+    - apiVersion: traefik.containo.us/v1alpha1
+      kind: IngressRoute
+      metadata:
+        name: {{ .Values.traefik.name }}-dashboard
+      spec:
+        entryPoints:
+          - web
+        routes:
+          - match: Host(`traefik.{{ .Values.ingress.internal.zone }}`) && (PathPrefix(`/dashboard`) || PathPrefix(`/api`))
+            kind: Rule
+            services:
+              - name: api@internal
+                kind: TraefikService

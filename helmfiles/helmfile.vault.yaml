@@ -6,7 +6,7 @@ bases:
 ---
 
 releases:
-- name: namespace-vault
+- name: namespace-{{ .Values.vault.name }}
   chart: {{ .Values.archetype.chart }}
   version: {{ .Values.archetype.version }}
   namespace: kube-system
@@ -14,28 +14,28 @@ releases:
   condition: vault.enabled
   installed: true
   labels:
-    chart: namespace-vault
+    chart: namespace-{{ .Values.vault.name }}
     component: vault
     namespace: kube-system
   values:
-  - app: vault
+  - app: {{ .Values.vault.name }}
     namespace:
       enabled: true
       name: {{ .Values.vault.namespace }}
 
 ## Vault Deployment
-- name: vault
+- name: {{ .Values.vault.name }}
   chart: {{ .Values.vault.chart }}
   version: {{ .Values.vault.version }}
   namespace: {{ .Values.vault.namespace }}
   condition: vault.enabled
   installed: true
   labels:
-    chart: vault
+    chart: {{ .Values.vault.name }}
     component: vault
-    namespace: vault
+    namespace: {{ .Values.vault.namespace }}
   needs:
-    - kube-system/namespace-vault
+    - kube-system/namespace-{{ .Values.vault.name }}
   values:
   - server:
       # affinity: ""
@@ -51,21 +51,22 @@ releases:
     ui:
       enabled: true
 
-- name: ingress-vault
+- name: ingress-{{ .Values.vault.name }}
   chart: {{ .Values.archetype.chart }}
   version: {{ .Values.archetype.version }}
   namespace: {{ .Values.vault.namespace }}
   condition: ingress.enabled
   installed: true
   needs:
-  - kube-system/namespace-vault
+  - kube-system/namespace-{{ .Values.vault.name }}
+  - {{ .Values.vault.namespace }}/{{ .Values.vault.name }}
   labels:
-    chart: ingress-vault
+    chart: ingress-{{ .Values.vault.name }}
     component: ingress
-    namespace: vault
+    namespace: {{ .Values.vault.namespace }}
   values:
   - zone: internal
-    app: vault-dashboard
+    app: {{ .Values.vault.name }}
     ingressClassMap:
       internal: {{ .Values.ingress.internal.class }}
     ingress:
@@ -83,24 +84,25 @@ releases:
                 servicePort: 8200
 
 ## Role binding needed to do vault auth
-- name: vault-sa-rolebinding
-  chart: incubator/raw
-  namespace: vault
+- name: rolebinding-{{ .Values.vault.name }}
+  chart: {{ .Values.raw.chart }}
+  version: {{ .Values.raw.version }}
+  namespace: {{ .Values.vault.namespace }}
   condition: vault.enabled
   installed: true
   needs:
-  - vault/vault
+  - {{ .Values.vault.namespace }}/{{ .Values.vault.name }}
   values:
   - resources:
     - apiVersion: rbacmanager.reactiveops.io/v1beta1
       kind: RBACDefinition
       metadata:
-        name: vault-sa-rolebinding
+        name: rolebinding-{{ .Values.vault.name }}
       rbacBindings:
       - name: example-service-account
         subjects:
           - kind: ServiceAccount
             name: vault
-            namespace: vault
+            namespace: {{ .Values.vault.namespace }}
         clusterRoleBindings:
           - clusterRole: system:auth-delegator

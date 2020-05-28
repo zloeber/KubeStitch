@@ -6,7 +6,7 @@ bases:
 ---
 
 releases:
-- name: namespace-localstack
+- name: namespace-{{ .Values.localstack.name }}
   chart: {{ .Values.archetype.chart }}
   version: {{ .Values.archetype.version }}
   namespace: kube-system
@@ -14,27 +14,27 @@ releases:
   installed: true
   wait: true
   labels:
-    chart: namespace-localstack
-    component: localstack
+    chart: namespace-{{ .Values.localstack.name }}
+    component: {{ .Values.localstack.name }}
     namespace: kube-system
   values:
-  - app: localstack
+  - app: {{ .Values.localstack.name }}
     namespace:
       enabled: true
       name: {{ .Values.localstack.namespace }}
 
-- name: localstack-deployment
+- name: {{ .Values.localstack.name }}
   chart: {{ .Values.raw.chart }}
   namespace: {{ .Values.localstack.namespace }}
   version: {{ .Values.raw.version }}
   condition: localstack.enabled
   installed: true
   labels:
-    chart: localstack-deployment
-    component: localstack
+    chart: {{ .Values.localstack.name }}
+    component: {{ .Values.localstack.name }}
     namespace: {{ .Values.localstack.namespace }}
   needs:
-  - kube-system/namespace-localstack
+  - kube-system/namespace-{{ .Values.localstack.name }}
   values:
   - resources:
     - apiVersion: v1
@@ -129,21 +129,21 @@ releases:
               persistentVolumeClaim:
                 claimName: localstack-claim1
 
-- name: ingress-localstack-dashboard
+- name: ingress-{{ .Values.localstack.name }}-dashboard
   namespace: {{ .Values.localstack.namespace }}
   chart: {{ .Values.archetype.chart }}
   version: {{ .Values.archetype.version }}
   condition: ingress.enabled
   installed: true
   needs:
-  - kube-system/namespace-localstack
+  - kube-system/namespace-{{ .Values.localstack.name }}
   labels:
-    chart: ingress-localstack-dashboard
+    chart: ingress-{{ .Values.localstack.name }}-dashboard
     component: ingress
     namespace: {{ .Values.localstack.namespace }}
   values:
   - zone: internal
-    app: localstack
+    app: {{ .Values.localstack.name }}
     ingressClassMap:
       internal: {{ .Values.ingress.internal.class }}
     ingress:
@@ -160,16 +160,16 @@ releases:
                 serviceName: localstack
                 servicePort: 8080
 
-- name: ingress-localstack-api
+- name: ingress-{{ .Values.localstack.name }}-api
   namespace: {{ .Values.localstack.namespace }}
   chart: {{ .Values.archetype.chart }}
   version: {{ .Values.archetype.version }}
   condition: ingress.enabled
   installed: true
   needs:
-  - kube-system/namespace-localstack
+  - kube-system/namespace-{{ .Values.localstack.name }}
   labels:
-    chart: ingress-localstack-api
+    chart: ingress-{{ .Values.localstack.name }}-api
     component: ingress
     namespace: {{ .Values.localstack.namespace }}
   values:
