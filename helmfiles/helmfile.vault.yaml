@@ -6,7 +6,7 @@ bases:
 ---
 
 releases:
-- name: namespace-{{ .Values.vault.name }}
+- name: {{ .Values.vault.name }}-namespace
   chart: {{ .Values.archetype.chart }}
   version: {{ .Values.archetype.version }}
   namespace: kube-system
@@ -14,8 +14,8 @@ releases:
   condition: vault.enabled
   installed: true
   labels:
-    chart: namespace-{{ .Values.vault.name }}
-    component: vault
+    chart: {{ .Values.vault.name }}-namespace
+    component: {{ .Values.vault.name }}
     namespace: kube-system
   values:
   - app: {{ .Values.vault.name }}
@@ -32,10 +32,10 @@ releases:
   installed: true
   labels:
     chart: {{ .Values.vault.name }}
-    component: vault
+    component: {{ .Values.vault.name }}
     namespace: {{ .Values.vault.namespace }}
   needs:
-    - kube-system/namespace-{{ .Values.vault.name }}
+    - kube-system/{{ .Values.vault.name }}-namespace
   values:
   - server:
       # affinity: ""
@@ -51,17 +51,17 @@ releases:
     ui:
       enabled: true
 
-- name: ingress-{{ .Values.vault.name }}
+- name: {{ .Values.vault.name }}-ingress
   chart: {{ .Values.archetype.chart }}
   version: {{ .Values.archetype.version }}
   namespace: {{ .Values.vault.namespace }}
   condition: ingress.enabled
   installed: true
   needs:
-  - kube-system/namespace-{{ .Values.vault.name }}
+  - kube-system/{{ .Values.vault.name }}-namespace
   - {{ .Values.vault.namespace }}/{{ .Values.vault.name }}
   labels:
-    chart: ingress-{{ .Values.vault.name }}
+    chart: {{ .Values.vault.name }}-ingress
     component: ingress
     namespace: {{ .Values.vault.namespace }}
   values:
@@ -73,8 +73,8 @@ releases:
       enabled: true
       tlsEnabled: true
       hosts:
-      - name: vault.{{ .Values.ingress.internal.zone }}
-        secretName: ingress-vault-dashboard
+      # - name: vault.{{ .Values.ingress.internal.zone }}
+      - secretName: ingress-vault-dashboard
         config:
           http:
             paths:
@@ -84,7 +84,7 @@ releases:
                 servicePort: 8200
 
 ## Role binding needed to do vault auth
-- name: rolebinding-{{ .Values.vault.name }}
+- name: {{ .Values.vault.name }}-rolebinding
   chart: {{ .Values.raw.chart }}
   version: {{ .Values.raw.version }}
   namespace: {{ .Values.vault.namespace }}

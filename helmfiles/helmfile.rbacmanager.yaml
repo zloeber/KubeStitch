@@ -6,7 +6,7 @@ bases:
 ---
 
 releases:
-- name: namespace-{{ .Values.rbacmanager.name }}
+- name: {{ .Values.rbacmanager.name }}-namespace
   chart: {{ .Values.archetype.chart }}
   version: {{ .Values.archetype.version }}
   namespace: kube-system
@@ -14,7 +14,7 @@ releases:
   installed: true
   wait: true
   labels:
-    chart: namespace-{{ .Values.rbacmanager.name }}
+    chart: {{ .Values.rbacmanager.name }}-namespace
     component: {{ .Values.rbacmanager.name }}
     namespace: kube-system
   values:
@@ -36,9 +36,9 @@ releases:
     component: {{ .Values.rbacmanager.name }}
     namespace: {{ .Values.rbacmanager.namespace }}
   needs:
-  - kube-system/namespace-{{ .Values.rbacmanager.name }}
+  - kube-system/{{ .Values.rbacmanager.name }}-namespace
 
-- name: rolebinding-{{ .Values.rbacmanager.name }}
+- name: {{ .Values.rbacmanager.name }}-rolebinding
   chart: {{ .Values.archetype.chart }}
   namespace: {{ .Values.rbacmanager.namespace }}
   version: {{ .Values.archetype.version }}

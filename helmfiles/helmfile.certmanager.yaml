@@ -6,7 +6,7 @@ bases:
 ---
 
 releases:
-- name: namespace-cert-manager
+- name: {{ .Values.certmanager.name }}-namespace
   chart: {{ .Values.archetype.chart }}
   version: {{ .Values.archetype.version }}
   namespace: kube-system
@@ -14,30 +14,30 @@ releases:
   installed: true
   wait: true
   labels:
-    chart: namespace-cert-manager
-    component: cert-manager
+    chart: {{ .Values.certmanager.name }}-namespace
+    component: {{ .Values.certmanager.name }}
     namespace: kube-system
   values:
-  - app: cert-manager
+  - app: {{ .Values.certmanager.name }}
     namespace:
       enabled: true
       name: {{ .Values.certmanager.namespace }}
       annotations:
         certmanager.k8s.io/disable-validation: "true"
 
-- name: cert-manager
+- name: {{ .Values.certmanager.name }}
   chart: {{ .Values.certmanager.chart }}
   namespace: {{ .Values.certmanager.namespace }}
   version: {{ .Values.certmanager.version }}
-  wait: true
   condition: certmanager.enabled
   installed: true
+  wait: true
   labels:
-    chart: cert-manager
-    component: cert-manager
+    chart: {{ .Values.certmanager.name }}
+    component: {{ .Values.certmanager.name }}
     namespace: {{ .Values.certmanager.namespace }}
   needs:
-  - kube-system/namespace-cert-manager
+  - kube-system/{{ .Values.certmanager.name }}-namespace
   values:
   - installCRDs: true
     fullnameOverride: cert-manager
@@ -65,26 +65,26 @@ releases:
         cpu: "50m"
         memory: "128Mi"
 
-- name: cert-manager-metricsservice
+- name: {{ .Values.certmanager.name }}-metricsservice
   chart: {{ .Values.raw.chart }}
   namespace: {{ .Values.certmanager.namespace }}
   version: {{ .Values.raw.version }}
   condition: monitoring.enabled
   installed: true
   labels:
-    chart: cert-manager-metricsservice
-    component: cert-manager
+    chart: {{ .Values.certmanager.name }}-metricsservice
+    component: {{ .Values.certmanager.name }}
     namespace: {{ .Values.certmanager.namespace }}
   needs:
-  - kube-system/namespace-cert-manager
+  - kube-system/{{ .Values.certmanager.name }}-namespace
   values:
   - resources:
     - apiVersion: v1
       kind: Service
       metadata:
-        name: cert-manager
+        name: {{ .Values.certmanager.name }}
         labels:
-          app: cert-manager
+          app: {{ .Values.certmanager.name }}
       spec:
         type: ClusterIP
         ports:
@@ -95,7 +95,7 @@ releases:
           app.kubernetes.io/name: cert-manager
           app.kubernetes.io/instance: cert-manager
 
-- name: cert-manager-servicemonitor
+- name: {{ .Values.certmanager.name }}-servicemonitor
   chart: {{ .Values.raw.chart }}
   namespace: {{ .Values.certmanager.namespace }}
   version: {{ .Values.raw.version }}
@@ -133,19 +133,19 @@ releases:
           interval: 60s
           scrapeTimeout: 30s
 
-- name: cert-manager-issuers
+- name: {{ .Values.certmanager.name }}-issuers
   chart: {{ .Values.raw.chart }}
   namespace: {{ .Values.certmanager.namespace }}
   version: {{ .Values.raw.version }}
   condition: certmanager.enabled
   installed: true
   labels:
-    chart: cert-manager-issuers
-    component: cert-manager
+    chart: {{ .Values.certmanager.name }}-issuers
+    component: {{ .Values.certmanager.name }}
     namespace: {{ .Values.certmanager.namespace }}
   needs:
-  - cert-manager/cert-manager
-  - kube-system/namespace-cert-manager
+  - {{ .Values.certmanager.namespace }}/{{ .Values.certmanager.name }}
+  - kube-system/{{ .Values.certmanager.name }}-namespace
   values:
   - resources:
     - apiVersion: cert-manager.io/v1alpha3

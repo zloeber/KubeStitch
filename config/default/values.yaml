@@ -48,6 +48,7 @@ certmanager:
   issuerDefault: default
   issuerStaging: letsencrypt-staging
   issuerProduction: letsencrypt-prod
+  zone: internal
 prometheus:
   instance: kube-prometheus
 metricsserver:
@@ -87,7 +88,7 @@ localstack:
 argocd:
   name: argocd
   enabled: true
-  version: ""
+  version: "2.3.5"
   chart: argocd/argo-cd
   namespace: argocd
   zone: internal
@@ -104,4 +105,11 @@ kubefledged:
   version: "0.7.0"
   chart: kubefledged/kubefledged
   namespace: kubefledged
+  zone: internal
+prometheusoperator:
+  name: prometheusoperator
+  enabled: true
+  version: "8.13.8"
+  chart: stable/prometheus-operator
+  namespace: prometheus-operator
   zone: internal

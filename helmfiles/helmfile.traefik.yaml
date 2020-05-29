@@ -9,7 +9,7 @@ bases:
 # Dashboard - http://traefik.int.micro.svc/dashboard/#/
 
 releases:
-- name: namespace-{{ .Values.traefik.name }}
+- name: {{ .Values.traefik.name }}-namespace
   chart: {{ .Values.archetype.chart }}
   version: {{ .Values.archetype.version }}
   namespace: kube-system
@@ -17,7 +17,7 @@ releases:
   condition: ingress.enabled
   installed: true
   labels:
-    chart: namespace-{{ .Values.traefik.name }}
+    chart: {{ .Values.traefik.name }}-namespace
     component: ingress
     namespace: kube-system
   values:
@@ -38,7 +38,7 @@ releases:
     component: traefik
     namespace: {{ .Values.ingress.internal.namespace }}
   needs:
-  - kube-system/namespace-{{ .Values.traefik.name }}
+  - kube-system/{{ .Values.traefik.name }}-namespace
   values:
   - globalArguments:
     - "--global.checknewversion=false"

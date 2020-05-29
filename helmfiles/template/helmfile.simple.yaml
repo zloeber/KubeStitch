@@ -6,7 +6,7 @@ bases:
 ---
 
 releases:
-- name: namespace-{{ .Values.simple.name }}
+- name: {{ .Values.simple.name }}-namespace
   chart: {{ .Values.archetype.chart }}
   version: {{ .Values.archetype.version }}
   namespace: kube-system
@@ -14,7 +14,7 @@ releases:
   installed: true
   wait: true
   labels:
-    chart: namespace-{{ .Values.simple.name }}
+    chart: {{ .Values.simple.name }}-namespace
     component: {{ .Values.simple.name }}
     namespace: kube-system
   values:
@@ -34,27 +34,27 @@ releases:
     component: {{ .Values.simple.name }}
     namespace: {{ .Values.simple.namespace }}
   needs:
-    - kube-system/namespace-{{ .Values.simple.name }}
+    - kube-system/{{ .Values.simple.name }}-namespace
   values:
   - somevalues:
       somevalue1: value
 
-- name: ingress-{{ .Values.simple.name }}
+- name: {{ .Values.simple.name }}-ingress
   namespace: {{ .Values.simple.namespace }}
   chart: {{ .Values.archetype.chart }}
   version: {{ .Values.archetype.version }}
   condition: ingress.enabled
   installed: true
   needs:
-  - kube-system/namespace-{{ .Values.simple.name }}
+  - kube-system/{{ .Values.simple.name }}-namespace
   - {{ .Values.simple.namespace }}/{{ .Values.simple.name }}
   labels:
-    chart: ingress-{{ .Values.simple.name }}
-    component: ingress
+    chart: {{ .Values.simple.name }}-ingress
+    component: {{ .Values.simple.name }}
     namespace: {{ .Values.simple.namespace }}
   values:
   - zone: internal
-    app: simple-dashboard
+    app: dashboard
     ingressClassMap:
       internal: {{ .Values.ingress.internal.class }}
       external: {{ .Values.ingress.external.class }}
@@ -63,8 +63,7 @@ releases:
       enabled: true
       tlsEnabled: true
       hosts:
-      - name: simple.{{ .Values.ingress.internal.zone }}
-        secretName: ingress-simple-dashboard
+      - secretName: ingress-simple-dashboard
         config:
           http:
             paths:

@@ -7,6 +7,9 @@ HELMFILE_PATH ?= $(ROOT_PATH)/helmfiles
 STACK ?= cluster.$(CLUSTER)
 HELMFILE_VERSION ?= 0.109.0
 HELM_VERSION ?= 3.2.0
+HELM_FLAGS ?= 
+## Use the following to show helm yaml rendered even if there are errors
+#HELM_FLAGS ?= --args --debug
 ENVIRONMENT ?= default
 HELMFILE_VALUES=$(CONFIG_PATH)/$(ENVIRONMENT)/values.yaml
 
@@ -105,7 +108,7 @@ helmfile/destroy: prompt/yesno ## Removes STACK from cluster
 
 .PHONY: helmfile/template
 helmfile/template: ## template STACK yaml manifest for cluster
-	$(helmfile) -b $(helm_binary) -f $(HELMFILE_PATH)/helmfile.$(STACK).yaml template
+	$(helmfile) -b $(helm_binary) -f $(HELMFILE_PATH)/helmfile.$(STACK).yaml template $(HELM_ARGS)
 
 .PHONY: helmfile/remove
 helmfile/remove: helmfile/destroy ## Removes STACK from cluster (alias for destroy)

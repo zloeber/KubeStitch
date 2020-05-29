@@ -17,6 +17,6 @@ endif
 .PHONY: .deps/argocd
 .deps/argocd: .dep/argocd ## Install dependencies
 
-.PHONY: argocd/cmd
+.PHONY: argocd/login
 argocd/login: ## login via argocd cli
-	$(argocd) login argocd.int.micro.svc #--username admin --password $(shell $(MAKE) argocd/get/password)
+	$(argocd) login argocd.int.micro.svc --username admin --password $(shell $(MAKE) argocd/get/password)

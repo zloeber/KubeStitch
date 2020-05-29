@@ -6,7 +6,7 @@ bases:
 ---
 
 releases:
-- name: namespace-{{ .Values.localstack.name }}
+- name: {{ .Values.localstack.name }}-namespace
   chart: {{ .Values.archetype.chart }}
   version: {{ .Values.archetype.version }}
   namespace: kube-system
@@ -14,7 +14,7 @@ releases:
   installed: true
   wait: true
   labels:
-    chart: namespace-{{ .Values.localstack.name }}
+    chart: {{ .Values.localstack.name }}-namespace
     component: {{ .Values.localstack.name }}
     namespace: kube-system
   values:
@@ -34,7 +34,7 @@ releases:
     component: {{ .Values.localstack.name }}
     namespace: {{ .Values.localstack.namespace }}
   needs:
-  - kube-system/namespace-{{ .Values.localstack.name }}
+  - kube-system/{{ .Values.localstack.name }}-namespace
   values:
   - resources:
     - apiVersion: v1
@@ -129,16 +129,16 @@ releases:
               persistentVolumeClaim:
                 claimName: localstack-claim1
 
-- name: ingress-{{ .Values.localstack.name }}-dashboard
+- name: {{ .Values.localstack.name }}-ingress-dashboard
   namespace: {{ .Values.localstack.namespace }}
   chart: {{ .Values.archetype.chart }}
   version: {{ .Values.archetype.version }}
   condition: ingress.enabled
   installed: true
   needs:
-  - kube-system/namespace-{{ .Values.localstack.name }}
+  - kube-system/{{ .Values.localstack.name }}-namespace
   labels:
-    chart: ingress-{{ .Values.localstack.name }}-dashboard
+    chart: {{ .Values.localstack.name }}-ingress-dashboard
     component: ingress
     namespace: {{ .Values.localstack.namespace }}
   values:
@@ -160,16 +160,16 @@ releases:
                 serviceName: localstack
                 servicePort: 8080
 
-- name: ingress-{{ .Values.localstack.name }}-api
+- name: {{ .Values.localstack.name }}-ingress-api
   namespace: {{ .Values.localstack.namespace }}
   chart: {{ .Values.archetype.chart }}
   version: {{ .Values.archetype.version }}
   condition: ingress.enabled
   installed: true
   needs:
-  - kube-system/namespace-{{ .Values.localstack.name }}
+  - kube-system/{{ .Values.localstack.name }}-namespace
   labels:
-    chart: ingress-{{ .Values.localstack.name }}-api
+    chart: {{ .Values.localstack.name }}-ingress-api
     component: ingress
     namespace: {{ .Values.localstack.namespace }}
   values:
