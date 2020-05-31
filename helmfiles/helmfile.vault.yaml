@@ -7,8 +7,8 @@ bases:
 
 releases:
 - name: {{ .Values.vault.name }}-namespace
-  chart: {{ .Values.archetype.chart }}
-  version: {{ .Values.archetype.version }}
+  chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.1" }}
   namespace: kube-system
   wait: true
   condition: vault.enabled
@@ -52,8 +52,8 @@ releases:
       enabled: true
 
 - name: {{ .Values.vault.name }}-ingress
-  chart: {{ .Values.archetype.chart }}
-  version: {{ .Values.archetype.version }}
+  chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.1" }}
   namespace: {{ .Values.vault.namespace }}
   condition: ingress.enabled
   installed: true
@@ -68,12 +68,12 @@ releases:
   - zone: internal
     app: {{ .Values.vault.name }}
     ingressClassMap:
-      internal: {{ .Values.ingress.internal.class }}
+      internal: {{ .Values | getOrNil "ingress.internal.class" | default "internal" }}
     ingress:
       enabled: true
       tlsEnabled: true
       hosts:
-      # - name: vault.{{ .Values.ingress.internal.zone }}
+      # - name: vault.{{ .Values | getOrNil "ingress.internal.zone" | default "int.micro.svc" }}
       - secretName: ingress-vault-dashboard
         config:
           http:
@@ -85,8 +85,8 @@ releases:
 
 ## Role binding needed to do vault auth
 - name: {{ .Values.vault.name }}-rolebinding
-  chart: {{ .Values.raw.chart }}
-  version: {{ .Values.raw.version }}
+  chart: {{ .Values | getOrNil "raw.chart" | default "incubator/raw" }}
+  version: {{ .Values | getOrNil "raw.version" | default "0.2.3" }}
   namespace: {{ .Values.vault.namespace }}
   condition: vault.enabled
   installed: true

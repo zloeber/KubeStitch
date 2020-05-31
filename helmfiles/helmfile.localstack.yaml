@@ -7,8 +7,8 @@ bases:
 
 releases:
 - name: {{ .Values.localstack.name }}-namespace
-  chart: {{ .Values.archetype.chart }}
-  version: {{ .Values.archetype.version }}
+  chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.1" }}
   namespace: kube-system
   condition: localstack.enabled
   installed: true
@@ -24,9 +24,9 @@ releases:
       name: {{ .Values.localstack.namespace }}
 
 - name: {{ .Values.localstack.name }}
-  chart: {{ .Values.raw.chart }}
+  chart: {{ .Values | getOrNil "raw.chart" | default "incubator/raw" }}
   namespace: {{ .Values.localstack.namespace }}
-  version: {{ .Values.raw.version }}
+  version: {{ .Values | getOrNil "raw.version" | default "0.2.3" }}
   condition: localstack.enabled
   installed: true
   labels:
@@ -131,8 +131,8 @@ releases:
 
 - name: {{ .Values.localstack.name }}-ingress-dashboard
   namespace: {{ .Values.localstack.namespace }}
-  chart: {{ .Values.archetype.chart }}
-  version: {{ .Values.archetype.version }}
+  chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.1" }}
   condition: ingress.enabled
   installed: true
   needs:
@@ -145,12 +145,12 @@ releases:
   - zone: internal
     app: {{ .Values.localstack.name }}
     ingressClassMap:
-      internal: {{ .Values.ingress.internal.class }}
+      internal: {{ .Values | getOrNil "ingress.internal.class" | default "internal" }}
     ingress:
       enabled: true
       tlsEnabled: true
       hosts:
-      - name: localstack-dashboard.{{ .Values.ingress.internal.zone }}
+      - name: localstack-dashboard.{{ .Values | getOrNil "ingress.internal.zone" | default "int.micro.svc" }}
         secretName: ingress-localstack-dashboard
         config:
           http:
@@ -162,8 +162,8 @@ releases:
 
 - name: {{ .Values.localstack.name }}-ingress-api
   namespace: {{ .Values.localstack.namespace }}
-  chart: {{ .Values.archetype.chart }}
-  version: {{ .Values.archetype.version }}
+  chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.1" }}
   condition: ingress.enabled
   installed: true
   needs:
@@ -176,12 +176,12 @@ releases:
   - zone: internal
     app: localstack
     ingressClassMap:
-      internal: {{ .Values.ingress.internal.class }}
+      internal: {{ .Values | getOrNil "ingress.internal.class" | default "internal" }}
     ingress:
       enabled: true
       tlsEnabled: true
       hosts:
-      - name: localstack.{{ .Values.ingress.internal.zone }}
+      - name: localstack.{{ .Values | getOrNil "ingress.internal.zone" | default "int.micro.svc" }}
         secretName: ingress-localstack-api
         config:
           http:

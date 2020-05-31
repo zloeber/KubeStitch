@@ -6,16 +6,16 @@ bases:
 ---
 
 releases:
-- name: {{ .Values.metricsserver.name }}
-  chart: {{ .Values.metricsserver.chart }}
+- name: {{ .Values | getOrNil "metricsserver.name" | default "metricsserver" }}
+  chart: {{ .Values | getOrNil "metricsserver.chart" | default "stable/metrics-server" }}
   namespace: kube-system
   version: {{ .Values.metricsserver.version }}
   wait: true
   condition: metricsserver.enabled
   installed: true
   labels:
-    chart: {{ .Values.metricsserver.name }}
-    component: {{ .Values.metricsserver.name }}
+    chart: {{ .Values | getOrNil "metricsserver.name" | default "metricsserver" }}
+    component: {{ .Values | getOrNil "metricsserver.name" | default "metricsserver" }}
     namespace: kube-system
   values:
   - args:

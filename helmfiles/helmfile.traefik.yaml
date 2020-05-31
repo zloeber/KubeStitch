@@ -10,8 +10,8 @@ bases:
 
 releases:
 - name: {{ .Values.traefik.name }}-namespace
-  chart: {{ .Values.archetype.chart }}
-  version: {{ .Values.archetype.version }}
+  chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.1" }}
   namespace: kube-system
   wait: true
   condition: ingress.enabled
@@ -46,7 +46,7 @@ releases:
     - "--api.insecure=true"
     additionalArguments:
       - "--providers.kubernetesingress=true"
-      - "--providers.kubernetesingress.ingressclass={{ .Values.ingress.internal.class }}"
+      - "--providers.kubernetesingress.ingressclass={{ .Values | getOrNil "ingress.internal.class" | default "internal" }}"
     ingressRoute:
       dashboard:
         enabled: false
@@ -62,7 +62,7 @@ releases:
         loadBalancerIP: "{{ .Values.ingress.internal.ip }}"
         {{- end }}
       annotations:
-        "prometheus.io/scrape": "{{ .Values.monitoring.enabled }}"
+        "prometheus.io/scrape": "{{ .Values.prometheusoperator.enabled }}"
         "prometheus.io/port": "9913"
         "service.beta.kubernetes.io/{{ .Values.cloud }}-load-balancer-internal": "true"
     ports:
@@ -70,8 +70,8 @@ releases:
         expose: true
 
 - name: {{ .Values.traefik.name }}-dashboard
-  chart: {{ .Values.raw.chart }}
-  version: {{ .Values.raw.version }}
+  chart: {{ .Values | getOrNil "raw.chart" | default "incubator/raw" }}
+  version: {{ .Values | getOrNil "raw.version" | default "0.2.3" }}
   namespace: {{ .Values.ingress.internal.namespace }}
   condition: traefik.enabled
   installed: true
@@ -91,7 +91,7 @@ releases:
         entryPoints:
           - web
         routes:
-          - match: Host(`traefik.{{ .Values.ingress.internal.zone }}`) && (PathPrefix(`/dashboard`) || PathPrefix(`/api`))
+          - match: Host(`traefik.{{ .Values | getOrNil "ingress.internal.zone" | default "int.micro.svc" }}`) && (PathPrefix(`/dashboard`) || PathPrefix(`/api`))
             kind: Rule
             services:
               - name: api@internal

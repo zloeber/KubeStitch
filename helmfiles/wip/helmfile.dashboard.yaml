@@ -7,7 +7,7 @@ bases:
 
 releases:
 - name: namespace-dashboard
-  chart: {{ .Values.archetype.chart }}
+  chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
   namespace: kube-system
   labels:
     chart: namespace-dashboard
@@ -338,8 +338,8 @@ releases:
 {{- if .Values.ingress.installed }}
 - name: ingress-kubernetes-dashboard
   namespace: kubernetes-dashboard
-  chart: {{ .Values.archetype.chart }}
-  version: {{ .Values.archetype.version }}
+  chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.1" }}
   installed: true
   needs:
   - kube-system/namespace-dashboard
@@ -351,18 +351,18 @@ releases:
   - zone: internal
     app: kubernetes-dashboard
     ingressClassMap:
-      internal: {{ .Values.ingress.internal.class }}
+      internal: {{ .Values | getOrNil "ingress.internal.class" | default "internal" }}
     # certificate:
     #   enabled: true
     #   name: dashboard-ingress-cert
     #   selfSigned: true
-    #   commonName: dashboard.{{ .Values.ingress.internal.zone }}
+    #   commonName: dashboard.{{ .Values | getOrNil "ingress.internal.zone" | default "int.micro.svc" }}
     #   isCA: false
     ingress:
       enabled: true
       tlsEnabled: true
       hosts:
-      - name: dashboard.{{ .Values.ingress.internal.zone }}
+      - name: dashboard.{{ .Values | getOrNil "ingress.internal.zone" | default "int.micro.svc" }}
         secretName: ingress-kubernetes-dashboard
         config:
           http:

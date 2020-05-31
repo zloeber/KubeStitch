@@ -6,37 +6,37 @@ bases:
 ---
 
 releases:
-- name: {{ .Values.argocd.name }}-namespace
-  chart: {{ .Values.archetype.chart }}
-  version: {{ .Values.archetype.version }}
+- name: {{ .Values | getOrNil "argocd.name" | default "argocd" }}-namespace
+  chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.1" }}
   namespace: kube-system
   condition: argocd.enabled
   installed: true
   wait: true
   labels:
-    chart: {{ .Values.argocd.name }}-namespace
-    component: {{ .Values.argocd.name }}
+    chart: {{ .Values | getOrNil "argocd.name" | default "argocd" }}-namespace
+    component: {{ .Values | getOrNil "argocd.name" | default "argocd" }}
     namespace: kube-system
   values:
-  - app: {{ .Values.argocd.name }}
+  - app: {{ .Values | getOrNil "argocd.name" | default "argocd" }}
     namespace:
       enabled: true
-      name: {{ .Values.argocd.namespace }}
+      name: {{ .Values | getOrNil "argocd.namespace" | default "argo-cd" }}
 
 ## argocd Deployment
 # Values: https://github.com/argoproj/argo-helm/blob/master/charts/argo-cd/values.yaml
-- name: {{ .Values.argocd.name }}
-  chart: {{ .Values.argocd.chart }}
-  namespace: {{ .Values.argocd.namespace }}
-  version: {{ .Values.argocd.version }}
+- name: {{ .Values | getOrNil "argocd.name" | default "argocd" }}
+  chart: {{ .Values | getOrNil "argocd.chart" | default "argocd/argo-cd" }}
+  namespace: {{ .Values | getOrNil "argocd.namespace" | default "argo-cd" }}
+  version: {{ .Values | getOrNil "argocd.version" | default "2.3.5" }}
   condition: argocd.enabled
   installed: true
   labels:
-    chart: {{ .Values.argocd.name }}
-    component: {{ .Values.argocd.name }}
-    namespace: {{ .Values.argocd.namespace }}
+    chart: {{ .Values | getOrNil "argocd.name" | default "argocd" }}
+    component: {{ .Values | getOrNil "argocd.name" | default "argocd" }}
+    namespace: {{ .Values | getOrNil "argocd.namespace" | default "argo-cd" }}
   needs:
-    - kube-system/{{ .Values.argocd.name }}-namespace
+    - kube-system/{{ .Values | getOrNil "argocd.name" | default "argocd" }}-namespace
   values:
   - server:
       # Setup server as insecure so that we can use traefik to expose ingress
@@ -47,7 +47,7 @@ releases:
       # https://github.com/travisghansen/argo-cd-helmfile
       config:
         # Argo CD's externally facing base URL (optional). Required when configuring SSO
-        url: https://argocd.{{ .Values.ingress.internal.zone }}
+        url: https://argocd.{{ .Values | getOrNil "ingress.internal.zone" | default "int.micro.svc" }}
         application.instanceLabelKey: argocd.argoproj.io/instance
         configManagementPlugins: |
           - name: helmfile
@@ -81,33 +81,33 @@ releases:
         name: custom-tools
         subPath: helmfile
 
-- name: {{ .Values.argocd.name }}-ingress
-  chart: {{ .Values.raw.chart }}
-  version: {{ .Values.raw.version }}
-  namespace: {{ .Values.argocd.namespace }}
+- name: {{ .Values | getOrNil "argocd.name" | default "argocd" }}-ingress
+  chart: {{ .Values | getOrNil "raw.chart" | default "incubator/raw" }}
+  version: {{ .Values | getOrNil "raw.version" | default "0.2.3" }}
+  namespace: {{ .Values | getOrNil "argocd.namespace" | default "argo-cd" }}
   condition: ingress.enabled
   installed: true
   needs:
-  - kube-system/{{ .Values.argocd.name }}-namespace
-  - {{ .Values.argocd.namespace }}/{{ .Values.argocd.name }}
+  - kube-system/{{ .Values | getOrNil "argocd.name" | default "argocd" }}-namespace
+  - {{ .Values | getOrNil "argocd.namespace" | default "argo-cd" }}/{{ .Values | getOrNil "argocd.name" | default "argocd" }}
   labels:
-    chart: {{ .Values.argocd.name }}-ingress
+    chart: {{ .Values | getOrNil "argocd.name" | default "argocd" }}-ingress
     component: ingress
-    namespace: {{ .Values.argocd.namespace }}
+    namespace: {{ .Values | getOrNil "argocd.namespace" | default "argo-cd" }}
   values:
   - resources:
     - apiVersion: traefik.containo.us/v1alpha1
       kind: IngressRoute
       metadata:
-        name: {{ .Values.argocd.name }}-ingress
+        name: {{ .Values | getOrNil "argocd.name" | default "argocd" }}-ingress
       spec:
         entryPoints:
           - websecure
         routes:
-          - match: Host(`argocd.{{ .Values.ingress.internal.zone }}`)
+          - match: Host(`argocd.{{ .Values | getOrNil "ingress.internal.zone" | default "int.micro.svc" }}`)
             kind: Rule
             services:
-              - name: {{ .Values.argocd.name }}-server
+              - name: {{ .Values | getOrNil "argocd.name" | default "argocd" }}-server
                 port: 80
         tls:
           certResolver: default

@@ -7,8 +7,8 @@ bases:
 
 releases:
 - name: {{ .Values.consul.name }}-namespace
-  chart: {{ .Values.archetype.chart }}
-  version: {{ .Values.archetype.version }}
+  chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.1" }}
   namespace: kube-system
   condition: consul.enabled
   installed: true
@@ -57,8 +57,8 @@ releases:
 
 - name: {{ .Values.consul.name }}-ingress
   namespace: {{ .Values.consul.namespace }}
-  chart: {{ .Values.archetype.chart }}
-  version: {{ .Values.archetype.version }}
+  chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.1" }}
   condition: consul.enabled
   installed: true
   needs:
@@ -71,12 +71,12 @@ releases:
   - zone: internal
     app: consul-dashboard
     ingressClassMap:
-      internal: {{ .Values.ingress.internal.class }}
+      internal: {{ .Values | getOrNil "ingress.internal.class" | default "internal" }}
     ingress:
       enabled: true
       tlsEnabled: true
       hosts:
-      - name: consul.{{ .Values.ingress.internal.zone }}
+      - name: consul.{{ .Values | getOrNil "ingress.internal.zone" | default "int.micro.svc" }}
         secretName: ingress-consul-dashboard
         config:
           http:

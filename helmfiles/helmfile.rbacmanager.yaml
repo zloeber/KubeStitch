@@ -7,8 +7,8 @@ bases:
 
 releases:
 - name: {{ .Values.rbacmanager.name }}-namespace
-  chart: {{ .Values.archetype.chart }}
-  version: {{ .Values.archetype.version }}
+  chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.1" }}
   namespace: kube-system
   condition: rbacmanager.enabled
   installed: true
@@ -39,9 +39,9 @@ releases:
   - kube-system/{{ .Values.rbacmanager.name }}-namespace
 
 - name: {{ .Values.rbacmanager.name }}-rolebinding
-  chart: {{ .Values.archetype.chart }}
+  chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
   namespace: {{ .Values.rbacmanager.namespace }}
-  version: {{ .Values.archetype.version }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.1" }}
   condition: rbacmanager.enabled
   installed: true
   labels:

@@ -9,8 +9,8 @@ bases:
 
 releases:
 - name: {{ .Values.prometheusoperator.name }}-namespace
-  chart: {{ .Values.archetype.chart }}
-  version: {{ .Values.archetype.version }}
+  chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.1" }}
   namespace: kube-system
   condition: prometheusoperator.enabled
   installed: true
@@ -40,15 +40,15 @@ releases:
   values:
   - alertmanager:
       alertmanagerSpec:
-        externalUrl: http://alertmanager.{{ .Values.ingress.internal.zone }}
+        externalUrl: http://alertmanager.{{ .Values | getOrNil "ingress.internal.zone" | default "int.micro.svc" }}
     prometheus:
       prometheusSpec:
-        externalUrl: http://prometheus.{{ .Values.ingress.internal.zone }}
+        externalUrl: http://prometheus.{{ .Values | getOrNil "ingress.internal.zone" | default "int.micro.svc" }}
 
 - name: {{ .Values.prometheusoperator.name }}-ingress-grafana
   namespace: {{ .Values.prometheusoperator.namespace }}
-  chart: {{ .Values.archetype.chart }}
-  version: {{ .Values.archetype.version }}
+  chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.1" }}
   condition: ingress.enabled
   installed: true
   needs:
@@ -76,8 +76,8 @@ releases:
 
 - name: {{ .Values.prometheusoperator.name }}-ingress-prometheus
   namespace: {{ .Values.prometheusoperator.namespace }}
-  chart: {{ .Values.archetype.chart }}
-  version: {{ .Values.archetype.version }}
+  chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.1" }}
   condition: ingress.enabled
   installed: true
   needs:
@@ -105,8 +105,8 @@ releases:
 
 - name: {{ .Values.prometheusoperator.name }}-ingress-alertmanager
   namespace: {{ .Values.prometheusoperator.namespace }}
-  chart: {{ .Values.archetype.chart }}
-  version: {{ .Values.archetype.version }}
+  chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.1" }}
   condition: ingress.enabled
   installed: true
   needs:

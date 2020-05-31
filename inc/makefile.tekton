@@ -1,0 +1,19 @@
+ROOT_PATH ?= $(abspath $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST))))))
+BIN_PATH ?= $(ROOT_PATH)/.local/bin
+
+tekton := $(BIN_PATH)/tkn
+
+.PHONY: .dep/tekton
+.dep/tekton: ## Install tekton cli locally
+ifeq (,$(wildcard $(tekton)))
+	@$(MAKE) --no-print-directory -C $(APP_PATH)/githubapp auto tektoncd/cli PACKAGE_EXE=tkn INSTALL_PATH=$(BIN_PATH)
+	@echo "Installed: $(tekton)"
+endif
+
+.PHONY: .deps/tekton
+.deps/tekton: .dep/tekton ## Install dependencies
+
+.PHONY: tekton/deploy
+tekton/deploy: ## Deploy tekton pipelines
+	$(kubecmd) apply --filename https://storage.googleapis.com/tekton-releases/pipeline/latest/release.yaml
+	$(kubecmd) apply --filename https://github.com/tektoncd/dashboard/releases/download/v0.6.1.4/tekton-dashboard-release.yaml

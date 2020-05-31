@@ -4,6 +4,7 @@ BIN_PATH ?= $(ROOT_PATH)/.local/bin
 METALLB_VERSION ?= 0.9.3
 CLUSTER_CONTEXT ?= $(CLUSTER)
 DOCKER_NETWORK ?= bridge
+SUBNET_INDEX ?= 1
 KUBE_CONFIG := $(ROOT_PATH)/.local/kube.$(CLUSTER).conf
 
 kubectl := $(BIN_PATH)/kubectl
@@ -113,7 +114,7 @@ kube/loadbalancer/ip: ## Show external loadbalancer ip
 
 .PHONY: kube/loadbalancer/subnet
 kube/loadbalancer/subnet: ## Show docker bridge subnet
-	@docker network inspect $(DOCKER_NETWORK) | $(jq) '.[0].IPAM.Config[0].Gateway' | sed -e 's/\0.1/1\.0\/24/g'
+	@docker network inspect $(DOCKER_NETWORK) | $(jq) '.[0].IPAM.Config[0].Gateway' | sed -e 's/\0.1/$(SUBNET_INDEX).0\/24/g'
 
 .PHONY: dnsforward/start
 dnsforward/start: dnsforward/stop ## Forwards all dns requests to a local dns-proxy-server

@@ -5,9 +5,6 @@ archetype:
 raw:
   version: "0.2.3"
   chart: incubator/raw
-monitoring:
-  enabled: true
-  namespace: monitoring
 ingress:
   enabled: true
   dashboard: true

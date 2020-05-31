@@ -7,8 +7,8 @@ bases:
 
 releases:
 - name: {{ .Values.certmanager.name }}-namespace
-  chart: {{ .Values.archetype.chart }}
-  version: {{ .Values.archetype.version }}
+  chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.1" }}
   namespace: kube-system
   condition: certmanager.enabled
   installed: true
@@ -50,7 +50,7 @@ releases:
       create: true
       name: ""
     prometheus:
-      enabled: {{ .Values.monitoring.enabled }}
+      enabled: {{ .Values.prometheusoperator.enabled }}
       servicemonitor:
         enabled: false
     webhook:
@@ -66,9 +66,9 @@ releases:
         memory: "128Mi"
 
 - name: {{ .Values.certmanager.name }}-metricsservice
-  chart: {{ .Values.raw.chart }}
+  chart: {{ .Values | getOrNil "raw.chart" | default "incubator/raw" }}
   namespace: {{ .Values.certmanager.namespace }}
-  version: {{ .Values.raw.version }}
+  version: {{ .Values | getOrNil "raw.version" | default "0.2.3" }}
   condition: monitoring.enabled
   installed: true
   labels:
@@ -96,24 +96,24 @@ releases:
           app.kubernetes.io/instance: cert-manager
 
 - name: {{ .Values.certmanager.name }}-servicemonitor
-  chart: {{ .Values.raw.chart }}
+  chart: {{ .Values | getOrNil "raw.chart" | default "incubator/raw" }}
   namespace: {{ .Values.certmanager.namespace }}
-  version: {{ .Values.raw.version }}
+  version: {{ .Values | getOrNil "raw.version" | default "0.2.3" }}
   condition: monitoring.enabled
   installed: true
   labels:
     chart: cert-manager-servicemonitor
     component: cert-manager
-    namespace: {{ .Values.monitoring.namespace }}
+    namespace: {{ .Values.prometheusoperator.namespace }}
   needs:
-  - {{ .Values.monitoring.namespace }}/prometheus-operator
+  - {{ .Values.prometheusoperator.namespace }}/prometheus-operator
   values:
   - resources:
     - apiVersion: monitoring.coreos.com/v1
       kind: ServiceMonitor
       metadata:
         name: cert-manager
-        namespace: {{ .Values.monitoring.namespace }}
+        namespace: {{ .Values.prometheusoperator.namespace }}
         labels:
           app: cert-manager-servicemonitor
           release: cert-manager-servicemonitor
@@ -134,9 +134,9 @@ releases:
           scrapeTimeout: 30s
 
 - name: {{ .Values.certmanager.name }}-issuers
-  chart: {{ .Values.raw.chart }}
+  chart: {{ .Values | getOrNil "raw.chart" | default "incubator/raw" }}
   namespace: {{ .Values.certmanager.namespace }}
-  version: {{ .Values.raw.version }}
+  version: {{ .Values | getOrNil "raw.version" | default "0.2.3" }}
   condition: certmanager.enabled
   installed: true
   labels:

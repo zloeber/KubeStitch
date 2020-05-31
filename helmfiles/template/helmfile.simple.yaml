@@ -7,8 +7,8 @@ bases:
 
 releases:
 - name: {{ .Values.simple.name }}-namespace
-  chart: {{ .Values.archetype.chart }}
-  version: {{ .Values.archetype.version }}
+  chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.1" }}
   namespace: kube-system
   condition: simple.enabled
   installed: true
@@ -41,8 +41,8 @@ releases:
 
 - name: {{ .Values.simple.name }}-ingress
   namespace: {{ .Values.simple.namespace }}
-  chart: {{ .Values.archetype.chart }}
-  version: {{ .Values.archetype.version }}
+  chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.1" }}
   condition: ingress.enabled
   installed: true
   needs:
@@ -56,7 +56,7 @@ releases:
   - zone: internal
     app: dashboard
     ingressClassMap:
-      internal: {{ .Values.ingress.internal.class }}
+      internal: {{ .Values | getOrNil "ingress.internal.class" | default "internal" }}
       external: {{ .Values.ingress.external.class }}
       stage: {{ .Values.ingress.stage.class }}
     ingress:

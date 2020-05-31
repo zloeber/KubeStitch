@@ -9,8 +9,8 @@ bases:
 ## Rancher Deployment
 releases:
 - name: namespace-rancher
-  chart: {{ .Values.archetype.chart }}
-  version: {{ .Values.archetype.version }}
+  chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.1" }}
   namespace: kube-system
   labels:
     chart: namespace-rancher
@@ -36,8 +36,8 @@ releases:
   needs:
     - kube-system/namespace-rancher
   values:
-  - hostname: rancher.{{ .Values.ingress.internal.zone }}
+  - hostname: rancher.{{ .Values | getOrNil "ingress.internal.zone" | default "int.micro.svc" }}
     # ingress:
     #   extraAnnotations:
-    #     kubernetes.io/ingress.class: {{ .Values.ingress.internal.class }}
+    #     kubernetes.io/ingress.class: {{ .Values | getOrNil "ingress.internal.class" | default "internal" }}
 

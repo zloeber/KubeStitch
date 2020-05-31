@@ -10,8 +10,8 @@ bases:
 
 releases:
 - name: namespace-{{ .Values.kubefledged.name }}
-  chart: {{ .Values.archetype.chart }}
-  version: {{ .Values.archetype.version }}
+  chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.1" }}
   namespace: kube-system
   condition: kubefledged.enabled
   installed: true
@@ -44,8 +44,8 @@ releases:
 
 ## Create a default image cache
 - name: {{ .Values.kubefledged.name }}-imagecache
-  chart: {{ .Values.raw.chart }}
-  version: {{ .Values.raw.version }}
+  chart: {{ .Values | getOrNil "raw.chart" | default "incubator/raw" }}
+  version: {{ .Values | getOrNil "raw.version" | default "0.2.3" }}
   namespace: {{ .Values.kubefledged.namespace }}
   condition: kubefledged.enabled
   installed: true

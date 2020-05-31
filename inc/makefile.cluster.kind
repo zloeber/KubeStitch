@@ -1,7 +1,7 @@
 ROOT_PATH ?= $(abspath $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST))))))
 BIN_PATH ?= $(ROOT_PATH)/.local/bin
 KIND_VERSION ?= 0.8.1
-KIND_CONFIG ?= kind-config.yaml
+KIND_CONFIG ?= config-multinode.yaml
 KIND_VERBOSITY ?= 1
 KIND_IMAGE_POSTFIX ?=
 
@@ -30,9 +30,9 @@ cluster/start: cluster/stop .kind/start kube/context kube/deploy/calico kube/dep
 
 .PHONY: cluster/ingress
 cluster/ingress: ## Start cluster ingress
-	kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/nginx-0.30.0/deploy/static/mandatory.yaml
-	kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/nginx-0.30.0/deploy/static/provider/baremetal/service-nodeport.yaml
-	kubectl patch deployments -n ingress-nginx nginx-ingress-controller -p '{"spec":{"template":{"spec":{"containers":[{"name":"nginx-ingress-controller","ports":[{"containerPort":80,"hostPort":80},{"containerPort":443,"hostPort":443}]}],"nodeSelector":{"ingress-ready":"true"},"tolerations":[{"key":"node-role.kubernetes.io/master","operator":"Equal","effect":"NoSchedule"}]}}}}'
+	$(kubecmd) apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/nginx-0.30.0/deploy/static/mandatory.yaml
+	$(kubecmd) apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/nginx-0.30.0/deploy/static/provider/baremetal/service-nodeport.yaml
+	$(kubecmd) patch deployments -n ingress-nginx nginx-ingress-controller -p '{"spec":{"template":{"spec":{"containers":[{"name":"nginx-ingress-controller","ports":[{"containerPort":80,"hostPort":80},{"containerPort":443,"hostPort":443}]}],"nodeSelector":{"ingress-ready":"true"},"tolerations":[{"key":"node-role.kubernetes.io/master","operator":"Equal","effect":"NoSchedule"}]}}}}'
 
 .PHONY: cluster/stop
 cluster/stop: ## Delete local cicd cluster
@@ -41,11 +41,10 @@ cluster/stop: ## Delete local cicd cluster
 .PHONY: cluster/test
 cluster/test: ## Validate the kubernetes deployment
 	$(kubecmd) delete job kube-bench || true
-	$(kubecmd) apply -f $(DEPLOY_PATH)/kind/kind.bench.yaml
+	$(kubecmd) apply -f $(DEPLOY_PATH)/kind/cluster-test.yaml
 	KUBECONFIG=$(KUBE_CONFIG) \
 		$(stern) -l app=kube-bench --container kube-bench
 
-.PHONY: kind/ingressip
-kind/ingressip: ## Get an ingress IP to use
-	@echo `docker inspect --format '{{ .NetworkSettings.IPAddress }}' $$(docker ps -q) | cut -d"." -f1-3`".100"
-
+#.PHONY: kind/ingressip
+#kind/ingressip: ## Get an ingress IP to use
+#	@echo `docker inspect --format '{{ .NetworkSettings.IPAddress }}' $$(docker ps -q) | cut -d"." -f1-3`".100"

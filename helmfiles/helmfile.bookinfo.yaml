@@ -7,8 +7,8 @@ bases:
 
 releases:
 - name: namespace-bookinfo
-  chart: {{ .Values.archetype.chart }}
-  version: {{ .Values.archetype.version }}
+  chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.1" }}
   namespace: kube-system
   labels:
     chart: namespace-bookinfo

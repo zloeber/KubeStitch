@@ -37,7 +37,7 @@ releases:
         gateways:
         - istio-dashboard-gateway
         hosts:
-        - 'kiali.{{ .Values.ingress.internal.zone }}'
+        - 'kiali.{{ .Values | getOrNil "ingress.internal.zone" | default "int.micro.svc" }}'
         http:
         - match:
           - uri:
