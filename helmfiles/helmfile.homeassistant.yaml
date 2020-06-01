@@ -36,7 +36,8 @@ releases:
   needs:
     - kube-system/{{ .Values | getOrNil "homeassistant.name" | default "homeassistant" }}-namespace
   values:
-  - vscode:
+  - hostNetwork: true
+    vscode:
       enabled: true
 
 # - name: {{ .Values | getOrNil "homeassistant.name" | default "homeassistant" }}-ingress

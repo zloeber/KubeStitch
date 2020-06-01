@@ -7,3 +7,4 @@ helmDefaults:
   force: false
   cleanupOnFail: true
   historyMax: 10
+  createNamespace: false
