@@ -1,0 +1,2 @@
+ROOT_PATH ?= $(abspath $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST))))))
+BIN_PATH ?= $(ROOT_PATH)/.local/bin

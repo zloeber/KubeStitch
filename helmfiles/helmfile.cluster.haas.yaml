@@ -1,0 +1,10 @@
+---
+bases:
+- ../config/environments.yaml
+---
+
+helmfiles:
+- ../helmfiles/helmfile.certmanager.yaml
+- ../helmfiles/helmfile.rbacmanager.yaml
+- ../helmfiles/helmfile.nfsstorage.yaml
+- ../helmfiles/helmfile.homeassistant.yaml
