@@ -13,7 +13,8 @@ CLUSTER_CONTEXT := default
 
 .PHONY: .k3s/cluster/config
 .k3s/cluster/config: ## Export cluster configuration
-	cat /etc/rancher/k3s/k3s.yaml > $(KUBE_CONFIG)
+	sudo cp /etc/rancher/k3s/k3s.yaml $(KUBE_CONFIG)
+	sudo chown `whoami`:`whoami` $(KUBE_CONFIG)
 
 .PHONY: cluster/start
 cluster/start: cluster/stop .k3s/create/cluster .k3s/cluster/config kube/context ## Start cluster
