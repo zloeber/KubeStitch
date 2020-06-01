@@ -82,8 +82,8 @@ endif
 .PHONY: .deps/helm
 .deps/helm: .dep/helm .dep/ct .dep/helmfile .dep/helm-x .helm/plugins ## Install yq, ct, helm, helmfile, helm-x, and plugins locally
 
-.PHONY: helmfile/list
-helmfile/list: ## Lists all available helmfiles
+.PHONY: helmfile/stacks
+helmfile/stacks: ## Lists all available helmfile stacks
 	@ls $(HELMFILE_PATH)/helmfile.*.yaml | xargs -n1 basename | sed -e 's/\.yaml//g' -e 's/helmfile\.//g'
 
 .PHONY: helmfile/apply
@@ -93,6 +93,14 @@ helmfile/apply: ## apply all resources from state file only when there are chang
 .PHONY: helmfile/sync
 helmfile/sync: ## Sync STACK with cluster
 	$(helmfile) -b $(helm_binary) -f $(HELMFILE_PATH)/helmfile.$(STACK).yaml sync
+
+.PHONY: helmfile/repos
+helmfile/repos: ## Helm repo add and update
+	$(helmfile) -b $(helm_binary) -f $(HELMFILE_PATH)/helmfile.$(STACK).yaml repos
+
+.PHONY: helmfile/list
+helmfile/list: ## List resources in state file
+	$(helmfile) -b $(helm_binary) -f $(HELMFILE_PATH)/helmfile.$(STACK).yaml list
 
 .PHONY: helmfile/diff
 helmfile/diff: ## diffs STACK with cluster

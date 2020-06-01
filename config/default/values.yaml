@@ -1,10 +1,7 @@
 cloud: local
-archetype:
-  version: "0.0.1"
-  chart: zloeber/archetype
-raw:
-  version: "0.2.3"
-  chart: incubator/raw
+dnsRoot: micro.svc
+monitoring:
+  enabled: true
 ingress:
   enabled: true
   dashboard: true
@@ -12,18 +9,24 @@ ingress:
   internal:
     namespace: ingress-int
     class: internal
-    zone: int.micro.svc
+    zone: int
     ip: ""
   external:
     namespace: ingress-ext
     class: external
-    zone: ext.micro.svc
+    zone: ext
     ip: ""
   stage:
     namespace: ingress-stage
     class: stage
-    zone: stage.micro.svc
+    zone: stage
     ip: ""
+archetype:
+  version: "0.0.2"
+  chart: zloeber/archetype
+raw:
+  version: "0.2.3"
+  chart: incubator/raw
 istio:
   enabled: true
   ingressGateway: istio-ingressgateway
@@ -119,9 +122,9 @@ nfsstorage:
   server: 10.20.20.1
   path: /nfs-kube
 homeassistant:
-  name: haas
+  name: homeassistant
   enabled: true
   version: "0.13.3"
   chart: stable/home-assistant
   namespace: home-assistant
-
+  zone: internal

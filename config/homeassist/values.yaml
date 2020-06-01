@@ -1,6 +1,7 @@
 cloud: local
+dnsRoot: home.local
 archetype:
-  version: "0.0.1"
+  version: "0.0.2"
   chart: zloeber/archetype
 raw:
   version: "0.2.3"
@@ -10,19 +11,19 @@ ingress:
   dashboard: true
   type: default
   internal:
-    namespace: traefik
+    namespace: ingress-int
     class: internal
-    zone: int.home.local
+    zone: int
     ip: "192.168.1.10"
   external:
-    namespace: traefik
+    namespace: ingress-ext
     class: external
-    zone: ext.home.local
+    zone: ext
     ip: ""
   stage:
     namespace: ingress-stage
     class: stage
-    zone: stage.home.local
+    zone: stage
     ip: ""
 traefik:
   name: traefik
@@ -71,7 +72,7 @@ nfsstorage:
   version: "1.2.8"
   chart: stable/nfs-client-provisioner
   namespace: nfs-storage
-  server: 10.20.20.1
+  server: ""
   path: /nfs-kube
 homeassistant:
   name: homeassistant
@@ -79,4 +80,5 @@ homeassistant:
   version: "0.13.3"
   chart: stable/home-assistant
   namespace: home-assistant
+  zone: internal
   

@@ -21,13 +21,6 @@ ifeq (,$(wildcard $(stern)))
 	@echo "Installed: $(stern)"
 endif
 
-#.PHONY: .dep/kustomize
-#.dep/kustomize: ## Install kustomize
-#ifeq (,$(wildcard $(kustomize)))
-#	@$(MAKE) --no-print-directory -C $(APP_PATH)/githubapp auto  kubernetes-sigs/kustomize INSTALL_PATH=$(BIN_PATH)
-#	@echo "Installed: $(kustomize)"
-#endif
-
 .PHONY: .dep/kubectl
 .dep/kubectl: ## install kubectl for this project
 ifeq (,$(wildcard $(kubectl)))

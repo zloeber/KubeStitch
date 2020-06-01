@@ -1,13 +1,12 @@
-## Kube-Fledged
-# Source: https://github.com/senthilrch/kube-fledged
-
 ---
 bases:
 - ../config/environments.yaml
-- ../config/{{ .Environment.Name }}/helmdefaults.yaml
+- ../config/helmdefaults.yaml
 - ../config/{{ .Environment.Name }}/repositories.yaml
 ---
 
+## Kube-Fledged
+# Source: https://github.com/senthilrch/kube-fledged
 releases:
 - name: namespace-{{ .Values.kubefledged.name }}
   chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}

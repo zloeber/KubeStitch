@@ -1,0 +1,23 @@
+ROOT_PATH ?= $(abspath $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST))))))
+BIN_PATH ?= $(ROOT_PATH)/.local/bin
+
+CLUSTER_CONTEXT := default
+
+.PHONY: .deps/cluster.k3s
+.deps/cluster.k3s: ## k3s dependencies
+	@echo "k3s has no dependencies, skipping"
+
+.PHONY: .k3s/create/cluster
+.k3s/create/cluster: ## create k3s cluster
+	curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="server --no-deploy traefik --no-deploy=metrics-server --no-deploy servicelb" sh
+
+.PHONY: .k3s/cluster/config
+.k3s/cluster/config: ## Export cluster configuration
+	cat /etc/rancher/k3s/k3s.yaml > $(KUBE_CONFIG)
+
+.PHONY: cluster/start
+cluster/start: cluster/stop .k3s/create/cluster .k3s/cluster/config kube/context ## Start cluster
+
+.PHONY: cluster/stop
+cluster/stop: prompt/yesno ## Stop and delete cluster
+	sudo /usr/local/bin/k3s-uninstall.sh || true

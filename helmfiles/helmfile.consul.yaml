@@ -1,12 +1,12 @@
 ---
 bases:
 - ../config/environments.yaml
-- ../config/{{ .Environment.Name }}/helmdefaults.yaml
+- ../config/helmdefaults.yaml
 - ../config/{{ .Environment.Name }}/repositories.yaml
 ---
 
 releases:
-- name: {{ .Values.consul.name }}-namespace
+- name: {{ .Values | getOrNil "consul.name" | default "consul" }}-namespace
   chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
   version: {{ .Values | getOrNil "archetype.version" | default "0.0.1" }}
   namespace: kube-system
@@ -14,28 +14,27 @@ releases:
   installed: true
   wait: true
   labels:
-    chart: {{ .Values.consul.name }}-namespace
-    component: {{ .Values.consul.name }}
+    chart: {{ .Values | getOrNil "consul.name" | default "consul" }}-namespace
+    component: {{ .Values | getOrNil "consul.name" | default "consul" }}
     namespace: kube-system
   values:
-  - app: {{ .Values.consul.name }}
+  - app: {{ .Values | getOrNil "consul.name" | default "consul" }}
     namespace:
       enabled: true
-      name: {{ .Values.consul.namespace }}
+      name: {{ .Values | getOrNil "consul.namespace" | default "consul" }}
 
-## consul Deployment
-- name: {{ .Values.consul.name }}
-  chart: {{ .Values.consul.chart }}
-  version: {{ .Values.consul.version }}
-  namespace: {{ .Values.consul.namespace }}
+- name: {{ .Values | getOrNil "consul.name" | default "consul" }}
+  chart: {{ .Values | getOrNil "consul.chart" | default "consul/consul" }}
+  version: {{ .Values | getOrNil "consul.version" | default "0.21.0" }}
+  namespace: {{ .Values | getOrNil "consul.namespace" | default "consul" }}
   condition: consul.enabled
   installed: true
   labels:
-    chart: {{ .Values.consul.name }}
-    component: {{ .Values.consul.name }}
-    namespace: {{ .Values.consul.namespace }}
+    chart: {{ .Values | getOrNil "consul.name" | default "consul" }}
+    component: {{ .Values | getOrNil "consul.name" | default "consul" }}
+    namespace: {{ .Values | getOrNil "consul.namespace" | default "consul" }}
   needs:
-    - kube-system/{{ .Values.consul.name }}-namespace
+    - kube-system/{{ .Values | getOrNil "consul.name" | default "consul" }}-namespace
   values:
   - dns:
       enabled: false
@@ -55,33 +54,34 @@ releases:
       consulDestinationNamespace: kube
       mirroringK8S: false
 
-- name: {{ .Values.consul.name }}-ingress
-  namespace: {{ .Values.consul.namespace }}
+- name: {{ .Values | getOrNil "consul.name" | default "consul" }}-ingress
+  namespace: {{ .Values | getOrNil "consul.namespace" | default "consul" }}
   chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
   version: {{ .Values | getOrNil "archetype.version" | default "0.0.1" }}
-  condition: consul.enabled
+  condition: ingress.enabled
   installed: true
   needs:
-  - kube-system/{{ .Values.consul.name }}-namespace
+  - kube-system/{{ .Values | getOrNil "consul.name" | default "consul" }}-namespace
+  - {{ .Values | getOrNil "consul.namespace" | default "consul" }}/{{ .Values | getOrNil "consul.name" | default "consul" }}
   labels:
-    chart: {{ .Values.consul.name }}-ingress
+    chart: {{ .Values | getOrNil "consul.name" | default "consul" }}-ingress
     component: ingress
-    namespace: {{ .Values.consul.namespace }}
+    namespace: {{ .Values | getOrNil "consul.namespace" | default "consul" }}
   values:
   - zone: internal
-    app: consul-dashboard
+    app: consul
+    dnsRoot: micro.svc
     ingressClassMap:
       internal: {{ .Values | getOrNil "ingress.internal.class" | default "internal" }}
     ingress:
       enabled: true
       tlsEnabled: true
       hosts:
-      - name: consul.{{ .Values | getOrNil "ingress.internal.zone" | default "int.micro.svc" }}
-        secretName: ingress-consul-dashboard
+      - secretName: {{ .Values | getOrNil "consul.name" | default "consul" }}-ingress
         config:
           http:
             paths:
             - path: "/"
               backend:
-                serviceName: consul-consul-ui
+                serviceName: {{ .Values | getOrNil "consul.name" | default "consul" }}-consul-ui
                 servicePort: 80

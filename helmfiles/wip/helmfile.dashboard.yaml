@@ -1,7 +1,7 @@
 ---
 bases:
 - ../config/environments.yaml
-- ../config/{{ .Environment.Name }}/helmdefaults.yaml
+- ../config/helmdefaults.yaml
 - ../config/{{ .Environment.Name }}/repositories.yaml
 ---
 

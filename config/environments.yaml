@@ -6,11 +6,18 @@ environments:
         enabled: false
   istio:
     values:
-    - ../config/istio/values.yaml
+    - ../config/default/values.yaml
     - monitoring:
         enabled: false
     - traefik:
         enabled: false
   homeassist:
     values:
-    - ../config/homeassist/values.yaml
+    - ../config/default/values.yaml
+    - dnsRoot: home.local
+    - ingress:
+        internal:
+          ip: "192.168.1.10"
+    - nfsstorage:
+        server: "10.20.20.1"
+        path: /nfs-kube

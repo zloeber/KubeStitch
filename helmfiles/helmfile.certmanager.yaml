@@ -1,12 +1,12 @@
 ---
 bases:
 - ../config/environments.yaml
-- ../config/{{ .Environment.Name }}/helmdefaults.yaml
+- ../config/helmdefaults.yaml
 - ../config/{{ .Environment.Name }}/repositories.yaml
 ---
 
 releases:
-- name: {{ .Values.certmanager.name }}-namespace
+- name: {{ .Values | getOrNil "certmanager.name" | default "certmanager" }}-namespace
   chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
   version: {{ .Values | getOrNil "archetype.version" | default "0.0.1" }}
   namespace: kube-system
@@ -14,30 +14,30 @@ releases:
   installed: true
   wait: true
   labels:
-    chart: {{ .Values.certmanager.name }}-namespace
-    component: {{ .Values.certmanager.name }}
+    chart: {{ .Values | getOrNil "certmanager.name" | default "certmanager" }}-namespace
+    component: {{ .Values | getOrNil "certmanager.name" | default "certmanager" }}
     namespace: kube-system
   values:
-  - app: {{ .Values.certmanager.name }}
+  - app: {{ .Values | getOrNil "certmanager.name" | default "certmanager" }}
     namespace:
       enabled: true
-      name: {{ .Values.certmanager.namespace }}
+      name: {{ .Values | getOrNil "certmanager.namespace" | default "certmanager" }}
       annotations:
         certmanager.k8s.io/disable-validation: "true"
 
-- name: {{ .Values.certmanager.name }}
-  chart: {{ .Values.certmanager.chart }}
-  namespace: {{ .Values.certmanager.namespace }}
-  version: {{ .Values.certmanager.version }}
+- name: {{ .Values | getOrNil "certmanager.name" | default "certmanager" }}
+  chart: {{ .Values | getOrNil "certmanager.chart" | default "jetstack/cert-manager" }}
+  namespace: {{ .Values | getOrNil "certmanager.namespace" | default "certmanager" }}
+  version: {{ .Values | getOrNil "certmanager.version" | default "0.15.0" }}
   condition: certmanager.enabled
   installed: true
   wait: true
   labels:
-    chart: {{ .Values.certmanager.name }}
-    component: {{ .Values.certmanager.name }}
-    namespace: {{ .Values.certmanager.namespace }}
+    chart: {{ .Values | getOrNil "certmanager.name" | default "certmanager" }}
+    component: {{ .Values | getOrNil "certmanager.name" | default "certmanager" }}
+    namespace: {{ .Values | getOrNil "certmanager.namespace" | default "certmanager" }}
   needs:
-  - kube-system/{{ .Values.certmanager.name }}-namespace
+  - kube-system/{{ .Values | getOrNil "certmanager.name" | default "certmanager" }}-namespace
   values:
   - installCRDs: true
     fullnameOverride: cert-manager
@@ -50,7 +50,7 @@ releases:
       create: true
       name: ""
     prometheus:
-      enabled: {{ .Values.prometheusoperator.enabled }}
+      enabled: {{ .Values | getOrNil "prometheusoperator.enabled" | default "false" }}
       servicemonitor:
         enabled: false
     webhook:
@@ -65,26 +65,26 @@ releases:
         cpu: "50m"
         memory: "128Mi"
 
-- name: {{ .Values.certmanager.name }}-metricsservice
+- name: {{ .Values | getOrNil "certmanager.name" | default "certmanager" }}-metricsservice
   chart: {{ .Values | getOrNil "raw.chart" | default "incubator/raw" }}
-  namespace: {{ .Values.certmanager.namespace }}
+  namespace: {{ .Values | getOrNil "certmanager.namespace" | default "certmanager" }}
   version: {{ .Values | getOrNil "raw.version" | default "0.2.3" }}
   condition: monitoring.enabled
   installed: true
   labels:
-    chart: {{ .Values.certmanager.name }}-metricsservice
-    component: {{ .Values.certmanager.name }}
-    namespace: {{ .Values.certmanager.namespace }}
+    chart: {{ .Values | getOrNil "certmanager.name" | default "certmanager" }}-metricsservice
+    component: {{ .Values | getOrNil "certmanager.name" | default "certmanager" }}
+    namespace: {{ .Values | getOrNil "certmanager.namespace" | default "certmanager" }}
   needs:
-  - kube-system/{{ .Values.certmanager.name }}-namespace
+  - kube-system/{{ .Values | getOrNil "certmanager.name" | default "certmanager" }}-namespace
   values:
   - resources:
     - apiVersion: v1
       kind: Service
       metadata:
-        name: {{ .Values.certmanager.name }}
+        name: {{ .Values | getOrNil "certmanager.name" | default "certmanager" }}
         labels:
-          app: {{ .Values.certmanager.name }}
+          app: {{ .Values | getOrNil "certmanager.name" | default "certmanager" }}
       spec:
         type: ClusterIP
         ports:
@@ -95,34 +95,34 @@ releases:
           app.kubernetes.io/name: cert-manager
           app.kubernetes.io/instance: cert-manager
 
-- name: {{ .Values.certmanager.name }}-servicemonitor
+- name: {{ .Values | getOrNil "certmanager.name" | default "certmanager" }}-servicemonitor
   chart: {{ .Values | getOrNil "raw.chart" | default "incubator/raw" }}
-  namespace: {{ .Values.certmanager.namespace }}
+  namespace: {{ .Values | getOrNil "certmanager.namespace" | default "certmanager" }}
   version: {{ .Values | getOrNil "raw.version" | default "0.2.3" }}
   condition: monitoring.enabled
   installed: true
   labels:
-    chart: cert-manager-servicemonitor
-    component: cert-manager
-    namespace: {{ .Values.prometheusoperator.namespace }}
+    chart: {{ .Values | getOrNil "certmanager.name" | default "certmanager" }}-servicemonitor
+    component: {{ .Values | getOrNil "certmanager.name" | default "certmanager" }}
+    namespace: {{ .Values | getOrNil "prometheusoperator.namespace" | default "prometheus-operator" }}
   needs:
-  - {{ .Values.prometheusoperator.namespace }}/prometheus-operator
+  - {{ .Values | getOrNil "prometheusoperator.namespace" | default "prometheus-operator" }}/prometheus-operator
   values:
   - resources:
     - apiVersion: monitoring.coreos.com/v1
       kind: ServiceMonitor
       metadata:
-        name: cert-manager
-        namespace: {{ .Values.prometheusoperator.namespace }}
+        name: {{ .Values | getOrNil "certmanager.name" | default "certmanager" }}
+        namespace: {{ .Values | getOrNil "prometheusoperator.namespace" | default "prometheus-operator" }}
         labels:
-          app: cert-manager-servicemonitor
-          release: cert-manager-servicemonitor
+          app: {{ .Values | getOrNil "certmanager.name" | default "certmanager" }}-servicemonitor
+          release: {{ .Values | getOrNil "certmanager.name" | default "certmanager" }}-servicemonitor
           prometheus: {{ .Values.prometheus.instance }}
       spec:
         jobLabel: cert-manager
         namespaceSelector:
           matchNames:
-          - cert-manager
+          - {{ .Values | getOrNil "certmanager.namespace" | default "certmanager" }}
         selector:
           matchLabels:
             app: cert-manager
@@ -133,19 +133,19 @@ releases:
           interval: 60s
           scrapeTimeout: 30s
 
-- name: {{ .Values.certmanager.name }}-issuers
+- name: {{ .Values | getOrNil "certmanager.name" | default "certmanager" }}-issuers
   chart: {{ .Values | getOrNil "raw.chart" | default "incubator/raw" }}
-  namespace: {{ .Values.certmanager.namespace }}
+  namespace: {{ .Values | getOrNil "certmanager.namespace" | default "certmanager" }}
   version: {{ .Values | getOrNil "raw.version" | default "0.2.3" }}
   condition: certmanager.enabled
   installed: true
   labels:
-    chart: {{ .Values.certmanager.name }}-issuers
-    component: {{ .Values.certmanager.name }}
-    namespace: {{ .Values.certmanager.namespace }}
+    chart: {{ .Values | getOrNil "certmanager.name" | default "certmanager" }}-issuers
+    component: {{ .Values | getOrNil "certmanager.name" | default "certmanager" }}
+    namespace: {{ .Values | getOrNil "certmanager.namespace" | default "certmanager" }}
   needs:
-  - {{ .Values.certmanager.namespace }}/{{ .Values.certmanager.name }}
-  - kube-system/{{ .Values.certmanager.name }}-namespace
+  - {{ .Values | getOrNil "certmanager.namespace" | default "certmanager" }}/{{ .Values | getOrNil "certmanager.name" | default "certmanager" }}
+  - kube-system/{{ .Values | getOrNil "certmanager.name" | default "certmanager" }}-namespace
   values:
   - resources:
     - apiVersion: cert-manager.io/v1alpha3

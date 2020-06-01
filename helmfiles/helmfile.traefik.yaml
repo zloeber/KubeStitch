@@ -1,13 +1,12 @@
 ---
 bases:
 - ../config/environments.yaml
-- ../config/{{ .Environment.Name }}/helmdefaults.yaml
+- ../config/helmdefaults.yaml
 - ../config/{{ .Environment.Name }}/repositories.yaml
 ---
 
 ## Traefik
 # Dashboard - http://traefik.int.micro.svc/dashboard/#/
-
 releases:
 - name: {{ .Values | getOrNil "traefik.name" | default "traefik" }}-namespace
   chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
@@ -62,9 +61,9 @@ releases:
         loadBalancerIP: "{{ .Values.ingress.internal.ip }}"
         {{- end }}
       annotations:
-        "prometheus.io/scrape": "{{ .Values.prometheusoperator.enabled }}"
+        "prometheus.io/scrape": "{{ .Values | getOrNil "monitoring.enabled" | default "false" }}"
         "prometheus.io/port": "9913"
-        "service.beta.kubernetes.io/{{ .Values.cloud }}-load-balancer-internal": "true"
+        "service.beta.kubernetes.io/{{ .Values | getOrNil "cloud" | default "local" }}-load-balancer-internal": "true"
     ports:
       traefik:
         expose: true
@@ -76,7 +75,7 @@ releases:
   condition: traefik.enabled
   installed: true
   labels:
-    chart: traefik-dashboard
+    chart: {{ .Values | getOrNil "traefik.name" | default "traefik" }}-dashboard
     component: ingress
     namespace: {{ .Values | getOrNil "ingress.internal.namespace" | default "ingress-int" }}
   needs:
@@ -91,7 +90,7 @@ releases:
         entryPoints:
           - web
         routes:
-          - match: Host(`traefik.{{ .Values | getOrNil "ingress.internal.zone" | default "int.micro.svc" }}`) && (PathPrefix(`/dashboard`) || PathPrefix(`/api`))
+          - match: Host(`traefik.{{ .Values | getOrNil "ingress.internal.zone" | default "int" }}.{{ .Values | getOrNil "dnsRoot" | default "micro.svc" }}`) && (PathPrefix(`/dashboard`) || PathPrefix(`/api`))
             kind: Rule
             services:
               - name: api@internal

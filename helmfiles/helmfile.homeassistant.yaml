@@ -1,10 +1,12 @@
 ---
 bases:
 - ../config/environments.yaml
-- ../config/{{ .Environment.Name }}/helmdefaults.yaml
+- ../config/helmdefaults.yaml
 - ../config/{{ .Environment.Name }}/repositories.yaml
 ---
 
+## HomeAssistant 
+# Link: https://github.com/helm/charts/blob/master/stable/home-assistant/values.yaml
 releases:
 - name: {{ .Values | getOrNil "homeassistant.name" | default "homeassistant" }}-namespace
   chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
@@ -36,39 +38,69 @@ releases:
   needs:
     - kube-system/{{ .Values | getOrNil "homeassistant.name" | default "homeassistant" }}-namespace
   values:
-  - hostNetwork: true
-    vscode:
+  - image:
+      repository: homeassistant/home-assistant
+      tag: latest
+    persistence:
       enabled: true
+      size: 10Gi
+    hostNetwork: false
+    git:
+      enabled: false
+      user:
+        name: ""
+        email: ""
+    vscode:
+      enabled: false
+    configurator:
+      enabled: false
+    zwave:
+      enabled: false
+      device: ttyACM0
+    # Mount devices or folders from the host machine. Can be used for USB device mounting.
+    hostMounts: []
+    monitoring:
+      enabled: false
+      serviceMonitor:
+        enabled: true
+    appdaemon:
+      enabled: false
 
-# - name: {{ .Values | getOrNil "homeassistant.name" | default "homeassistant" }}-ingress
-#   namespace: {{ .Values | getOrNil "homeassistant.namespace" | default "homeassistant" }}
-#   chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
-#   version: {{ .Values | getOrNil "archetype.version" | default "0.0.1" }}
-#   condition: ingress.enabled
-#   installed: true
-#   needs:
-#   - kube-system/{{ .Values | getOrNil "homeassistant.name" | default "homeassistant" }}-namespace
-#   - {{ .Values | getOrNil "homeassistant.namespace" | default "homeassistant" }}/{{ .Values | getOrNil "homeassistant.name" | default "homeassistant" }}
-#   labels:
-#     chart: {{ .Values | getOrNil "homeassistant.name" | default "homeassistant" }}-ingress
-#     component: {{ .Values | getOrNil "homeassistant.name" | default "homeassistant" }}
-#     namespace: {{ .Values | getOrNil "homeassistant.namespace" | default "homeassistant" }}
-#   values:
-#   - zone: internal
-#     app: dashboard
-#     ingressClassMap:
-#       internal: {{ .Values | getOrNil "ingress.internal.class" | default "internal" }}
-#       external: {{ .Values | getOrNil "ingress.external.class" | default "external" }}
-#       stage: {{ .Values | getOrNil "ingress.stage.class" | default "stage" }}
-#     ingress:
-#       enabled: true
-#       tlsEnabled: true
-#       hosts:
-#       - secretName: ingress-homeassistant-dashboard
-#         config:
-#           http:
-#             paths:
-#             - path: "/"
-#               backend:
-#                 serviceName: homeassistant-homeassistant-ui
-#                 servicePort: 80
+- name: {{ .Values | getOrNil "homeassistant.name" | default "homeassistant" }}-ingress
+  namespace: {{ .Values | getOrNil "homeassistant.namespace" | default "homeassistant" }}
+  chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.1" }}
+  condition: ingress.enabled
+  installed: true
+  needs:
+  - kube-system/{{ .Values | getOrNil "homeassistant.name" | default "homeassistant" }}-namespace
+  - {{ .Values | getOrNil "homeassistant.namespace" | default "homeassistant" }}/{{ .Values | getOrNil "homeassistant.name" | default "homeassistant" }}
+  labels:
+    chart: {{ .Values | getOrNil "homeassistant.name" | default "homeassistant" }}-ingress
+    component: {{ .Values | getOrNil "homeassistant.name" | default "homeassistant" }}
+    namespace: {{ .Values | getOrNil "homeassistant.namespace" | default "homeassistant" }}
+  values:
+  - dnsRoot: {{ .Values | getOrNil "dnsRoot" | default "home.local" }}
+    zone: internal
+    app: haas
+    ingressClassMap:
+      internal: {{ .Values | getOrNil "ingress.internal.class" | default "internal" }}
+      external: {{ .Values | getOrNil "ingress.external.class" | default "external" }}
+      stage: {{ .Values | getOrNil "ingress.stage.class" | default "stage" }}
+    zoneMap:
+      internal: {{ .Values | getOrNil "ingress.internal.zone" | default "int" }}
+      external: {{ .Values | getOrNil "ingress.external.zone" | default "ext" }}
+      staging: {{ .Values | getOrNil "ingress.stage.zone" | default "stage" }}
+      default: ""
+    ingress:
+      enabled: true
+      tlsEnabled: true
+      hosts:
+      - secretName: {{ .Values | getOrNil "homeassistant.name" | default "homeassistant" }}-ingress
+        config:
+          http:
+            paths:
+            - path: "/"
+              backend:
+                serviceName: {{ .Values | getOrNil "homeassistant.name" | default "homeassistant" }}-home-assistant
+                servicePort: 8123
