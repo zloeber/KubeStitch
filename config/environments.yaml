@@ -11,3 +11,6 @@ environments:
         enabled: false
     - traefik:
         enabled: false
+  homeassist:
+    values:
+    - ../config/homeassist/values.yaml

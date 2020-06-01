@@ -10,23 +10,20 @@ ingress:
   dashboard: true
   type: default
   internal:
-    namespace: ingress-int
+    namespace: traefik
     class: internal
-    zone: int.micro.svc
-    ip: ""
+    zone: int.home.local
+    ip: "192.168.1.10"
   external:
-    namespace: ingress-ext
+    namespace: traefik
     class: external
-    zone: ext.micro.svc
+    zone: ext.home.local
     ip: ""
   stage:
     namespace: ingress-stage
     class: stage
-    zone: stage.micro.svc
+    zone: stage.home.local
     ip: ""
-istio:
-  enabled: true
-  ingressGateway: istio-ingressgateway
 traefik:
   name: traefik
   enabled: true
@@ -61,48 +58,6 @@ rbacmanager:
   chart: reactiveops-stable/rbac-manager
   namespace: rbacmanager
   zone: internal
-vault:
-  name: vault
-  enabled: true
-  version: "0.5.0"
-  chart: vault/vault
-  namespace: vault
-  zone: internal
-consul:
-  name: consul
-  enabled: true
-  version: "0.21.0"
-  chart: consul/consul
-  namespace: consul
-  zone: internal
-localstack:
-  name: localstack
-  enabled: true
-  version: ""
-  chart: localstack/localstack
-  namespace: localstack
-  zone: internal
-argocd:
-  name: argocd
-  enabled: true
-  version: "2.3.5"
-  chart: argocd/argo-cd
-  namespace: argocd
-  zone: internal
-rancher:
-  name: rancher
-  enabled: true
-  version: ""
-  chart: rancher/rancher
-  namespace: cattle-system
-  zone: internal
-kubefledged:
-  name: kubefledged
-  enabled: true
-  version: "0.7.0"
-  chart: kubefledged/kubefledged
-  namespace: kubefledged
-  zone: internal
 prometheusoperator:
   name: prometheusoperator
   enabled: true
@@ -124,4 +79,4 @@ homeassistant:
   version: "0.13.3"
   chart: stable/home-assistant
   namespace: home-assistant
-
+  
