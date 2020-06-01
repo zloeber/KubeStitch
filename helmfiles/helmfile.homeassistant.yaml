@@ -39,35 +39,35 @@ releases:
   - vscode:
       enabled: true
 
-- name: {{ .Values | getOrNil "homeassistant.name" | default "homeassistant" }}-ingress
-  namespace: {{ .Values | getOrNil "homeassistant.namespace" | default "homeassistant" }}
-  chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
-  version: {{ .Values | getOrNil "archetype.version" | default "0.0.1" }}
-  condition: ingress.enabled
-  installed: true
-  needs:
-  - kube-system/{{ .Values | getOrNil "homeassistant.name" | default "homeassistant" }}-namespace
-  - {{ .Values | getOrNil "homeassistant.namespace" | default "homeassistant" }}/{{ .Values | getOrNil "homeassistant.name" | default "homeassistant" }}
-  labels:
-    chart: {{ .Values | getOrNil "homeassistant.name" | default "homeassistant" }}-ingress
-    component: {{ .Values | getOrNil "homeassistant.name" | default "homeassistant" }}
-    namespace: {{ .Values | getOrNil "homeassistant.namespace" | default "homeassistant" }}
-  values:
-  - zone: internal
-    app: dashboard
-    ingressClassMap:
-      internal: {{ .Values | getOrNil "ingress.internal.class" | default "internal" }}
-      external: {{ .Values | getOrNil "ingress.external.class" | default "external" }}
-      stage: {{ .Values | getOrNil "ingress.stage.class" | default "stage" }}
-    ingress:
-      enabled: true
-      tlsEnabled: true
-      hosts:
-      - secretName: ingress-homeassistant-dashboard
-        config:
-          http:
-            paths:
-            - path: "/"
-              backend:
-                serviceName: homeassistant-homeassistant-ui
-                servicePort: 80
+# - name: {{ .Values | getOrNil "homeassistant.name" | default "homeassistant" }}-ingress
+#   namespace: {{ .Values | getOrNil "homeassistant.namespace" | default "homeassistant" }}
+#   chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
+#   version: {{ .Values | getOrNil "archetype.version" | default "0.0.1" }}
+#   condition: ingress.enabled
+#   installed: true
+#   needs:
+#   - kube-system/{{ .Values | getOrNil "homeassistant.name" | default "homeassistant" }}-namespace
+#   - {{ .Values | getOrNil "homeassistant.namespace" | default "homeassistant" }}/{{ .Values | getOrNil "homeassistant.name" | default "homeassistant" }}
+#   labels:
+#     chart: {{ .Values | getOrNil "homeassistant.name" | default "homeassistant" }}-ingress
+#     component: {{ .Values | getOrNil "homeassistant.name" | default "homeassistant" }}
+#     namespace: {{ .Values | getOrNil "homeassistant.namespace" | default "homeassistant" }}
+#   values:
+#   - zone: internal
+#     app: dashboard
+#     ingressClassMap:
+#       internal: {{ .Values | getOrNil "ingress.internal.class" | default "internal" }}
+#       external: {{ .Values | getOrNil "ingress.external.class" | default "external" }}
+#       stage: {{ .Values | getOrNil "ingress.stage.class" | default "stage" }}
+#     ingress:
+#       enabled: true
+#       tlsEnabled: true
+#       hosts:
+#       - secretName: ingress-homeassistant-dashboard
+#         config:
+#           http:
+#             paths:
+#             - path: "/"
+#               backend:
+#                 serviceName: homeassistant-homeassistant-ui
+#                 servicePort: 80
