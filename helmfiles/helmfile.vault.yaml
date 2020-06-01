@@ -6,36 +6,35 @@ bases:
 ---
 
 releases:
-- name: {{ .Values.vault.name }}-namespace
+- name: {{ .Values | getOrNil "vault.name" | default "vault" }}-namespace
   chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
   version: {{ .Values | getOrNil "archetype.version" | default "0.0.1" }}
   namespace: kube-system
-  wait: true
   condition: vault.enabled
   installed: true
+  wait: true
   labels:
-    chart: {{ .Values.vault.name }}-namespace
-    component: {{ .Values.vault.name }}
+    chart: {{ .Values | getOrNil "vault.name" | default "vault" }}-namespace
+    component: {{ .Values | getOrNil "vault.name" | default "vault" }}
     namespace: kube-system
   values:
-  - app: {{ .Values.vault.name }}
+  - app: {{ .Values | getOrNil "vault.name" | default "vault" }}
     namespace:
       enabled: true
-      name: {{ .Values.vault.namespace }}
+      name: {{ .Values | getOrNil "vault.namespace" | default "vault" }}
 
-## Vault Deployment
-- name: {{ .Values.vault.name }}
-  chart: {{ .Values.vault.chart }}
-  version: {{ .Values.vault.version }}
-  namespace: {{ .Values.vault.namespace }}
+- name: {{ .Values | getOrNil "vault.name" | default "vault" }}
+  chart: {{ .Values | getOrNil "vault.chart" | default "vault/vault" }}
+  version: {{ .Values | getOrNil "vault.version" | default "0.5.0" }}
+  namespace: {{ .Values | getOrNil "vault.namespace" | default "vault" }}
   condition: vault.enabled
   installed: true
   labels:
-    chart: {{ .Values.vault.name }}
-    component: {{ .Values.vault.name }}
-    namespace: {{ .Values.vault.namespace }}
+    chart: {{ .Values | getOrNil "vault.name" | default "vault" }}
+    component: {{ .Values | getOrNil "vault.name" | default "vault" }}
+    namespace: {{ .Values | getOrNil "vault.namespace" | default "vault" }}
   needs:
-    - kube-system/{{ .Values.vault.name }}-namespace
+    - kube-system/{{ .Values | getOrNil "vault.name" | default "vault" }}-namespace
   values:
   - server:
       # affinity: ""
@@ -51,22 +50,22 @@ releases:
     ui:
       enabled: true
 
-- name: {{ .Values.vault.name }}-ingress
+- name: {{ .Values | getOrNil "vault.name" | default "vault" }}-ingress
   chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
   version: {{ .Values | getOrNil "archetype.version" | default "0.0.1" }}
-  namespace: {{ .Values.vault.namespace }}
+  namespace: {{ .Values | getOrNil "vault.namespace" | default "vault" }}
   condition: ingress.enabled
   installed: true
   needs:
-  - kube-system/{{ .Values.vault.name }}-namespace
-  - {{ .Values.vault.namespace }}/{{ .Values.vault.name }}
+  - kube-system/{{ .Values | getOrNil "vault.name" | default "vault" }}-namespace
+  - {{ .Values | getOrNil "vault.namespace" | default "vault" }}/{{ .Values | getOrNil "vault.name" | default "vault" }}
   labels:
-    chart: {{ .Values.vault.name }}-ingress
+    chart: {{ .Values | getOrNil "vault.name" | default "vault" }}-ingress
     component: ingress
-    namespace: {{ .Values.vault.namespace }}
+    namespace: {{ .Values | getOrNil "vault.namespace" | default "vault" }}
   values:
   - zone: internal
-    app: {{ .Values.vault.name }}
+    app: {{ .Values | getOrNil "vault.name" | default "vault" }}
     ingressClassMap:
       internal: {{ .Values | getOrNil "ingress.internal.class" | default "internal" }}
     ingress:
@@ -84,25 +83,25 @@ releases:
                 servicePort: 8200
 
 ## Role binding needed to do vault auth
-- name: {{ .Values.vault.name }}-rolebinding
+- name: {{ .Values | getOrNil "vault.name" | default "vault" }}-rolebinding
   chart: {{ .Values | getOrNil "raw.chart" | default "incubator/raw" }}
   version: {{ .Values | getOrNil "raw.version" | default "0.2.3" }}
-  namespace: {{ .Values.vault.namespace }}
+  namespace: {{ .Values | getOrNil "vault.namespace" | default "vault" }}
   condition: vault.enabled
   installed: true
   needs:
-  - {{ .Values.vault.namespace }}/{{ .Values.vault.name }}
+  - {{ .Values | getOrNil "vault.namespace" | default "vault" }}/{{ .Values | getOrNil "vault.name" | default "vault" }}
   values:
   - resources:
     - apiVersion: rbacmanager.reactiveops.io/v1beta1
       kind: RBACDefinition
       metadata:
-        name: rolebinding-{{ .Values.vault.name }}
+        name: rolebinding-{{ .Values | getOrNil "vault.name" | default "vault" }}
       rbacBindings:
       - name: example-service-account
         subjects:
           - kind: ServiceAccount
             name: vault
-            namespace: {{ .Values.vault.namespace }}
+            namespace: {{ .Values | getOrNil "vault.namespace" | default "vault" }}
         clusterRoleBindings:
           - clusterRole: system:auth-delegator

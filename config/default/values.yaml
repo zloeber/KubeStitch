@@ -110,3 +110,11 @@ prometheusoperator:
   chart: stable/prometheus-operator
   namespace: prometheus-operator
   zone: internal
+nfsstorage:
+  name: nfsstorage
+  enabled: true
+  version: "1.2.8"
+  chart: stable/nfs-client-provisioner
+  namespace: nfs-storage
+  server: 10.20.20.1
+  path: /nfs-kube

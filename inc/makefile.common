@@ -3,9 +3,9 @@ ROOT_DIR ?= $(abspath $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST
 BIN_PATH ?= $(ROOT_PATH)/.local/bin
 
 ## Force some language items
-export LANG=C.UTF-8
-export LC_CTYPE=C.UTF-8
-export LC_ALL=en_US.UTF-8
+#export LANG=C.UTF-8
+#export LC_CTYPE=C.UTF-8
+#export LC_ALL=en_US.UTF-8
 
 ## Output related vars
 BOLD=$(shell tput bold)

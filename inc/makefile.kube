@@ -5,7 +5,7 @@ METALLB_VERSION ?= 0.9.3
 CLUSTER_CONTEXT ?= $(CLUSTER)
 DOCKER_NETWORK ?= bridge
 SUBNET_INDEX ?= 1
-KUBE_CONFIG := $(ROOT_PATH)/.local/kube.$(CLUSTER).conf
+KUBE_CONFIG ?= $(ROOT_PATH)/.local/kube.$(CLUSTER).conf
 
 kubectl := $(BIN_PATH)/kubectl
 kustomize := $(BIN_PATH)/kustomize

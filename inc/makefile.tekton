@@ -14,6 +14,6 @@ endif
 .deps/tekton: .dep/tekton ## Install dependencies
 
 .PHONY: tekton/deploy
-tekton/deploy: ## Deploy tekton pipelines
+tekton/deploy: ## Deploy tekton pipelines operator
 	$(kubecmd) apply --filename https://storage.googleapis.com/tekton-releases/pipeline/latest/release.yaml
 	$(kubecmd) apply --filename https://github.com/tektoncd/dashboard/releases/download/v0.6.1.4/tekton-dashboard-release.yaml
