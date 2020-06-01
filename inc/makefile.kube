@@ -107,7 +107,7 @@ kube/loadbalancer/ip: ## Show external loadbalancer ip
 
 .PHONY: kube/loadbalancer/subnet
 kube/loadbalancer/subnet: ## Show docker bridge subnet
-	@docker network inspect $(DOCKER_NETWORK) | $(jq) '.[0].IPAM.Config[0].Gateway' | sed -e 's/\0.1/$(SUBNET_INDEX).0\/24/g'
+	@echo $(or $(STACK_INGRESS_INTERNALSUBNET), $(shell docker network inspect $(DOCKER_NETWORK) | $(jq) '.[0].IPAM.Config[0].Gateway' | sed -e 's/\0.1/$(SUBNET_INDEX).0\/24/g'))
 
 .PHONY: dnsforward/start
 dnsforward/start: dnsforward/stop ## Forwards all dns requests to a local dns-proxy-server

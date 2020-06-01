@@ -26,10 +26,10 @@ helm-x := $(BIN_PATH)/helm-x
 gomplate := $(BIN_PATH)/gomplate
 ct := $(BIN_PATH)/ct
 
-
 ifneq (,$(wildcard $(yq)))
 STACK_INGRESS_INTERNALZONE := $(shell $(yq) r $(HELMFILE_VALUES) ingress.internal.zone)
 STACK_INGRESS_INTERNALNAMESPACE := $(shell $(yq) r $(HELMFILE_VALUES) ingress.internal.namespace)
+STACK_INGRESS_INTERNALSUBNET := $(shell $(yq) r $(HELMFILE_VALUES) ingress.internal.subnet)
 endif
 
 .PHONY: .dep/helmfile

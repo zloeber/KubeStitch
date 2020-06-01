@@ -22,8 +22,6 @@ ifeq ($(DOCKER_PROVIDER),dockerhub)
 REGISTRY_DOMAIN ?= https://index.docker.io/v1/
 endif
 
-
-
 ## Docker commands
 docker ?= docker
 DOCKER_BUILD=$(docker) build
