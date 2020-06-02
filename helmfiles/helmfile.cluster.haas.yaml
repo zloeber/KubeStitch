@@ -5,7 +5,8 @@ bases:
 
 helmfiles:
 - ../helmfiles/helmfile.traefik.yaml
-- ../helmfiles/helmfile.certmanager.yaml
-- ../helmfiles/helmfile.rbacmanager.yaml
 - ../helmfiles/helmfile.nfsstorage.yaml
+- ../helmfiles/helmfile.rbacmanager.yaml
+- ../helmfiles/helmfile.prometheus-operator.yaml
+- ../helmfiles/helmfile.certmanager.yaml
 - ../helmfiles/helmfile.homeassistant.yaml
