@@ -9,7 +9,8 @@ CLUSTER_CONTEXT := default
 
 .PHONY: .k3s/create/cluster
 .k3s/create/cluster: ## create k3s cluster
-	curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="server --no-deploy traefik --no-deploy=metrics-server --no-deploy servicelb" sh
+	curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="server --no-deploy traefik --no-deploy=metrics-server" sh
+	#curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="server --no-deploy traefik --no-deploy=metrics-server --no-deploy servicelb" sh
 
 .PHONY: .k3s/cluster/config
 .k3s/cluster/config: ## Export cluster configuration
@@ -21,7 +22,7 @@ CLUSTER_CONTEXT := default
 	$(kubecmd) patch storageclass local-path -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}'
 
 .PHONY: cluster/start
-cluster/start: cluster/stop .k3s/create/cluster .k3s/cluster/config kube/context metallb/deploy .k3s/cluster/disabledefaultstorageclass ## Start cluster
+cluster/start: cluster/stop .k3s/create/cluster .k3s/cluster/config kube/context .k3s/cluster/disabledefaultstorageclass ## Start cluster
 
 .PHONY: cluster/stop
 cluster/stop: prompt/yesno ## Stop and delete cluster
