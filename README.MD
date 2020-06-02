@@ -147,6 +147,10 @@ Create a local argocd cluster for testing out GitOps. Includes customization to 
 
 To access the GUI interface (https://argocd.int.micro.svc/) the default ID is `admin` and the password can be retrieved by running `make argocd/get/password` (typically ends up being the argocd-server pod name)
 
+### PROFILE - homeassist
+
+Performs a local install/uninstall of a 1 node k3s cluster for use in a home assistant installation. This assumes the local machine is Linux ready and uses sudo rights to setup systemd among other things. To do the same install via kind use the 'kind_homeassist' profile instead.
+
 ## Tasksets
 
 Sometimes there are additional commands required to vet out a solution. To accommodate for this need, you can add a new makefile directly in the 'inc' folder as `./inc/makefile.<taskset>` and then add the `<taskset>` into your profile's `ADDITIONAL_TASKSETS` definition (space delimited if there is more than one). This will source in your new script tasks automatically only when the profile is used.

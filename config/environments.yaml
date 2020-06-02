@@ -17,7 +17,8 @@ environments:
     - dnsRoot: home.local
     - ingress:
         internal:
-          ip: "192.168.1.10"
+          subnet: "192.168.1.11-20"
+          ip: "192.168.1.11"
     - nfsstorage:
         server: "10.20.20.1"
         path: /nfs-kube
