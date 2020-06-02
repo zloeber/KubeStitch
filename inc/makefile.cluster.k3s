@@ -16,8 +16,12 @@ CLUSTER_CONTEXT := default
 	sudo cp /etc/rancher/k3s/k3s.yaml $(KUBE_CONFIG)
 	sudo chown `whoami`:`whoami` $(KUBE_CONFIG)
 
+.PHONY: .k3s/cluster/disabledefaultstorageclass
+.k3s/cluster/disabledefaultstorageclass: ## Exactly as it says
+	$(kubecmd) patch storageclass local-path -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}'
+
 .PHONY: cluster/start
-cluster/start: cluster/stop .k3s/create/cluster .k3s/cluster/config kube/context metallb/deploy ## Start cluster
+cluster/start: cluster/stop .k3s/create/cluster .k3s/cluster/config kube/context metallb/deploy .k3s/cluster/disabledefaultstorageclass ## Start cluster
 
 .PHONY: cluster/stop
 cluster/stop: prompt/yesno ## Stop and delete cluster
