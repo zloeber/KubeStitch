@@ -21,6 +21,17 @@ CLUSTER_CONTEXT := default
 .k3s/cluster/disabledefaultstorageclass: ## Exactly as it says
 	$(kubecmd) patch storageclass local-path -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}'
 
+.PHONY: .k3s/config/ufw
+.k3s/config/ufw: ## Configure ufw if required
+	sudo ufw allow 6443
+	sudo ufw allow 22
+	sudo ufw allow 80
+	sudo ufw allow 443
+	sudo ufw default deny incoming
+	#sudo ufw default deny outgoing
+	sudo ufw allow in on weave from all
+	sudo ufw enable
+
 .PHONY: cluster/start
 cluster/start: cluster/stop .k3s/create/cluster .k3s/cluster/config kube/context .k3s/cluster/disabledefaultstorageclass ## Start cluster
 
