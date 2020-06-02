@@ -218,9 +218,9 @@ Using this is pretty powerful for quickly working on various deployments and all
 
 > **NOTE** Sometimes you may have to wait for the initial cluster to fully come up before running the helmfile/apply for the entire cluster.
 
-## Usage
+## Usage Example 1
 
-Here is an example of using a profile to start up a local istio cluster.
+Here is an example of using a profile to start up a local istio cluster. Istio has a moderately more complex deployment path than a standard helm chart so this is a good example for showing how CICDHelper can be flexible.
 
 ```bash
 # Ensure we get the correct profile for the remaining commands
@@ -255,7 +255,10 @@ If k3d is more your style then you can repeat this entire set of directions with
 make cluster/start istio/deploy istio/start/dnsforward helmfile/sync STACK=bookinfo PROFILE=istio-k3d
 ```
 
-> **NOTE** If you are rapidly creating a cluster you can do so idempotently via one command that will delete any running cluster defined in the profile, create it again, then apply a helmfile/sync for the cluster's default helmfile stack (example - `make cluster PROFILE=argocd`)
+## Usage Example 2
+
+I also use this framework for a bare metal k3s cluster at home for home assistant. 
+
 ## Secrets
 
 Any secrets should be put into your environment for use in tasksets that require them. For this I personally use direnv with a local .envrc file. 

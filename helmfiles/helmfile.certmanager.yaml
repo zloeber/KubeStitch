@@ -106,7 +106,7 @@ releases:
     component: {{ .Values | getOrNil "certmanager.name" | default "certmanager" }}
     namespace: {{ .Values | getOrNil "prometheusoperator.namespace" | default "prometheus-operator" }}
   needs:
-  - {{ .Values | getOrNil "prometheusoperator.namespace" | default "prometheus-operator" }}/prometheus-operator
+  - {{ .Values | getOrNil "prometheusoperator.namespace" | default "prometheus-operator" }}/{{ .Values | getOrNil "prometheusoperator.name" | default "prometheusoperator" }}
   values:
   - resources:
     - apiVersion: monitoring.coreos.com/v1
