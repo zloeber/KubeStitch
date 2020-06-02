@@ -1,0 +1,26 @@
+ROOT_PATH ?= $(abspath $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST))))))
+BIN_PATH ?= $(ROOT_PATH)/.local/bin
+
+.PHONY: .dep/metallb
+.dep/metallb: ## Install metallb locally
+
+.PHONY: .deps/metallb
+.deps/metallb: .dep/metallb ## Install dependencies
+
+.PHONY: metallb/deploy
+metallb/deploy: .dep/kubectl .kube/get/configfile ## Deploy metallb on the cluster
+	@$(kubecmd) apply -f https://raw.githubusercontent.com/metallb/metallb/v$(METALLB_VERSION)/manifests/namespace.yaml
+	@$(kubecmd) apply -f https://raw.githubusercontent.com/metallb/metallb/v$(METALLB_VERSION)/manifests/metallb.yaml
+	@$(kubecmd) create secret generic -n metallb-system memberlist --from-literal=secretkey="$(openssl rand -base64 128)" || true
+	@tmpdir=$$(mktemp -d) && \
+	export STACK_INGRESS_INTERNALLBSUBNET=$(shell $(MAKE) kube/loadbalancer/subnet) && \
+	$(gomplate) \
+		-d config=$(HELMFILE_VALUES) \
+		--file $(DEPLOY_PATH)/metallb/metallb-config.yaml \
+		--out "$${tmpdir}/metallb-config.yaml" && \
+	$(kubecmd) apply -f "$${tmpdir}/metallb-config.yaml"
+
+.PHONY: metallb/remove
+metallb/remove: ## Delete metallb deployment
+	@$(kubecmd) delete -f https://raw.githubusercontent.com/metallb/metallb/v$(METALLB_VERSION)/manifests/metallb.yaml
+	@$(kubecmd) delete -f https://raw.githubusercontent.com/metallb/metallb/v$(METALLB_VERSION)/manifests/namespace.yaml
