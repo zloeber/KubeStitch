@@ -257,7 +257,26 @@ make cluster/start istio/deploy istio/start/dnsforward helmfile/sync STACK=booki
 
 ## Usage Example 2
 
-I also use this framework for a bare metal k3s cluster at home for home assistant. 
+I also use this framework for a bare metal k3s cluster at home for home assistant. I created another kubernetes provider specifically for k3s ('inc/makefile.cluster.k3s) along with a profile to use it ('profiles/profile.homeassist.env'). With this I overwrite the default location of the KUBE_CONFIG so that after installation of the cluster elements the config is automatically updated for my standard account. This particular provider does require sudo rights of course.
+
+```bash
+export PROFILE=homeassist
+make cluster
+```
+
+> **NOTE** The k3s provider I created specifically disables many of the default deployment settings as well as the default 'local-path' storage provider. I later use NFS mounts for my own lab. This gets installed via helmfile.
+
+While I was testing this out on an old Shuttle PC I found out that some memory sticks were bad. As I was running memtest86+ against the server (which takes forever and a day) I quickly setup another profile so I could continue vetting out my kubernetes deployment stacks. In a few minutes I had the same deployment via the kind provider up and running.
+
+```bash
+export PROFILE=kind_homeassist
+make cluster
+make helmfile/sync STACK=homeassistant
+```
+
+You may notice that I use the cicd cluster for the local kind install as I know it works locally and since I'm not using nfs mounts or anything like that in my docker based cluster it makes sense for me to use a default baseline cluster and simply manually add the stacks in that I'm testing afterwards.
+
+Because I'm using a whole other dns root domain and IP addresses for both the nfs provisioner chart and traefik, I created another helmfile profile in 'config/environments.yaml' with these override settings in place. Because I do not yet know how to extract the extrapolated values yaml from helmfile, I also have to put these values in the 'config/homeassist/values.yaml' file for the Metallb deployment scripts to provision the configuration correctly.
 
 ## Secrets
 
