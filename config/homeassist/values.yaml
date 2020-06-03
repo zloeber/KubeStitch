@@ -1,5 +1,5 @@
 cloud: local
-dnsRoot: home.local
+dnsRoot: micro.svc
 archetype:
   version: "0.0.2"
   chart: zloeber/archetype
@@ -14,8 +14,8 @@ ingress:
     namespace: ingress-int
     class: internal
     zone: int
-    subnet: "192.168.1.11-192.168.1.20"
-    ip: "192.168.1.11"
+    subnet: "192.168.1.10-192.168.1.20"
+    ip: "192.168.1.10"
   external:
     namespace: ingress-ext
     class: external

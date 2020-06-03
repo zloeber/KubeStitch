@@ -6,7 +6,7 @@ bases:
 ---
 
 releases:
-- name: {{ .Values.simple.name }}-namespace
+- name: {{ .Values | getOrNil "simple.name" | default "simple" }}-namespace
   chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
   version: {{ .Values | getOrNil "archetype.version" | default "0.0.1" }}
   namespace: kube-system
@@ -14,60 +14,65 @@ releases:
   installed: true
   wait: true
   labels:
-    chart: {{ .Values.simple.name }}-namespace
-    component: {{ .Values.simple.name }}
+    chart: {{ .Values | getOrNil "simple.name" | default "simple" }}-namespace
+    component: {{ .Values | getOrNil "simple.name" | default "simple" }}
     namespace: kube-system
   values:
-  - app: {{ .Values.simple.name }}
+  - app: {{ .Values | getOrNil "simple.name" | default "simple" }}
     namespace:
       enabled: true
-      name: {{ .Values.simple.namespace }}
+      name: {{ .Values | getOrNil "simple.namespace" | default "simple" }}
 
-- name: {{ .Values.simple.name }}
-  chart: {{ .Values.simple.chart }}
-  version: {{ .Values.simple.version }}
-  namespace: {{ .Values.simple.namespace }}
+- name: {{ .Values | getOrNil "simple.name" | default "simple" }}
+  chart: {{ .Values | getOrNil "simple.chart" | default "simple/simple" }}
+  version: {{ .Values | getOrNil "simple.version" | default "0.0.1" }}
+  namespace: {{ .Values | getOrNil "simple.namespace" | default "simple" }}
   condition: simple.enabled
   installed: true
   labels:
-    chart: {{ .Values.simple.name }}
-    component: {{ .Values.simple.name }}
-    namespace: {{ .Values.simple.namespace }}
+    chart: {{ .Values | getOrNil "simple.name" | default "simple" }}
+    component: {{ .Values | getOrNil "simple.name" | default "simple" }}
+    namespace: {{ .Values | getOrNil "simple.namespace" | default "simple" }}
   needs:
-    - kube-system/{{ .Values.simple.name }}-namespace
+    - kube-system/{{ .Values | getOrNil "simple.name" | default "simple" }}-namespace
   values:
   - somevalues:
       somevalue1: value
 
-- name: {{ .Values.simple.name }}-ingress
-  namespace: {{ .Values.simple.namespace }}
+- name: {{ .Values | getOrNil "simple.name" | default "simple" }}-ingress
+  namespace: {{ .Values | getOrNil "simple.namespace" | default "simple" }}
   chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
   version: {{ .Values | getOrNil "archetype.version" | default "0.0.1" }}
   condition: ingress.enabled
   installed: true
   needs:
-  - kube-system/{{ .Values.simple.name }}-namespace
-  - {{ .Values.simple.namespace }}/{{ .Values.simple.name }}
+  - kube-system/{{ .Values | getOrNil "simple.name" | default "simple" }}-namespace
+  - {{ .Values | getOrNil "simple.namespace" | default "simple" }}/{{ .Values | getOrNil "simple.name" | default "simple" }}
   labels:
-    chart: {{ .Values.simple.name }}-ingress
-    component: {{ .Values.simple.name }}
-    namespace: {{ .Values.simple.namespace }}
+    chart: {{ .Values | getOrNil "simple.name" | default "simple" }}-ingress
+    component: {{ .Values | getOrNil "simple.name" | default "simple" }}
+    namespace: {{ .Values | getOrNil "simple.namespace" | default "simple" }}
   values:
-  - zone: internal
+  - zone: {{ .Values | getOrNil "simple.zone" | default "internal" }}
     app: dashboard
     ingressClassMap:
       internal: {{ .Values | getOrNil "ingress.internal.class" | default "internal" }}
-      external: {{ .Values.ingress.external.class }}
-      stage: {{ .Values.ingress.stage.class }}
+      external: {{ .Values | getOrNil "ingress.external.class" | default "external" }}
+      stage: {{ .Values | getOrNil "ingress.stage.class" | default "stage" }}
+    zoneMap:
+      internal: {{ .Values | getOrNil "ingress.internal.zone" | default "int" }}
+      external: {{ .Values | getOrNil "ingress.external.zone" | default "ext" }}
+      staging: {{ .Values | getOrNil "ingress.stage.zone" | default "stage" }}
+      default: ""
     ingress:
       enabled: true
       tlsEnabled: true
       hosts:
-      - secretName: ingress-simple-dashboard
+      - secretName: {{ .Values | getOrNil "simple.name" | default "simple" }}-ingress
         config:
           http:
             paths:
             - path: "/"
               backend:
-                serviceName: simple-simple-ui
+                serviceName: {{ .Values | getOrNil "simple.name" | default "simple" }}-ui
                 servicePort: 80
