@@ -43,10 +43,10 @@ releases:
     - "--global.checknewversion=false"
     - "--global.sendanonymoususage=false"
     - "--api.insecure=true"
-    - "--logLevel=DEBUG"
     additionalArguments:
       - "--providers.kubernetesingress=true"
       - "--providers.kubernetesingress.ingressclass={{ .Values | getOrNil "ingress.internal.class" | default "internal" }}"
+      - "--logLevel=DEBUG"
     ingressRoute:
       dashboard:
         enabled: false
