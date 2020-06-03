@@ -46,7 +46,7 @@ releases:
     additionalArguments:
       - "--providers.kubernetesingress=true"
       - "--providers.kubernetesingress.ingressclass={{ .Values | getOrNil "ingress.internal.class" | default "internal" }}"
-      - "--log.evel=DEBUG"
+      - "--log.level=DEBUG"
     ingressRoute:
       dashboard:
         enabled: false
