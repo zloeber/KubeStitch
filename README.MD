@@ -293,8 +293,9 @@ make helmfile/destroy STACK=consul # Now remove just consul for the hell of it
 
 This is a powerful way to quickly work on various deployments and allows for layering of stacks to get the results you are looking for in an iterative manner.
 
-> **NOTE** Sometimes you may have to wait for the initial cluster to fully come up before running the helmfile/apply for the entire cluster.
+> **NOTE 1** Sometimes you may have to wait for the initial cluster to fully come up before running the helmfile/apply for the entire cluster.
 
+> **NOTE 2** Because many of the lookups involved with this framework are just simple scripts and I found no other good way to look up the helmfile values in a post rendered state, I use a special helmfile that is never meant to be deployed that is called lookup.placeholder.yaml. This allows me to render values based on environment using the helmfile build command. Then the output is parsed for the values I need. I use this workaround and a hidden task to render out ingress internal dns zone information for the dns proxy task for instance.
 
 # Examples
 
