@@ -55,7 +55,7 @@ releases:
       servicemonitor:
         enabled: {{ .Values | getOrNil "prometheusoperator.enabled" | default "false" }}
         namespace: {{ .Values | getOrNil "prometheusoperator.namespace" | default "prometheus-operator" }}
-        prometheusInstance: {{ .Values | getOrNil "prometheusoperator.name" | default "po" }}-prometheus"
+        prometheusInstance: {{ .Values | getOrNil "prometheusoperator.name" | default "po" }}-prometheus
     webhook:
       enabled: true
     cainjector:
