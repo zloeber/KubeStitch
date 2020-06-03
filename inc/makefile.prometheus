@@ -1,0 +1,23 @@
+ROOT_PATH ?= $(abspath $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST))))))
+BIN_PATH ?= $(ROOT_PATH)/.local/bin
+
+ifneq (,$(wildcard $(yq)))
+STACK_PROM_NAMESPACE := $(shell $(yq) r $(HELMFILE_VALUES) prometheusoperator.namespace)
+STACK_PROM_NAME := $(shell $(yq) r $(HELMFILE_VALUES) prometheusoperator.name)
+endif
+
+promtool := $(BIN_PATH)/promtool
+
+.PHONY: .dep/promtool
+.dep/promtool: ## Install prom locally
+ifeq (,$(wildcard $(promtool)))
+	@$(MAKE) --no-print-directory -C $(APP_PATH)/githubapp auto promtool INSTALL_PATH=$(BIN_PATH)
+	@echo "Installed: $(promtool)"
+endif
+
+.PHONY: .deps/prometheus
+.deps/prometheus: .dep/promtool ## Install dependencies
+
+.PHONY: prom/grafana/password
+prom/grafana/password: ## Retrieves the grafana dashboard admin password
+	@$(kubecmd) get secret --namespace $(STACK_PROM_NAMESPACE) $(STACK_PROM_NAME)-grafana -o jsonpath="{.data.admin-password}" | base64 --decode ; echo

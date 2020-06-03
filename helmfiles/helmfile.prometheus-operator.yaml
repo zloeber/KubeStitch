@@ -121,7 +121,7 @@ releases:
             paths:
             - path: "/"
               backend:
-                serviceName: {{ .Values | getOrNil "prometheusoperator.name" | default "po" }}-prometh-prometheus
+                serviceName: {{ .Values | getOrNil "prometheusoperator.name" | default "po" }}-prometheus
                 servicePort: 9090
 
 - name: {{ .Values | getOrNil "prometheusoperator.name" | default "po" }}-alertmanager-ingress
@@ -160,5 +160,5 @@ releases:
             paths:
             - path: "/"
               backend:
-                serviceName: {{ .Values | getOrNil "prometheusoperator.name" | default "po" }}-prometh-alertmanager
+                serviceName: {{ .Values | getOrNil "prometheusoperator.name" | default "po" }}-alertmanager
                 servicePort: 9093

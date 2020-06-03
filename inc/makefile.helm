@@ -11,7 +11,7 @@ HELM_FLAGS ?=
 ## Use the following to show helm yaml rendered even if there are errors
 #HELM_FLAGS ?= --args --debug
 ENVIRONMENT ?= default
-HELMFILE_VALUES=$(CONFIG_PATH)/$(ENVIRONMENT)/values.yaml
+HELMFILE_VALUES ?= $(CONFIG_PATH)/$(ENVIRONMENT)/values.yaml
 
 ## This is to home helm configuration and plugins within the ./.local path.
 export XDG_CACHE_HOME=$(HOME_PATH)
