@@ -44,7 +44,6 @@ releases:
     - "--global.sendanonymoususage=false"
     - "--api.insecure=true"
     - "--logLevel=DEBUG"
-    - "--defaultentrypoints=websecure,web"
     additionalArguments:
       - "--providers.kubernetesingress=true"
       - "--providers.kubernetesingress.ingressclass={{ .Values | getOrNil "ingress.internal.class" | default "internal" }}"
