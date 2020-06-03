@@ -1,7 +1,5 @@
 cloud: local
 dnsRoot: micro.svc
-monitoring:
-  enabled: true
 ingress:
   enabled: true
   dashboard: true
@@ -40,7 +38,7 @@ traefik:
 certmanager:
   name: certmanager
   enabled: true
-  version: "0.15.0"
+  version: "0.15.1"
   chart: jetstack/cert-manager
   namespace: cert-manager
   serviceaccountname: ""
@@ -107,7 +105,7 @@ kubefledged:
   namespace: kubefledged
   zone: internal
 prometheusoperator:
-  name: prometheusoperator
+  name: po
   enabled: true
   version: "8.13.8"
   chart: stable/prometheus-operator

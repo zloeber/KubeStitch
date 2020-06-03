@@ -189,6 +189,8 @@ A provider taskset is special as it is a specific taskset for provisioning kuber
 
 I use helmfile extensively to declaratively stitch together my deployments from other helm charts, my own monochart (called archetype), and the raw helm chart. Helmfile uses 'environments' to help breakdown multiple configuration paths.
 
+### Helmfile Environments
+
 The per-environment values files are defined in `config/environments.yaml`. This just points to the individual values files that reside in ther own per-environment folder. This environment folder also includes relevant helm repositories and helm default values. These values get sourced into the various helmfiles using a common block at the top of each helmfile. 
 
 The idea is that I can create new environments from copying this folder and make simple changes to target them from a pipeline when the time comes.
@@ -209,13 +211,18 @@ environments:
   default:
     values:
     - ../config/default/values.yaml
-    - monitoring:
+    - prometheusoperator:
         enabled: false
 ```
 
+As you can see, I purposefully set the prometheus operator deployment as disabled in the default environment. This is because one usually does not want an entire monitoring environment when doing local testing. But many helmfile stacks include monitors that I may otherwise need to deploy that have dependencies upon CRDs of the Prometheus Operator. To work around this chicken/egg scenario we simply disable the monitoring stack at the environment level and use that variable when deploying monitoring elements in the various stacks. The same type of logic is done with the 'ingress' stack so we can deploy several stacks and simply not deploy ingress by ensuring that ingress.enabled=false if we so desire.
+
+> **NOTE:** The approach I take is that all stacks are default enabled unless the environment overrides say otherwise. This does not mean that all stacks are deployed by default, this is what the cluster helmfiles are for. But we can add/remove individual stacks this way.
+
 This effectively makes the `../config/default/values.yaml` our default settings with anything under `./config/environments.yaml` being the overrides. I source these settings in for all my helmfiles which allows me to update helm chart versions and sources from one values file. If I want to test a new chart I can create another environment with the value being overwritten in `./config/environments.yaml` while retaining all other chart settings.
 
-> **NOTE** In the past I've utilized many environment variables for these kinds of settings. While it is tempting to do so I recommend against this style of chart authoring as it makes for more complex pipelines and a less declarative approach to deployments.
+> **NOTE:** In the past I've utilized many environment variables for these kinds of settings. While it is tempting to do so I recommend against this style of chart authoring as it makes for more complex pipelines and a less declarative approach to deployments.
+
 
 ### Helmfile Stacks
 
@@ -251,7 +258,12 @@ This is a powerful way to quickly work on various deployments and allows for lay
 
 > **NOTE** Sometimes you may have to wait for the initial cluster to fully come up before running the helmfile/apply for the entire cluster.
 
-## Usage Example 1
+
+# Examples
+
+Here are a few example use cases worth looking over.
+
+## Example 1
 
 Here is an example of using a profile to start up a local istio cluster. Istio has a moderately more complex deployment path than a standard helm chart so this is a good example for showing how CICDHelper can be flexible.
 
@@ -288,7 +300,7 @@ If k3d is more your style then you can repeat this entire set of directions with
 make cluster/start istio/deploy istio/start/dnsforward helmfile/sync STACK=bookinfo PROFILE=istio-k3d
 ```
 
-## Usage Example 2
+## Example 2
 
 This is a somewhat unique example. Basically I used this framework for a bare metal k3s cluster at home for home assistant. I created another kubernetes provider specifically for k3s (`inc/makefile.cluster.k3s`) along with a profile to use it (`profiles/profile.homeassist.env`). With this profile and provider I overwrite the default location of the KUBE_CONFIG so that after installation of the cluster elements the config is automatically updated for my standard account. This particular provider does require sudo rights.
 

@@ -48,7 +48,7 @@ releases:
       - "--providers.kubernetesingress.ingressclass={{ .Values | getOrNil "ingress.internal.class" | default "internal" }}"
       - "--log.level={{ .Values | getOrNil "traefik.loglevel" | default "INFO" }}"
       - "--accesslog={{ .Values | getOrNil "traefik.accesslog" | default "true" }}"
-      - "--metrics.prometheus={{ .Values | getOrNil "monitoring.enabled" | default "true" }}"
+      - "--metrics.prometheus={{ .Values | getOrNil "prometheusoperator.enabled" | default "true" }}"
       - "--tracing={{ .Values | getOrNil "traefik.tracing" | default "false" }}"
     ingressRoute:
       dashboard:
@@ -65,7 +65,7 @@ releases:
         loadBalancerIP: "{{ .Values.ingress.internal.ip }}"
         {{- end }}
       annotations:
-        "prometheus.io/scrape": "{{ .Values | getOrNil "monitoring.enabled" | default "false" }}"
+        "prometheus.io/scrape": "{{ .Values | getOrNil "prometheusoperator.enabled" | default "false" }}"
         "prometheus.io/port": "9913"
         "service.beta.kubernetes.io/{{ .Values | getOrNil "cloud" | default "local" }}-load-balancer-internal": "true"
     ports:

@@ -8,7 +8,7 @@ bases:
 ## Prometheus Operator
 # site: https://github.com/helm/charts/blob/master/stable/prometheus-operator/values.yaml
 releases:
-- name: {{ .Values | getOrNil "prometheusoperator.name" | default "prometheusoperator" }}-namespace
+- name: {{ .Values | getOrNil "prometheusoperator.name" | default "po" }}-namespace
   chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
   version: {{ .Values | getOrNil "archetype.version" | default "0.0.1" }}
   namespace: kube-system
@@ -16,47 +16,48 @@ releases:
   installed: true
   wait: true
   labels:
-    chart: {{ .Values | getOrNil "prometheusoperator.name" | default "prometheusoperator" }}-namespace
-    component: {{ .Values | getOrNil "prometheusoperator.name" | default "prometheusoperator" }}
+    chart: {{ .Values | getOrNil "prometheusoperator.name" | default "po" }}-namespace
+    component: {{ .Values | getOrNil "prometheusoperator.name" | default "po" }}
     namespace: kube-system
   values:
-  - app: {{ .Values | getOrNil "prometheusoperator.name" | default "prometheusoperator" }}
+  - app: {{ .Values | getOrNil "prometheusoperator.name" | default "po" }}
     namespace:
       enabled: true
       name: {{ .Values | getOrNil "prometheusoperator.namespace" | default "prometheus-operator" }}
 
-- name: {{ .Values | getOrNil "prometheusoperator.name" | default "prometheusoperator" }}
+- name: {{ .Values | getOrNil "prometheusoperator.name" | default "po" }}
   chart: {{ .Values | getOrNil "prometheusoperator.chart" | default "stable/prometheus-operator" }}
   version: {{ .Values | getOrNil "prometheusoperator.version" | default "8.13.8" }}
   namespace: {{ .Values | getOrNil "prometheusoperator.namespace" | default "prometheus-operator" }}
   condition: prometheusoperator.enabled
   installed: true
   labels:
-    chart: {{ .Values | getOrNil "prometheusoperator.name" | default "prometheusoperator" }}
-    component: {{ .Values | getOrNil "prometheusoperator.name" | default "prometheusoperator" }}
+    chart: {{ .Values | getOrNil "prometheusoperator.name" | default "po" }}
+    component: {{ .Values | getOrNil "prometheusoperator.name" | default "po" }}
     namespace: {{ .Values | getOrNil "prometheusoperator.namespace" | default "prometheus-operator" }}
   needs:
-  - kube-system/{{ .Values | getOrNil "prometheusoperator.name" | default "prometheusoperator" }}-namespace
+  - kube-system/{{ .Values | getOrNil "prometheusoperator.name" | default "po" }}-namespace
   values:
-  - alertmanager:
+  - fullnameOverride: {{ .Values | getOrNil "prometheusoperator.name" | default "po" }}
+    alertmanager:
       alertmanagerSpec:
         externalUrl: http://alertmanager.{{ .Values | getOrNil "ingress.internal.zone" | default "int" }}.{{ .Values | getOrNil "dnsRoot" | default "micro.svc" }}
     prometheus:
       prometheusSpec:
         externalUrl: http://prometheus.{{ .Values | getOrNil "ingress.internal.zone" | default "int" }}.{{ .Values | getOrNil "dnsRoot" | default "micro.svc" }}
 
-- name: {{ .Values | getOrNil "prometheusoperator.name" | default "prometheusoperator" }}-grafana-ingress
+- name: {{ .Values | getOrNil "prometheusoperator.name" | default "po" }}-grafana-ingress
   namespace: {{ .Values | getOrNil "prometheusoperator.namespace" | default "prometheus-operator" }}
   chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
   version: {{ .Values | getOrNil "archetype.version" | default "0.0.1" }}
   condition: ingress.enabled
   installed: true
   needs:
-  - kube-system/{{ .Values | getOrNil "prometheusoperator.name" | default "prometheusoperator" }}-namespace
-  - {{ .Values | getOrNil "prometheusoperator.namespace" | default "prometheus-operator" }}/{{ .Values | getOrNil "prometheusoperator.name" | default "prometheusoperator" }}
+  - kube-system/{{ .Values | getOrNil "prometheusoperator.name" | default "po" }}-namespace
+  - {{ .Values | getOrNil "prometheusoperator.namespace" | default "prometheus-operator" }}/{{ .Values | getOrNil "prometheusoperator.name" | default "po" }}
   labels:
-    chart: {{ .Values | getOrNil "prometheusoperator.name" | default "prometheusoperator" }}-grafana-ingress
-    component: {{ .Values | getOrNil "prometheusoperator.name" | default "prometheusoperator" }}
+    chart: {{ .Values | getOrNil "prometheusoperator.name" | default "po" }}-grafana-ingress
+    component: {{ .Values | getOrNil "prometheusoperator.name" | default "po" }}
     namespace: {{ .Values | getOrNil "prometheusoperator.namespace" | default "prometheus-operator" }}
   values:
   - app: grafana
@@ -75,27 +76,27 @@ releases:
       enabled: true
       tlsEnabled: true
       hosts:
-      - secretName: {{ .Values | getOrNil "prometheusoperator.name" | default "prometheusoperator" }}-grafana-ingress
+      - secretName: {{ .Values | getOrNil "prometheusoperator.name" | default "po" }}-grafana-ingress
         config:
           http:
             paths:
             - path: "/"
               backend:
-                serviceName: {{ .Values | getOrNil "prometheusoperator.name" | default "prometheusoperator" }}-grafana
+                serviceName: {{ .Values | getOrNil "prometheusoperator.name" | default "po" }}-grafana
                 servicePort: 80
 
-- name: {{ .Values | getOrNil "prometheusoperator.name" | default "prometheusoperator" }}-prometheus-ingress
+- name: {{ .Values | getOrNil "prometheusoperator.name" | default "po" }}-prometheus-ingress
   namespace: {{ .Values | getOrNil "prometheusoperator.namespace" | default "prometheus-operator" }}
   chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
   version: {{ .Values | getOrNil "archetype.version" | default "0.0.1" }}
   condition: ingress.enabled
   installed: true
   needs:
-  - kube-system/{{ .Values | getOrNil "prometheusoperator.name" | default "prometheusoperator" }}-namespace
-  - {{ .Values | getOrNil "prometheusoperator.namespace" | default "prometheus-operator" }}/{{ .Values | getOrNil "prometheusoperator.name" | default "prometheusoperator" }}
+  - kube-system/{{ .Values | getOrNil "prometheusoperator.name" | default "po" }}-namespace
+  - {{ .Values | getOrNil "prometheusoperator.namespace" | default "prometheus-operator" }}/{{ .Values | getOrNil "prometheusoperator.name" | default "po" }}
   labels:
-    chart: {{ .Values | getOrNil "prometheusoperator.name" | default "prometheusoperator" }}-prometheus-ingress
-    component: {{ .Values | getOrNil "prometheusoperator.name" | default "prometheusoperator" }}
+    chart: {{ .Values | getOrNil "prometheusoperator.name" | default "po" }}-prometheus-ingress
+    component: {{ .Values | getOrNil "prometheusoperator.name" | default "po" }}
     namespace: {{ .Values | getOrNil "prometheusoperator.namespace" | default "prometheus-operator" }}
   values:
   - app: prometheus
@@ -114,27 +115,27 @@ releases:
       enabled: true
       tlsEnabled: true
       hosts:
-      - secretName: {{ .Values | getOrNil "prometheusoperator.name" | default "prometheusoperator" }}-prometheus-ingress
+      - secretName: {{ .Values | getOrNil "prometheusoperator.name" | default "po" }}-prometheus-ingress
         config:
           http:
             paths:
             - path: "/"
               backend:
-                serviceName: {{ .Values | getOrNil "prometheusoperator.name" | default "prometheusoperator" }}-prometh-prometheus
+                serviceName: {{ .Values | getOrNil "prometheusoperator.name" | default "po" }}-prometh-prometheus
                 servicePort: 9090
 
-- name: {{ .Values | getOrNil "prometheusoperator.name" | default "prometheusoperator" }}-alertmanager-ingress
+- name: {{ .Values | getOrNil "prometheusoperator.name" | default "po" }}-alertmanager-ingress
   namespace: {{ .Values | getOrNil "prometheusoperator.namespace" | default "prometheus-operator" }}
   chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
   version: {{ .Values | getOrNil "archetype.version" | default "0.0.1" }}
   condition: ingress.enabled
   installed: true
   needs:
-  - kube-system/{{ .Values | getOrNil "prometheusoperator.name" | default "prometheusoperator" }}-namespace
-  - {{ .Values | getOrNil "prometheusoperator.namespace" | default "prometheus-operator" }}/{{ .Values | getOrNil "prometheusoperator.name" | default "prometheusoperator" }}
+  - kube-system/{{ .Values | getOrNil "prometheusoperator.name" | default "po" }}-namespace
+  - {{ .Values | getOrNil "prometheusoperator.namespace" | default "prometheus-operator" }}/{{ .Values | getOrNil "prometheusoperator.name" | default "po" }}
   labels:
-    chart: {{ .Values | getOrNil "prometheusoperator.name" | default "prometheusoperator" }}-alertmanager-ingress
-    component: {{ .Values | getOrNil "prometheusoperator.name" | default "prometheusoperator" }}
+    chart: {{ .Values | getOrNil "prometheusoperator.name" | default "po" }}-alertmanager-ingress
+    component: {{ .Values | getOrNil "prometheusoperator.name" | default "po" }}
     namespace: {{ .Values | getOrNil "prometheusoperator.namespace" | default "prometheus-operator" }}
   values:
   - app: alertmanager
@@ -153,11 +154,11 @@ releases:
       enabled: true
       tlsEnabled: true
       hosts:
-      - secretName: {{ .Values | getOrNil "prometheusoperator.name" | default "prometheusoperator" }}-alertmanager-ingress
+      - secretName: {{ .Values | getOrNil "prometheusoperator.name" | default "po" }}-alertmanager-ingress
         config:
           http:
             paths:
             - path: "/"
               backend:
-                serviceName: {{ .Values | getOrNil "prometheusoperator.name" | default "prometheusoperator" }}-prometh-alertmanager
+                serviceName: {{ .Values | getOrNil "prometheusoperator.name" | default "po" }}-prometh-alertmanager
                 servicePort: 9093

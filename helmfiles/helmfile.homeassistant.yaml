@@ -60,9 +60,9 @@ releases:
     # Mount devices or folders from the host machine. Can be used for USB device mounting.
     hostMounts: []
     monitoring:
-      enabled: {{ .Values | getOrNil "monitoring.enabled" | default "false" }}
+      enabled: {{ .Values | getOrNil "prometheusoperator.enabled" | default "false" }}
       serviceMonitor:
-        enabled: {{ .Values | getOrNil "monitoring.enabled" | default "false" }}
+        enabled: {{ .Values | getOrNil "prometheusoperator.enabled" | default "false" }}
     appdaemon:
       enabled: false
 

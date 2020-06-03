@@ -2,12 +2,12 @@ environments:
   default:
     values:
     - ../config/default/values.yaml
-    - monitoring:
+    - prometheusoperator:
         enabled: false
   istio:
     values:
     - ../config/default/values.yaml
-    - monitoring:
+    - prometheusoperator:
         enabled: false
     - traefik:
         enabled: false
