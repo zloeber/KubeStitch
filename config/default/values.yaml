@@ -65,15 +65,17 @@ rbacmanager:
 vault:
   name: vault
   enabled: true
-  version: "0.5.0"
-  chart: vault/vault
+  version: "0.6.0"
+  chart: hashicorp/vault
   namespace: vault
   zone: internal
+  ha: true
+  dev: true
 consul:
   name: consul
   enabled: true
   version: "0.21.0"
-  chart: consul/consul
+  chart: hashicorp/consul
   namespace: consul
   zone: internal
 localstack:

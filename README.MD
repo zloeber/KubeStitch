@@ -183,7 +183,9 @@ environments:
         enabled: false
 ```
 
-This effectively makes the `../config/default/values.yaml` the default settings with anything under `./config/environments.yaml` being the overrides.
+This effectively makes the `../config/default/values.yaml` our default settings with anything under `./config/environments.yaml` being the overrides. I source these settings in for all my helmfiles which allows me to update helm chart versions and sources from one values file. If I want to test a new chart I can create another environment with the value being overwritten in `./config/environments.yaml` while retaining all other chart settings.
+
+> **NOTE** In the past I've utilized many environment variables for these kinds of settings. While it is tempting to do so I recommend against this style of chart authoring as it makes for more complex pipelines and a less declarative approach to deployments.
 
 ### Helmfile Stacks
 

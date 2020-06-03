@@ -9,12 +9,10 @@ repositories:
   url: git+https://github.com/containous/traefik-helm-chart@/traefik
 - name: jetstack
   url: https://charts.jetstack.io
-- name: vault
-  url: git+https://github.com/hashicorp/vault-helm@/
+- name: hashicorp
+  url: https://helm.releases.hashicorp.com
 - name: reactiveops-stable
   url: https://charts.reactiveops.com/stable
-- name: consul
-  url: git+https://github.com/hashicorp/consul-helm@/
 - name: rancher
   url: https://releases.rancher.com/server-charts/latest
 - name: argocd

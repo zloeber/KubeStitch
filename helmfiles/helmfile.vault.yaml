@@ -39,11 +39,11 @@ releases:
   - server:
       # affinity: ""
       ha:
-        enabled: true
+        enabled: {{ .Values | getOrNil "vault.ha" | default "false" }}
       service: 
         type: LoadBalancer
       dev:
-        enabled: true
+        enabled: {{ .Values | getOrNil "vault.dev" | default "false" }}
       dataStorage:
         enabled: true
         size: 2Gi
