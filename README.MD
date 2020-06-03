@@ -417,14 +417,16 @@ Great question! One which I sometimes struggle to answer. There are dozens of ot
 
 [Helmfile](https://github.com/roboll/helmfile) - The ultimate helm chart stitcher
 
+[My Archetype Chart](https://github.com/zloeber/archetype-chart) - I use this quite a bit for standardized ingress among other things
+
 [Manage Helm Charts With Helmfile](https://www.arthurkoziel.com/managing-helm-charts-with-helmfile/) - Good article on some techniques to implement DRY helmfile deployments
 
 [Helm Secrets Plugin](https://github.com/zendesk/helm-secrets) - Helm plugin for secrets management
 
-[Istio Practice Deployment](https://github.com/RothAndrew/istio-practice/tree/master/eks)
+[Istio Practice Deployment](https://github.com/RothAndrew/istio-practice/tree/master/eks) - Inspired me to finish this framework
 
-[Fury Kubernetes Distribution](https://github.com/sighupio/fury-distribution) - The basic concept of 'stacks' that I have been putting together using helmfiles has been done in this distribution using kustomize instead. Inspiring work.
+[Fury Kubernetes Distribution](https://github.com/sighupio/fury-distribution) - The basic concept of 'stacks' that I have been putting together using helmfiles has been done in this distribution using kustomize instead. Inspiring work but far too difficult to modify and use for rapid stack stitching from my experience.
 
-[CloudPosse's Helmfiles](https://github.com/cloudposse/helmfiles) - A very impressive and well written set of helmfiles.
+[CloudPosse's Helmfiles](https://github.com/cloudposse/helmfiles) - A very impressive and well written set of helmfiles. Inspirational and if I'm honest, better than my own charts.
 
-[MetalLB]() - The software loadbalancer used in many of the deployed clusters
+[MetalLB](https://metallb.universe.tf/) - The software loadbalancer used in several of the cluster profiles
