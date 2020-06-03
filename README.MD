@@ -104,6 +104,13 @@ This profile is what we use for default deployments. It includes;
 - The calico CNI
 - MetalLB
 
+### Profile - monitoring
+
+**File:** ./profiles/monitoring.env
+
+This profile is the same as the default profile but allows for the prometheus operator to also be deployed.
+
+
 ### PROFILE - k3d
 
 **File:** ./profiles/k3d.env

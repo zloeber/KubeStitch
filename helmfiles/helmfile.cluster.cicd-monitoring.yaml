@@ -1,0 +1,11 @@
+---
+bases:
+- ../config/environments.yaml
+---
+
+helmfiles:
+- ../helmfiles/helmfile.traefik.yaml
+- ../helmfiles/helmfile.prometheus-operator.yaml
+- ../helmfiles/helmfile.certmanager.yaml
+- ../helmfiles/helmfile.rbacmanager.yaml
+- ../helmfiles/helmfile.metricsserver.yaml

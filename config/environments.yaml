@@ -4,6 +4,9 @@ environments:
     - ../config/default/values.yaml
     - prometheusoperator:
         enabled: false
+  monitoring:
+    values:
+    - ../config/default/values.yaml
   istio:
     values:
     - ../config/default/values.yaml
