@@ -104,12 +104,22 @@ This profile is what we use for default deployments. It includes;
 - The calico CNI
 - MetalLB
 
-### Profile - monitoring
+ After the cluster starts up and you run the `dnsforward/start` task the following urls will be available.
+ 
+ - http://traefik.int.micro.svc
+
+ ### Profile - monitoring
 
 **File:** ./profiles/monitoring.env
 
-This profile is the same as the default profile but allows for the prometheus operator to also be deployed.
+This profile is the same as the default profile but allows for the prometheus operator to also be deployed. After the cluster starts up and you run the `dnsforward/start` task the following urls will be available.
 
+- http://traefik.int.micro.svc
+- http://grafana.int.micro.svc
+- http://alertmanager.int.micro.svc
+- http://prometheus.int.micro.svc
+
+The grafana site default login is `admin/prom-operator`
 
 ### PROFILE - k3d
 
