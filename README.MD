@@ -257,16 +257,18 @@ make cluster/start istio/deploy istio/start/dnsforward helmfile/sync STACK=booki
 
 ## Usage Example 2
 
-I also use this framework for a bare metal k3s cluster at home for home assistant. I created another kubernetes provider specifically for k3s ('inc/makefile.cluster.k3s) along with a profile to use it ('profiles/profile.homeassist.env'). With this I overwrite the default location of the KUBE_CONFIG so that after installation of the cluster elements the config is automatically updated for my standard account. This particular provider does require sudo rights of course.
+This is a somewhat unique example. Basically I used this framework for a bare metal k3s cluster at home for home assistant. I created another kubernetes provider specifically for k3s (`inc/makefile.cluster.k3s`) along with a profile to use it (`profiles/profile.homeassist.env`). With this profile and provider I overwrite the default location of the KUBE_CONFIG so that after installation of the cluster elements the config is automatically updated for my standard account. This particular provider does require sudo rights.
+
+A neat trick I use here is to set 'CLUSTER' to 'haas' in the profile and create a helmfile.cluster.haas.yaml file for use in deploying all stacks to this deployment even though it is not local.
 
 ```bash
 export PROFILE=homeassist
 make cluster
 ```
 
-> **NOTE** The k3s provider I created specifically disables many of the default deployment settings as well as the default 'local-path' storage provider. I later use NFS mounts for my own lab. This gets installed via helmfile.
+The k3s provider I created specifically disables many of the default deployment settings of k8s, specifically the default 'local-path' storage provider. I later use NFS mounts in my home setup using the nfs-client-provider. This gets installed via helmfile like 99% of hte cluster configuration.
 
-While I was testing this out on an old Shuttle PC I found out that some memory sticks were bad. As I was running memtest86+ against the server (which takes forever and a day) I quickly setup another profile so I could continue vetting out my kubernetes deployment stacks. In a few minutes I had the same deployment via the kind provider up and running.
+While I was testing this out on an old Shuttle PC I found out that some memory sticks were bad. As I was running memtest86+ against the server (which takes forever and a day) I quickly setup another profile called 'kind_homeassist' so I could continue vetting out my kubernetes deployment stacks. In a few minutes I had the same deployment via the kind provider up and running.
 
 ```bash
 export PROFILE=kind_homeassist
@@ -276,7 +278,9 @@ make helmfile/sync STACK=homeassistant
 
 You may notice that I use the cicd cluster for the local kind install as I know it works locally and since I'm not using nfs mounts or anything like that in my docker based cluster it makes sense for me to use a default baseline cluster and simply manually add the stacks in that I'm testing afterwards.
 
-Because I'm using a whole other dns root domain and IP addresses for both the nfs provisioner chart and traefik, I created another helmfile profile in 'config/environments.yaml' with these override settings in place. Because I do not yet know how to extract the extrapolated values yaml from helmfile, I also have to put these values in the 'config/homeassist/values.yaml' file for the Metallb deployment scripts to provision the configuration correctly.
+Because I'm using some localized IP addresses for both the nfs provisioner chart and traefik, I created another helmfile profile in 'config/environments.yaml' with these override settings in place. I do not yet know how to extract the extrapolated values yaml from helmfile so for now I also have to put these values in the 'config/homeassist/values.yaml' file for the Metallb deployment scripts to locate and for dnsforward tasks to use.
+
+> **NOTE**: In this setup I run the CICDHelper from my server then access it remotely via kubectl. To do this I have to copy over the config file that gets generated to my workstation `scp zloeber@servername:~/.kube/config ~/.kube/config ` then edit it to replace 127.0.0.1 with the IP address of the server.
 
 ## Secrets
 
@@ -319,11 +323,11 @@ make lens
 - MetalLB is used when a loadbalancer is required.
 - ~~Currently the loadbalancer deployment will use IP addresses between 172.17.0.100 and 172.17.0.110. This is the bridge IP subnet of docker on my workstation. You can modify this range in the config file within `./deploy/metallb/metallb-config.yaml`.~~ This is/was only for kind and is now automatically determined when metallb is deployed to the cluster. You can still override this in the `./config/environment.default.yaml` file by adding `stacks.ingress.internalLBSubnet` and assigning it a CIDR subnet instead. Otherwise it grabs the `DOCKER_NETWORK` subnet and replaces the last digits with 1.0/24 (in my case it now ends up being 172.21.1.0/24 since I kept screwing around with the bridge network...whoops.)
 - Currently I source in all used repositories regardless if they are used or not, this slows down initial syncing and probably can be improved upon somehow.
-- The `dnsforward/*` tasks are a bit janky as it is really hard to account for all possible scenarios. Generically, only use dnsforward tasks for local clusters (and make any additional forwarding updates/changes via the web interface if the logic is not working for you).
+- The `dnsforward/*` tasks are a bit janky as it is really hard to account for all possible scenarios. Generically, only use dnsforward tasks for local cluster testing (and make any additional forwarding updates/changes via the web interface if the logic is not working for you).
 
 ## Why Makefiles?
 
-Great question! One which I sometimes struggle to answer. There are dozens of other taskers out there but make is probably one of the older ones that is well supported across a number of different systems. I personally use it when I might use bash scripts otherwise. It allows me to quickly view the commands being run (if I've not purposefully hidden them with a well placed prepended @ symbol). Plus I'm sort of used to slinging makefiles so why not? Besides, most repos worth their salt have at least one of these things to bootstrap things in some manner so it doesn't hurt to get to know them a bit I'd say.
+Great question! One which I sometimes struggle to answer. There are dozens of other taskers out there but make is probably one of the older ones that is well supported across a number of different systems. I personally use it when I might use bash scripts otherwise. It allows me to quickly view the commands being run (if I've not purposefully hidden them with a well placed prepended @ symbol). Plus I'm sort of used to slinging makefiles so why not? Besides, most repos worth their salt have at least one of these to bootstrap things in some manner so it doesn't hurt to get to know them a bit I'd say.
 
 > **NOTE** If you are copying task definitions out for stand alone scripts remember to replace '$$' for '$' where ever you see them.
 

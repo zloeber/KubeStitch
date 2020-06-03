@@ -17,7 +17,7 @@ releases:
   wait: true
   labels:
     chart: {{ .Values | getOrNil "traefik.name" | default "traefik" }}-namespace
-    component: namespace
+    component: {{ .Values | getOrNil "traefik.name" | default "traefik" }}
     namespace: kube-system
   values:
   - app: {{ .Values | getOrNil "traefik.name" | default "traefik" }}
@@ -46,7 +46,9 @@ releases:
     additionalArguments:
       - "--providers.kubernetesingress=true"
       - "--providers.kubernetesingress.ingressclass={{ .Values | getOrNil "ingress.internal.class" | default "internal" }}"
-      #- "--log.level=DEBUG"
+      - "--log.level={{ .Values | getOrNil "traefik.loglevel" | default "INFO" }}"
+      - "--accesslog={{ .Values | getOrNil "traefik.accesslog" | default "true" }}"
+      - "--metrics.prometheus={{ .Values | getOrNil "monitoring.enabled" | default "true" }}"
     ingressRoute:
       dashboard:
         enabled: false

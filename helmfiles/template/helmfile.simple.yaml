@@ -5,6 +5,8 @@ bases:
 - ../config/{{ .Environment.Name }}/repositories.yaml
 ---
 
+## Simple Template helmfile
+# Replace 'simple' with your service/chart name
 releases:
 - name: {{ .Values | getOrNil "simple.name" | default "simple" }}-namespace
   chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
