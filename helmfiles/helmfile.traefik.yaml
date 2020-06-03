@@ -27,14 +27,14 @@ releases:
 
 ## traefik Deployment
 - name: {{ .Values | getOrNil "traefik.name" | default "traefik" }}
-  chart: {{ .Values.traefik.chart }}
-  version: {{ .Values.traefik.version }}
+  chart: {{ .Values | getOrNil "traefik.chart" | default "traefik/traefik" }}
+  version: {{ .Values | getOrNil "traefik.version" | default "8.2.1" }}
   namespace: {{ .Values | getOrNil "ingress.internal.namespace" | default "ingress-int" }}
   condition: ingress.enabled
   installed: true
   labels:
-    chart: traefik
-    component: traefik
+    chart: {{ .Values | getOrNil "traefik.name" | default "traefik" }}
+    component: {{ .Values | getOrNil "traefik.name" | default "traefik" }}
     namespace: {{ .Values | getOrNil "ingress.internal.namespace" | default "ingress-int" }}
   needs:
   - kube-system/{{ .Values | getOrNil "traefik.name" | default "traefik" }}-namespace
@@ -49,6 +49,7 @@ releases:
       - "--log.level={{ .Values | getOrNil "traefik.loglevel" | default "INFO" }}"
       - "--accesslog={{ .Values | getOrNil "traefik.accesslog" | default "true" }}"
       - "--metrics.prometheus={{ .Values | getOrNil "monitoring.enabled" | default "true" }}"
+      - "--tracing={{ .Values | getOrNil "traefik.tracing" | default "false" }}"
     ingressRoute:
       dashboard:
         enabled: false

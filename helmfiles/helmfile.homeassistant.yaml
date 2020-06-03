@@ -80,9 +80,9 @@ releases:
     component: {{ .Values | getOrNil "homeassistant.name" | default "homeassistant" }}
     namespace: {{ .Values | getOrNil "homeassistant.namespace" | default "homeassistant" }}
   values:
-  - dnsRoot: {{ .Values | getOrNil "dnsRoot" | default "home.local" }}
-    zone: internal
-    app: haas
+  - app: haas
+    dnsRoot: {{ .Values | getOrNil "dnsRoot" | default "micro.svc" }}
+    zone: {{ .Values | getOrNil "homeassistant.zone" | default "internal" }}
     ingressClassMap:
       internal: {{ .Values | getOrNil "ingress.internal.class" | default "internal" }}
       external: {{ .Values | getOrNil "ingress.external.class" | default "external" }}
@@ -119,9 +119,9 @@ releases:
     component: {{ .Values | getOrNil "homeassistant.name" | default "homeassistant" }}
     namespace: {{ .Values | getOrNil "homeassistant.namespace" | default "homeassistant" }}
   values:
-  - dnsRoot: {{ .Values | getOrNil "dnsRoot" | default "home.local" }}
-    zone: internal
-    app: vscode
+  - app: vscode
+    dnsRoot: {{ .Values | getOrNil "dnsRoot" | default "micro.svc" }}
+    zone: {{ .Values | getOrNil "homeassistant.zone" | default "internal" }}
     ingressClassMap:
       internal: {{ .Values | getOrNil "ingress.internal.class" | default "internal" }}
       external: {{ .Values | getOrNil "ingress.external.class" | default "external" }}
@@ -158,9 +158,9 @@ releases:
     component: {{ .Values | getOrNil "homeassistant.name" | default "homeassistant" }}
     namespace: {{ .Values | getOrNil "homeassistant.namespace" | default "homeassistant" }}
   values:
-  - dnsRoot: {{ .Values | getOrNil "dnsRoot" | default "home.local" }}
-    zone: internal
-    app: configurator
+  - app: configurator
+    dnsRoot: {{ .Values | getOrNil "dnsRoot" | default "micro.svc" }}
+    zone: {{ .Values | getOrNil "homeassistant.zone" | default "internal" }}
     ingressClassMap:
       internal: {{ .Values | getOrNil "ingress.internal.class" | default "internal" }}
       external: {{ .Values | getOrNil "ingress.external.class" | default "external" }}

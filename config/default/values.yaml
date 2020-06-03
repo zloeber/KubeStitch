@@ -49,8 +49,6 @@ certmanager:
   issuerStaging: letsencrypt-staging
   issuerProduction: letsencrypt-prod
   zone: internal
-prometheus:
-  instance: kube-prometheus
 metricsserver:
   name: metricsserver
   enabled: true
