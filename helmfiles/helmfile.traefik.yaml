@@ -46,13 +46,13 @@ releases:
     additionalArguments:
       - "--providers.kubernetesingress=true"
       - "--providers.kubernetesingress.ingressclass={{ .Values | getOrNil "ingress.internal.class" | default "internal" }}"
-      - "--log.level=DEBUG"
+      #- "--log.level=DEBUG"
     ingressRoute:
       dashboard:
         enabled: false
         annotations:
           "cert-manager.io/cluster-issuer": "default"
-          "kubernetes.io/ingress.class": "internal"
+          "kubernetes.io/ingress.class": "{{ .Values | getOrNil "ingress.internal.class" | default "internal" }}"
           "service.beta.kubernetes.io/local-load-balancer-internal": "true"
     service:
       type: LoadBalancer
