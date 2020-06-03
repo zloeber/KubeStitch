@@ -1,0 +1,23 @@
+---
+bases:
+- ../config/environments.yaml
+- ../config/helmdefaults.yaml
+- ../config/{{ .Environment.Name }}/repositories.yaml
+---
+
+## This special chart does not deploy anything but is used in conjunction with helmfile build
+## to create a lookup of some values that may change between environments.
+releases:
+- name: none
+  chart: none/none
+  namespace: none
+  version: 0.0.1
+  installed: false
+  values:
+  - aplaceholder: none
+    lookup_dnsRoot: {{ .Values | getOrNil "dnsRoot" | default "micro.svc" }}
+    lookup_internalDNSZone: {{ .Values | getOrNil "ingress.internal.zone" | default "int" }}.{{ .Values | getOrNil "dnsRoot" | default "micro.svc" }}
+    lookup_externalDNSZone: {{ .Values | getOrNil "ingress.external.zone" | default "ext" }}.{{ .Values | getOrNil "dnsRoot" | default "micro.svc" }}
+    lookup_stageDNSZone: {{ .Values | getOrNil "ingress.stage.zone" | default "stage" }}.{{ .Values | getOrNil "dnsRoot" | default "micro.svc" }}
+    lookup_ingressInternalSubnet: {{ .Values | getOrNil "ingress.internal.subnet" | default "" }}
+    lookup_ingressInternalIP: {{ .Values | getOrNil "ingress.internal.ip" | default "" }}

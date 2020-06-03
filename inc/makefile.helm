@@ -114,12 +114,17 @@ helmfile/test: ## Tests STACK on cluster
 helmfile/destroy: prompt/yesno ## Removes STACK from cluster
 	$(helmfile) -b $(helm_binary) -f $(HELMFILE_PATH)/helmfile.$(STACK).yaml destroy
 
+.PHONY: helmfile/build
+helmfile/build: ## Builds helmfile YAML only
+	$(helmfile) -b $(helm_binary) -f $(HELMFILE_PATH)/helmfile.$(STACK).yaml build
+
+.PHONY: .helmfile/lookups
+.helmfile/lookups: ## Builds helmfile YAML for looking ups
+	$(helmfile) -b $(helm_binary) -f $(HELMFILE_PATH)/lookup.placeholder.yaml build
+
 .PHONY: helmfile/template
 helmfile/template: ## template STACK yaml manifest for cluster
 	$(helmfile) -b $(helm_binary) -f $(HELMFILE_PATH)/helmfile.$(STACK).yaml template $(HELM_ARGS)
-
-.PHONY: helmfile/remove
-helmfile/remove: helmfile/destroy ## Removes STACK from cluster (alias for destroy)
 
 .PHONY: helmfile/reload
 helmfile/reload: helmfile/destroy helmfile/sync ## Removes then adds STACK from cluster

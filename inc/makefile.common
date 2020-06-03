@@ -65,6 +65,7 @@ show/env: ## Show our environment settings
 	@echo "HELMFILE_PATH: $(HELMFILE_PATH)"
 	@echo "STACK: $(STACK)"
 	@echo "CHART_PATH: $(CHART_PATH)"
+	@echo "HELMFILE_VALUES: $(HELMFILE_VALUES)"
 	@echo "ENVIRONMENT_VARS: $(ENVIRONMENT_VARS)"
 	@echo "ADDITIONAL_TASKSETS: $(ADDITIONAL_TASKSETS)"
 	@echo "TASKSETS: $(TASKSETS)"

@@ -1,4 +1,3 @@
-{{- $config := (datasource "config") -}}
 {
 	"version": 2,
 	"remoteDnsServers": [
@@ -11,7 +10,7 @@
 			"hostnames": [
 				{
 					"id": 1,
-					"hostname": ".{{ if (has $config.ingress.internal "zone") }}{{ $config.ingress.internal.zone }}.{{ end }}{{ if (has $config "dnsRoot") }}{{ $config.dnsRoot }}{{ else }}localhost{{ end }}",
+					"hostname": ".{{ env.Getenv "STACK_INGRESS_INTERNALDNSZONE" "int.micro.svc" }}",
 					"ip": "{{ env.Getenv "STACK_INGRESS_INTERNALIP" "127.0.0.1" }}",
 					"target": "acme.com",
 					"ttl": 60,

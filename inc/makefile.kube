@@ -95,13 +95,14 @@ kube/loadbalancer/subnet: ## Show docker bridge subnet
 dnsforward/start: dnsforward/stop ## Forwards all dns requests to a local dns-proxy-server
 	@tmpdir=$$(mktemp -d) && \
 	export STACK_INGRESS_INTERNALIP=$(shell $(MAKE) kube/loadbalancer/ip) && \
+	export STACK_INGRESS_INTERNALDNSZONE=$(shell $(MAKE) .helmfile/lookups | grep -e "lookup_internalDNSZone: .*$$" | sed -e 's/^[ \t]*//' | cut -d" " -f2 ) && \
 	echo "STACK_INGRESS_INTERNALIP=$${STACK_INGRESS_INTERNALIP}" && \
+	echo "STACK_INGRESS_INTERNALDNSZONE=$${STACK_INGRESS_INTERNALDNSZONE}" && \
 	$(gomplate) \
-		-d config=$(HELMFILE_VALUES) \
 		--file $(DEPLOY_PATH)/dnsproxy/config.json \
 		--out "$${tmpdir}/config.json" && \
 	docker run --rm -d \
-		--hostname $(STACK_INGRESS_INTERNALZONE) \
+		--hostname $${STACK_INGRESS_INTERNALDNSZONE} \
 		--name dns-proxy-server \
 		-p 5380:5380 \
 		-v $${tmpdir}:/app/conf \
@@ -109,7 +110,6 @@ dnsforward/start: dnsforward/stop ## Forwards all dns requests to a local dns-pr
 		-v /etc/resolv.conf:/etc/resolv.conf \
 		defreitas/dns-proxy-server
 	@echo ""
-	@echo "STACK_INGRESS_INTERNALZONE=$(STACK_INGRESS_INTERNALZONE)"
 	@echo "View dnsforwarding admin page at: http://localhost:5380"
 
 .PHONY: dnsforward/stop
