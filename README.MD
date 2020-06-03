@@ -131,6 +131,13 @@ This is another proof of concept environment that spins up a kind cluster runnin
 
 You can access both [http://consul.int.micro.svc](http://consul.int.micro.svc) and [http://vault.int.micro.svc](http://vault.int.micro.svc) to immediately start exploring these cool products after bringing up the cluster.
 
+If you use this profile the vault service will be provisioned via a loadbalancer IP which can be accessed using the vault client and some environment variables. To export these variables into your session use the following command:
+
+```bash
+`make show/vault`
+./.local/bin/vault status
+```
+
 ### PROFILE - localstack
 
 **File:** ./profiles/localstack.env
@@ -154,6 +161,23 @@ Performs a local install/uninstall of a 1 node k3s cluster for use in a home ass
 ## Tasksets
 
 Sometimes there are additional commands required to vet out a solution. To accommodate for this need, you can add a new makefile directly in the 'inc' folder as `./inc/makefile.<taskset>` and then add the `<taskset>` into your profile's `ADDITIONAL_TASKSETS` definition (space delimited if there is more than one). This will source in your new script tasks automatically only when the profile is used.
+
+You can see the tasksets which are available within the 'inc' folder of this repo. Thus far there are a few default tasksets and these additional ones:
+
+- vault
+- consul
+- argocd
+- arkade
+- fury
+- gitlab
+- istio
+- lens
+- metallb
+- tekton
+- terraform
+- k9s
+
+A provider taskset is special as it is a specific taskset for provisioning kubernetes clusters. Only one of these should be loaded at a time. I've only really tested out kind, k3d, and k3s. I include a minikube provider from earlier testing but abandoned it earlier on for a number of reasons.
 
 ## Helmfile
 
@@ -191,9 +215,10 @@ This effectively makes the `../config/default/values.yaml` our default settings 
 
 For lack of better terminology I use 'stack' to define a set of helm charts that I've stitched together as a deployable unit. Typically this is a handful of charts all targeting a single namespace by the same name. I attempt to create helmfiles in a manner which can be deployed individually but there may be some cross dependencies for more complex stacks (like if I use cert manager CRDs for instance). 
 
-A set of stacks can be applied, in order, via a single helmfile. This is how I deploy whole cluster configurations in fact. Here is the default cluster helmfile for example. As it is simply another helmfile I keep the cluster helmfile definitions right alongside the rest of the stacks. Here is `/helmfiles/helmfile.cluster.cicd.yaml`
+A set of stacks can be applied, in order, via a single helmfile. This is how I deploy whole cluster configurations declaratively. Below you can see the default cicd cluster helmfile. As it is simply another helmfile we keep the cluster helmfile definitions right alongside the rest of the stacks.
 
 ```bash
+#/helmfiles/helmfile.cluster.cicd.yaml
 ---
 bases:
 - ../config/environments.yaml
@@ -206,17 +231,17 @@ helmfiles:
 - ../helmfiles/helmfile.metricsserver.yaml
 ```
 
-What makes this fun is that I have a whole other profile called 'vault' that creates its own cluster (aptly named 'vault') that I put together simply for the convenience of bringing up a full cluster configured with consul and vault in a single command. But I don't need to use the vault profile to run consul and vault either. I can also simply add helmfile stacks or the entire cluster helmfile definition afterwards as well.
+What makes this fun is that I have a whole other profile called 'vault' that creates its own cluster (aptly named 'vault') that I put together simply for the convenience of bringing up a full cluster configured with consul and vault in a single command. But I don't need to use the vault profile to run consul and vault. We can also add individual helmfile stacks or the entire cluster helmfile stack definition at any time to any cluster while in any profile.
 
 ```bash
 unset PROFILE   # Use the default profile
 make deps cluster/start helmfile/sync # Setup a default cluster
 make helmfile/sync STACK=consul # Install only the consul stack
-make helmfile/destroy STACK=consul # Now remove it
-make helmfile/sync STACK=cluster.vault # Or apply the cluster stack entirely outside of the vault profile!
+make helmfile/sync STACK=cluster.vault # Or apply the cluster stack entirely outside of the vault profile (note that consul is already applied and will not be applied again even though it is listed in the cluster.vault helmfile)
+make helmfile/destroy STACK=consul # Now remove just consul for the hell of it
 ```
 
-Using this is pretty powerful for quickly working on various deployments and allows for layering of stacks to get the results you are looking for.
+This is a powerful way to quickly work on various deployments and allows for layering of stacks to get the results you are looking for in an iterative manner.
 
 > **NOTE** Sometimes you may have to wait for the initial cluster to fully come up before running the helmfile/apply for the entire cluster.
 
