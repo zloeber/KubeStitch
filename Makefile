@@ -67,4 +67,4 @@ clean: ## Remove downloaded dependencies
 	rm $(INSTALL_PATH)/*
 
 .PHONY: cluster
-cluster: cluster/start helmfile/sync ## Create cluster and apply default helmfile stack
+cluster: deps cluster/start helmfile/sync ## Create cluster and apply default helmfile stack

@@ -17,7 +17,13 @@ Where required, stand-alone cli tools will be installed to a `./.local/` path wi
 
 ## Usage
 
-Standard usage is pretty simple. 
+Standard usage is pretty simple. After cloning this repo you can start a default kind cluster with one command:
+
+```bash
+make cluster
+```
+
+This aggregates several tasks which are broken down further below.
 
 ```bash
 # Show tasks
@@ -32,16 +38,16 @@ make cluster/start
 # Run tests on the cluster and watch the output with stern (press ctrl+c to exit)
 make cluster/test
 
-# Perform a default deployment of helmfiles for the cluster definition
+# Perform a default deployment of helmfiles for the cluster defined in the profile (default: cicd)
 make helmfile/sync
 
 # Destroy the cluster you just created
 make cluster/stop
 ```
 
-## Kube Clusters
+## Clusters
 
-Before going into profiles, it is important to be aware that each cluster that gets created will create its own configuration file within the `./.local/` path in the form of `kube.<clustername>.conf`. This ensures your personal user kubernetes configuration does not get polluted with testing cluster detritus. But this also means that, by default, you will not be able to interface with the cluster without some additional work. The simple way around this is to just point your 'KUBECONFIG' env var to the config file that gets generated. This can be done easily with the following command after the cluster has been created:
+Before going into profiles, it is important to be aware that each cluster that gets created will create its own configuration file within the `./.local/` path in the form of `kube.<clustername>.conf` unless `KUBE_CONFIG` is overwritten in the profile. This ensures your personal user kubernetes configuration does not get polluted with testing cluster detritus. But this also means that, by default, you will not be able to interface with the cluster without some additional work. The simple way around this is to just point your 'KUBECONFIG' env var to the config file that gets generated. This can be done easily with the following command after the cluster has been created:
 
 ```bash
 export KUBECONFIG=`make kube/config/file` 
