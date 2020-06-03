@@ -177,13 +177,19 @@ Create a local argocd cluster for testing out GitOps. Includes customization to 
 
 To access the GUI interface (https://argocd.int.micro.svc/) the default ID is `admin` and the password can be retrieved by running `make argocd/get/password` (typically ends up being the argocd-server pod name)
 
+**NOTE:** I'm still working on the helmfile argocd repository task runner. This is just a base environment and nothing more.
+
 ### PROFILE - homeassist
 
-Performs a local install/uninstall of a 1 node k3s cluster for use in a home assistant installation. This assumes the local machine is Linux ready and uses sudo rights to setup systemd among other things. To do the same install via kind use the 'kind_homeassist' profile instead.
+Performs a local install/uninstall of a single node k3s cluster for use in a bare metal home assistant deployment. This assumes the local machine is Linux ready and uses sudo rights to setup the service. This profile is custom built for my own environment which includes an NFS storage backend and should not be used without modifications.
+
+**File:** ./profiles/homeassist.env
+
+**NOTE:** To do the same deployment locally via kind use the 'kind_homeassist' profile instead.
 
 ## Tasksets
 
-Sometimes there are additional commands required to vet out a solution. To accommodate for this need, you can add a new makefile directly in the 'inc' folder as `./inc/makefile.<taskset>` and then add the `<taskset>` into your profile's `ADDITIONAL_TASKSETS` definition (space delimited if there is more than one). This will source in your new script tasks automatically only when the profile is used.
+Sometimes there are additional commands required to vet out a particular solution. To accommodate for this need, you can add a new makefile directly in the 'inc' folder as `./inc/makefile.<taskset>` and then add the `<taskset>` into your profile's `ADDITIONAL_TASKSETS` definition (space delimited if there is more than one). This will source in your new script tasks automatically only when the profile is used.
 
 You can see the tasksets which are available within the 'inc' folder of this repo. Thus far there are a few default tasksets and these additional ones:
 
@@ -200,8 +206,21 @@ You can see the tasksets which are available within the 'inc' folder of this rep
 - terraform
 - k9s
 - prometheus
+- docker
 
-A provider taskset is special as it is a specific taskset for provisioning kubernetes clusters. Only one of these should be loaded at a time. I've only really tested out kind, k3d, and k3s. I include a minikube provider from earlier testing (I abandoned minikube earlier on for a number of reasons). If you add a new provider you simply have to ensure that the cluster/* tasks exist and work to bring up and tear down clusters.
+Not all of these are useful for every scenario so they simply don't get loaded (otherwise `make help` would be WAY too long of a list!). The follow tasksets are loaded every time though:
+
+- helm
+- kube
+- common
+
+### Provider Tasksets
+
+A provider taskset is special as it is a specific taskset for provisioning kubernetes clusters. These are in the same location as the other tasksets but with a different naming convention, `./inc/makefile.provider.<taskset>`. Only one provider taskset should be loaded at a time. Thus far kind and k3d are the most reliable and tested provider tasksets but I also include a minikube provider from earlier testing as well as the k3s taskset for my home server deployment.
+
+> **NOTE:** I abandoned minikube earlier on for a number of reasons but it would be feasible to fix this up and use minikube as well if that's your thing.
+
+If you add a new provider ensure that the 'cluster/*' tasks exist to bring up and tear down clusters. I'd model them against the existing kind or k3d provider tasksets.
 
 ## Helmfile
 
