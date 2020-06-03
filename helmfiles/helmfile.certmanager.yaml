@@ -117,7 +117,7 @@ releases:
         labels:
           app: {{ .Values | getOrNil "certmanager.name" | default "certmanager" }}-servicemonitor
           release: {{ .Values | getOrNil "certmanager.name" | default "certmanager" }}-servicemonitor
-          prometheus: {{ .Values.prometheus.instance }}
+          prometheus: {{ .Values | getOrNil "prometheusoperator.prometheus.instance" | default "prometheusoperator-prometh-prometheus" }}
       spec:
         jobLabel: cert-manager
         namespaceSelector:
@@ -151,34 +151,34 @@ releases:
     - apiVersion: cert-manager.io/v1alpha3
       kind: ClusterIssuer
       metadata:
-        name: {{ .Values.certmanager.issuerStaging }}
+        name: {{ .Values | getOrNil "certmanager.issuerStaging" | default "letsencrypt-staging" }}
       spec:
         acme:
           server: https://acme-staging-v02.api.letsencrypt.org/directory
-          email: {{ .Values.certmanager.email }}
+          email: {{ .Values | getOrNil "certmanager.email" | default "admin@nodomain" }}
           privateKeySecretRef:
-            name: {{ .Values.certmanager.issuerStaging }}
+            name: {{ .Values | getOrNil "certmanager.issuerStaging" | default "letsencrypt-staging" }}
           solvers:
             - http01:
                 ingress:
-                  class: {{ .Values.ingress.stage.class }}
+                  class: {{ .Values | getOrNil "ingress.stage.class" | default "stage" }}
     - apiVersion: cert-manager.io/v1alpha3
       kind: ClusterIssuer
       metadata:
-        name: {{ .Values.certmanager.issuerProduction }}
+        name: {{ .Values | getOrNil "certmanager.issuerProduction" | default "letsencrypt-prod" }}
       spec:
         acme:
           server: https://acme-v02.api.letsencrypt.org/directory
-          email: {{ .Values.certmanager.email }}
+          email: {{ .Values | getOrNil "certmanager.email" | default "admin@nodomain" }}
           privateKeySecretRef:
-            name: letsencrypt-prod
+            name: {{ .Values | getOrNil "certmanager.issuerProduction" | default "letsencrypt-prod" }}
           solvers:
             - http01:
                 ingress:
-                  class: {{ .Values.ingress.external.class }}
+                  class: {{ .Values | getOrNil "ingress.external.class" | default "external" }}
     - apiVersion: cert-manager.io/v1alpha3
       kind: ClusterIssuer
       metadata:
-        name: {{ .Values.certmanager.issuerDefault }}
+        name: {{ .Values | getOrNil "certmanager.issuerDefault" | default "default" }}
       spec:
         selfSigned: {}
