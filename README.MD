@@ -182,8 +182,9 @@ You can see the tasksets which are available within the 'inc' folder of this rep
 - tekton
 - terraform
 - k9s
+- prometheus
 
-A provider taskset is special as it is a specific taskset for provisioning kubernetes clusters. Only one of these should be loaded at a time. I've only really tested out kind, k3d, and k3s. I include a minikube provider from earlier testing but abandoned it earlier on for a number of reasons.
+A provider taskset is special as it is a specific taskset for provisioning kubernetes clusters. Only one of these should be loaded at a time. I've only really tested out kind, k3d, and k3s. I include a minikube provider from earlier testing (I abandoned minikube earlier on for a number of reasons). If you add a new provider you simply have to ensure that the cluster/* tasks exist and work to bring up and tear down clusters.
 
 ## Helmfile
 
