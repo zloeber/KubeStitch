@@ -40,13 +40,6 @@ ifeq (,$(wildcard $(helmfile_binary)))
 	@echo "Installed: $(helmfile_binary)"
 endif
 
-.PHONY: .dep/helm-x
-.dep/helm-x: ## Install helm-x locally
-ifeq (,$(wildcard $(helm-x)))
-	@$(MAKE) --no-print-directory -C $(APP_PATH)/githubapp auto mumoshu/helm-x INSTALL_PATH=$(BIN_PATH)
-	@echo "Installed: $(helm-x)"
-endif
-
 .PHONY: .dep/ct
 .dep/ct: ## Install ct locally
 ifeq (,$(wildcard $(ct)))
@@ -80,7 +73,7 @@ endif
 #	@$(helm) plugin install https://github.com/mumoshu/helm-x 2> /dev/null || true
 
 .PHONY: .deps/helm
-.deps/helm: .dep/helm .dep/ct .dep/helmfile .dep/helm-x .helm/plugins ## Install yq, ct, helm, helmfile, helm-x, and plugins locally
+.deps/helm: .dep/helm .dep/ct .dep/helmfile .helm/plugins ## Install yq, ct, helm, helmfile, helm-x, and plugins locally
 
 .PHONY: helmfile/stacks
 helmfile/stacks: ## Lists all available helmfile stacks
