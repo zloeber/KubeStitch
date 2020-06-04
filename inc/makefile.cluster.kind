@@ -9,7 +9,7 @@ kind := $(BIN_PATH)/kind
 CLUSTER_CONTEXT := kind-$(CLUSTER)
 
 ifeq (darwin,$(HOST_PLATFORM)))
-DOCKER_NETWORK ?= kind
+DOCKER_NETWORK := kind
 endif
 
 .PHONY: .deps/cluster.kind
