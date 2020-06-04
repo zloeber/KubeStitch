@@ -63,8 +63,8 @@ endif
 
 .PHONY: clean
 clean: ## Remove downloaded dependencies
-	rm -rf $(APP_PATH)/githubapp
-	rm $(INSTALL_PATH)/*
+	@rm -rf $(APP_PATH)/githubapp
+	@rm -rf $(INSTALL_PATH)/*
 
 .PHONY: cluster
 cluster: deps cluster/start helmfile/sync ## Create cluster and apply default helmfile stack
