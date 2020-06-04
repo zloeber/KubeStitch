@@ -7,6 +7,12 @@ CLUSTER_CONTEXT ?= $(CLUSTER)
 SUBNET_INDEX ?= 1
 KUBE_CONFIG ?= $(ROOT_PATH)/.local/kube.$(CLUSTER).conf
 
+ifeq ($(HOST_PLATFORM),linux)
+RESOLV_CONF ?= /etc/resolv.conf
+else
+RESOLV_CONF ?= /var/run/resolv.conf
+endif
+
 kubectl := $(BIN_PATH)/kubectl
 kustomize := $(BIN_PATH)/kustomize
 kubecmd := KUBECONFIG=$(KUBE_CONFIG) $(kubectl)
@@ -93,7 +99,7 @@ kube/loadbalancer/subnet: ## Show docker bridge subnet
 
 .PHONY: dnsforward/start
 dnsforward/start: dnsforward/stop ## Forwards all dns requests to a local dns-proxy-server
-	@tmpdir=$$(mktemp -d) && \
+	tmpdir=$$(mktemp -d) && \
 	export STACK_INGRESS_INTERNALIP=$(shell $(MAKE) kube/loadbalancer/ip) && \
 	export STACK_INGRESS_INTERNALDNSZONE=$(shell $(MAKE) .helmfile/lookups | grep -e "lookup_internalDNSZone: .*$$" | sed -e 's/^[ \t]*//' | cut -d" " -f2 ) && \
 	echo "STACK_INGRESS_INTERNALIP=$${STACK_INGRESS_INTERNALIP}" && \
@@ -107,11 +113,11 @@ dnsforward/start: dnsforward/stop ## Forwards all dns requests to a local dns-pr
 		-p 5380:5380 \
 		-v $${tmpdir}:/app/conf \
 		-v /var/run/docker.sock:/var/run/docker.sock \
-		-v /etc/resolv.conf:/etc/resolv.conf \
+		-v $(RESOLV_CONF):/etc/resolv.conf \
 		defreitas/dns-proxy-server
 	@echo ""
 	@echo "View dnsforwarding admin page at: http://localhost:5380"
 
 .PHONY: dnsforward/stop
 dnsforward/stop: ## Stop the dns forwarding container
-	@docker stop dns-proxy-server || true
+	docker stop dns-proxy-server || true

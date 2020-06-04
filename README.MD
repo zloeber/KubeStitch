@@ -19,6 +19,8 @@ I've tested all the profiles on an Ubuntu based Linux host and have also done so
 
 If you ever run a git pull to update this project locally and there are changes it would be safe to run a `make clean deps` to ensure that all the latest updates are pulled down.
 
+> **NOTE** Mac users should not use the dns-proxy-server as it simply doesn't work from what I can tell. The DPS container starts and has the correct configuration but the local /etc/resolve.conf 
+
 ## Usage
 
 Standard usage is pretty simple. After cloning this repo you can start a default kind cluster with one command:
@@ -437,3 +439,5 @@ Great question! One which I sometimes struggle to answer. There are dozens of ot
 [CloudPosse's Helmfiles](https://github.com/cloudposse/helmfiles) - A very impressive and well written set of helmfiles. Inspirational and if I'm honest, better than my own charts.
 
 [MetalLB](https://metallb.universe.tf/) - The software loadbalancer used in several of the cluster profiles
+
+[DPS](http://mageddo.github.io/dns-proxy-server/latest/en/) - DNS Proxy Server container used to forward ingress zone requests to local clusters
