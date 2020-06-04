@@ -6,11 +6,13 @@ CLUSTER_CONTEXT ?= $(CLUSTER)
 #DOCKER_NETWORK ?= bridge
 SUBNET_INDEX ?= 1
 KUBE_CONFIG ?= $(ROOT_PATH)/.local/kube.$(CLUSTER).conf
+RESOLV_CONF ?= /etc/resolv.conf
 
 ifeq ($(HOST_PLATFORM),linux)
 RESOLV_CONF ?= /etc/resolv.conf
+DPS_PORTS := -p 5380:5380
 else
-RESOLV_CONF ?= /etc/resolv.conf
+DPS_PORTS := -p 5380:5380 -p 53:53/udp
 endif
 
 kubectl := $(BIN_PATH)/kubectl
@@ -110,7 +112,7 @@ dnsforward/start: dnsforward/stop ## Forwards all dns requests to a local dns-pr
 	docker run --rm -d \
 		--hostname $${STACK_INGRESS_INTERNALDNSZONE} \
 		--name dns-proxy-server \
-		-p 5380:5380 -p 53:53/udp \
+		$(DPS_PORTS) \
 		-v $${tmpdir}:/app/conf \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v $(RESOLV_CONF):/etc/resolv.conf \

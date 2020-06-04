@@ -19,7 +19,7 @@ I've tested all the profiles on an Ubuntu based Linux host and have also done so
 
 If you ever run a git pull to update this project locally and there are changes it would be safe to run a `make clean deps` to ensure that all the latest updates are pulled down.
 
-> **NOTE** Mac users should not use the dns-proxy-server as it simply doesn't work from what I can tell. The DPS container starts and has the correct configuration but the local /etc/resolve.conf 
+> **NOTE** Mac users should be aware that while the dns-proxy-server will spin up with the correct dns internal zone forwarding configured to the correct ingress internal IP, it will not work from the mac automatically. First you will need to reconfigure your DNS resolver to point to 127.0.0.1. I could not figure out a way to make this work automatically due to how mdnsResponder takes over the DNS lookup process on Macs, sorry. :(
 
 ## Usage
 
