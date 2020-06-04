@@ -8,7 +8,7 @@ KIND_IMAGE_POSTFIX ?=
 kind := $(BIN_PATH)/kind
 CLUSTER_CONTEXT := kind-$(CLUSTER)
 
-ifeq (darwin,$(HOST_PLATFORM)))
+ifeq (darwin,$(HOST_PLATFORM))
 DOCKER_NETWORK := kind
 endif
 
