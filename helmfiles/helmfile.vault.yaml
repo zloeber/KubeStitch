@@ -25,7 +25,7 @@ releases:
 
 - name: {{ .Values | getOrNil "vault.name" | default "vault" }}
   chart: {{ .Values | getOrNil "vault.chart" | default "vault/vault" }}
-  version: {{ .Values | getOrNil "vault.version" | default "0.5.0" }}
+  version: {{ .Values | getOrNil "vault.version" | default "0.6.0" }}
   namespace: {{ .Values | getOrNil "vault.namespace" | default "vault" }}
   condition: vault.enabled
   installed: true

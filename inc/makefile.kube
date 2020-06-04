@@ -83,6 +83,9 @@ kube/config: ## Exports a copy of the current kube config
 kube/config/file: ## Prints the current kube config file location
 	@echo $(KUBE_CONFIG)
 
+kube/untaint/masternodes: ## Untaints master nodes of a cluster
+	@$(kubecmd) taint nodes $$($(kubecmd) get nodes --selector=node-role.kubernetes.io/master | awk 'FNR==2{print $$1}') node-role.kubernetes.io/master-
+
 .PHONY: kube/list/resources
 kube/list/resources: ## Prints kubernetes resources
 	for kind in `$(kubecmd) api-resources | tail +2 | awk '{ print $$1 }' | sort`; do kubectl explain $$kind ; done | grep -e "KIND:" -e  "VERSION:" | awk '{print $$2}' | paste -sd' \n'

@@ -167,6 +167,12 @@ If you use this profile the vault service will be provisioned via a loadbalancer
 ./.local/bin/vault status
 ```
 
+### PROFILE - vaultha
+
+**File:** ./profiles/vaultha.env
+
+This changes a few variables around so that a 3 node kind cluster is deployed and the vault chart gets deployed in ha mode instead of dev mode. The vault deployment is uninitialized and will need more love to get working correctly.
+
 ### PROFILE - localstack
 
 **File:** ./profiles/localstack.env
@@ -236,9 +242,9 @@ I use helmfile extensively to declaratively stitch together my deployments from 
 
 ### Helmfile Environments
 
-The per-environment values files are defined in `config/environments.yaml`. This just points to the individual values files that reside in ther own per-environment folder. This environment folder also includes relevant helm repositories and helm default values. These values get sourced into the various helmfiles using a common block at the top of each helmfile. 
+The per-environment values files are defined in `config/environments.yaml`. This just points to the individual values files first with optional override values afterwards. Common repositories and default helmfile values are sourced into the various helmfiles using a common block at the top of each helmfile.
 
-The idea is that I can create new environments from copying this folder and make simple changes to target them from a pipeline when the time comes.
+The idea is that I can create new environments in one location and create custom values files later for specific pipelines later if so desired.
 
 To target another environment for helmfile follow a few extra steps.
 
