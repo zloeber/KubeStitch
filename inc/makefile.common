@@ -32,6 +32,12 @@ HOST_PLATFORM := $(shell sh -c 'uname -s 2>/dev/null || echo not supported' | tr
 OS := $(shell sh -c 'uname -s 2>/dev/null || echo not supported' | tr '[:upper:]' '[:lower:]')
 endif
 
+ifeq ($(HOST_PLATFORM),linux)
+DOCKER_NETWORK ?= bridge
+else
+DOCKER_NETWORK ?= kind
+endif
+
 $(BIN_PATH): ## Stage build directory if it does not exist
 	@mkdir -p $(BIN_PATH)
 

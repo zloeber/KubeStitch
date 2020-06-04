@@ -8,10 +8,6 @@ KIND_IMAGE_POSTFIX ?=
 kind := $(BIN_PATH)/kind
 CLUSTER_CONTEXT := kind-$(CLUSTER)
 
-ifeq (darwin,$(HOST_PLATFORM))
-DOCKER_NETWORK := kind
-endif
-
 .PHONY: .deps/cluster.kind
 .deps/cluster.kind: ## Get kind binary dependency
 ifeq (,$(wildcard $(INSTALL_PATH)/kind))
