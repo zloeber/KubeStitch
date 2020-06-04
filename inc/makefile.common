@@ -62,6 +62,7 @@ show/env: ## Show our environment settings
 	@echo "KUBE_PROVIDER: $(KUBE_PROVIDER)"
 	@echo "KUBE_VERSION: $(KUBE_VERSION)"
 	@echo "KUBE_CONFIG: $(KUBE_CONFIG)"
+	@echo "DOCKER_NETWORK: $(DOCKER_NETWORK)"
 	@echo "HELMFILE_PATH: $(HELMFILE_PATH)"
 	@echo "STACK: $(STACK)"
 	@echo "CHART_PATH: $(CHART_PATH)"

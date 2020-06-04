@@ -15,6 +15,10 @@ Everything in this repo uses standard bash scripts and currently only supports L
 
 Where required, stand-alone cli tools will be installed to a `./.local/` path within this folder to ensure portability.
 
+I've tested all the profiles on an Ubuntu based Linux host and have also done some work towards ensuring that this also works on a Mac (mileage may vary on the Mac side of things though...).
+
+If you ever run a git pull to update this project locally and there are changes it would be safe to run a `make clean deps` to ensure that all the latest updates are pulled down.
+
 ## Usage
 
 Standard usage is pretty simple. After cloning this repo you can start a default kind cluster with one command:
@@ -207,6 +211,8 @@ You can see the tasksets which are available within the 'inc' folder of this rep
 - k9s
 - prometheus
 - docker
+
+> **NOTE** Most of these are cross platform (will download and run binaries specific to your platform) but lens is not so it is excluded from the default profile. You can insert this or any other non-profile specific taskset by adding `CUSTOM_TASKSETS=lens` to your make commands.
 
 Not all of these are useful for every scenario so they simply don't get loaded (otherwise `make help` would be WAY too long of a list!). The follow tasksets are loaded every time though:
 

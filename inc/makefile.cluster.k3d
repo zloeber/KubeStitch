@@ -6,6 +6,7 @@ k3d := $(BIN_PATH)/k3d
 CLUSTER_CONTEXT := $(CLUSTER)
 K3D_WORKERS ?= 1
 K3D_IMAGE_POSTFIX ?= -k3s1
+
 .PHONY: .deps/cluster.k3d
 .deps/cluster.k3d: ## Get k3d binary dependency
 ifeq (,$(wildcard $(INSTALL_PATH)/k3d))
