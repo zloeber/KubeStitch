@@ -93,17 +93,20 @@ kube/bearertoken: Return bearer token for cluster
 
 .PHONY: kube/loadbalancer/ip
 kube/loadbalancer/ip: ## Show external loadbalancer ip
-	@$(kubecmd) -n $(STACK_INGRESS_INTERNALNAMESPACE) get svc -o jsonpath='{.items[?(@.spec.type=="LoadBalancer")].status.loadBalancer.ingress[0].ip}'
+	@$(kubecmd) -n $(shell $(MAKE) .helmfile/lookup/lookup_ingressInternalNamespace) get svc -o jsonpath='{.items[?(@.spec.type=="LoadBalancer")].status.loadBalancer.ingress[0].ip}'
 
 .PHONY: kube/loadbalancer/subnet
 kube/loadbalancer/subnet: ## Show docker bridge subnet
-	@echo $(or $(STACK_INGRESS_INTERNALSUBNET), $(shell docker network inspect $(DOCKER_NETWORK) | $(jq) '.[0].IPAM.Config[0].Gateway' | sed -e 's/\0.1/$(SUBNET_INDEX).0\/24/g'))
+	@INTERNALSUBNET=$(shell $(MAKE) .helmfile/lookup/lookup_internalIngressSubnet) && \
+		[[ ! -z "$$INTERNALSUBNET" ]] && \
+		echo "$$INTERNALSUBNET" || \
+		echo `docker network inspect $(DOCKER_NETWORK) | $(jq) '.[0].IPAM.Config[0].Gateway' | sed -e 's/\0.1/$(SUBNET_INDEX).0\/24/g'`
 
 .PHONY: dnsforward/start
 dnsforward/start: dnsforward/stop ## Forwards all dns requests to a local dns-proxy-server
 	tmpdir=$$(mktemp -d) && \
 	export STACK_INGRESS_INTERNALIP=$(shell $(MAKE) kube/loadbalancer/ip) && \
-	export STACK_INGRESS_INTERNALDNSZONE=$(shell $(MAKE) .helmfile/lookups | grep -e "lookup_internalDNSZone: .*$$" | sed -e 's/^[ \t]*//' | cut -d" " -f2 ) && \
+	export STACK_INGRESS_INTERNALDNSZONE=$(shell $(MAKE) .helmfile/lookup/lookup_internalDNSZone) && \
 	echo "STACK_INGRESS_INTERNALIP=$${STACK_INGRESS_INTERNALIP}" && \
 	echo "STACK_INGRESS_INTERNALDNSZONE=$${STACK_INGRESS_INTERNALDNSZONE}" && \
 	$(gomplate) \

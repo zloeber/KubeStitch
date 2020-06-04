@@ -15,7 +15,6 @@ metallb/deploy: .dep/kubectl .kube/get/configfile ## Deploy metallb on the clust
 	@tmpdir=$$(mktemp -d) && \
 	export STACK_INGRESS_INTERNALLBSUBNET=$(shell $(MAKE) kube/loadbalancer/subnet) && \
 	$(gomplate) \
-		-d config=$(HELMFILE_VALUES) \
 		--file $(DEPLOY_PATH)/metallb/metallb-config.yaml \
 		--out "$${tmpdir}/metallb-config.yaml" && \
 	$(kubecmd) apply -f "$${tmpdir}/metallb-config.yaml"

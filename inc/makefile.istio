@@ -37,7 +37,7 @@ istio/generate: ## Generate the istio operator manifest
 .PHONY: istio/remove
 istio/remove: ## Remove istio
 	tmpdir=$$(mktemp -d) && echo "$${tmpdir}" && \
-	export STACK_INGRESS_INTERNALZONE=$(STACK_INGRESS_INTERNALZONE) && \
+	export STACK_INGRESS_INTERNALZONE=$(shell $(MAKE) .helmfile/lookup/lookup_internalDNSZone) && \
 	$(gomplate) --file $(DEPLOY_PATH)/istio/profile.yaml --out "$${tmpdir}/profile.yaml" && \
 	$(istioctl) manifest generate \
 	  -f $${tmpdir}/profile.yaml | \

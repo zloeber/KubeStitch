@@ -24,3 +24,11 @@ environments:
     - nfsstorage:
         server: "10.20.20.1"
         path: /nfs-kube
+  vaultha:
+    values:
+    - ../config/default/values.yaml
+    - prometheusoperator:
+        enabled: false
+    - vault:
+        dev: false
+        ha: true

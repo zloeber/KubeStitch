@@ -2,7 +2,7 @@
 bases:
 - ../config/environments.yaml
 - ../config/helmdefaults.yaml
-- ../config/{{ .Environment.Name }}/repositories.yaml
+- ../config/repositories.yaml
 ---
 
 ## Traefik

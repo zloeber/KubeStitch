@@ -2,7 +2,7 @@
 bases:
 - ../config/environments.yaml
 - ../config/helmdefaults.yaml
-- ../config/{{ .Environment.Name }}/repositories.yaml
+- ../config/repositories.yaml
 ---
 
 ## This special chart does not deploy anything but is used in conjunction with helmfile build
@@ -21,3 +21,5 @@ releases:
     lookup_stageDNSZone: {{ .Values | getOrNil "ingress.stage.zone" | default "stage" }}.{{ .Values | getOrNil "dnsRoot" | default "micro.svc" }}
     lookup_ingressInternalSubnet: {{ .Values | getOrNil "ingress.internal.subnet" | default "" }}
     lookup_ingressInternalIP: {{ .Values | getOrNil "ingress.internal.ip" | default "" }}
+    lookup_ingressInternalNamespace: {{ .Values | getOrNil "ingress.internal.namespace" | default "ingress-int" }}
+    lookup_promoperatorNamespace: {{ .Values | getOrNil "prometheusoperator.namespace" | default "prometheus-operator" }}
