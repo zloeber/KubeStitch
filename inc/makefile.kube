@@ -10,7 +10,7 @@ KUBE_CONFIG ?= $(ROOT_PATH)/.local/kube.$(CLUSTER).conf
 ifeq ($(HOST_PLATFORM),linux)
 RESOLV_CONF ?= /etc/resolv.conf
 else
-RESOLV_CONF ?= /var/run/resolv.conf
+RESOLV_CONF ?= /etc/resolv.conf
 endif
 
 kubectl := $(BIN_PATH)/kubectl
