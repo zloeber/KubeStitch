@@ -29,7 +29,6 @@ istio:
   enabled: true
   ingressGateway: istio-ingressgateway
 traefik:
-  name: traefik
   enabled: true
   version: "8.2.1"
   chart: traefik/traefik
@@ -48,57 +47,49 @@ certmanager:
   issuerProduction: letsencrypt-prod
   zone: internal
 metricsserver:
-  name: metricsserver
   enabled: true
   version: "2.11.1"
   chart: stable/metrics-server
   zone: internal
 rbacmanager:
-  name: rbacmanager
   enabled: true
   version: "1.5.4"
   chart: reactiveops-stable/rbac-manager
   namespace: rbacmanager
   zone: internal
 vault:
-  name: vault
   enabled: true
   version: "0.6.0"
   chart: hashicorp/vault
   namespace: vault
   zone: internal
-  ha: true
+  ha: false
   dev: true
 consul:
-  name: consul
   enabled: true
   version: "0.21.0"
   chart: hashicorp/consul
   namespace: consul
   zone: internal
 localstack:
-  name: localstack
   enabled: true
   version: ""
   chart: localstack/localstack
   namespace: localstack
   zone: internal
 argocd:
-  name: argocd
   enabled: true
   version: "2.3.5"
   chart: argocd/argo-cd
   namespace: argocd
   zone: internal
 rancher:
-  name: rancher
   enabled: true
   version: ""
   chart: rancher/rancher
   namespace: cattle-system
   zone: internal
 kubefledged:
-  name: kubefledged
   enabled: true
   version: "0.7.0"
   chart: kubefledged/kubefledged
@@ -112,7 +103,6 @@ prometheusoperator:
   namespace: prometheus-operator
   zone: internal
 nfsstorage:
-  name: nfsstorage
   enabled: true
   version: "1.2.8"
   chart: stable/nfs-client-provisioner
@@ -120,7 +110,6 @@ nfsstorage:
   server: 10.20.20.1
   path: /nfs-kube
 homeassistant:
-  name: homeassistant
   enabled: true
   version: "0.13.3"
   chart: stable/home-assistant

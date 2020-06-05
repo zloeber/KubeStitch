@@ -6,37 +6,38 @@ bases:
 ---
 
 releases:
-- name: {{ .Values | getOrNil "argocd.name" | default "argocd" }}-namespace
+- name: argocd-namespace
   chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
-  version: {{ .Values | getOrNil "archetype.version" | default "0.0.1" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.2" }}
   namespace: kube-system
   condition: argocd.enabled
   installed: true
   wait: true
   labels:
-    chart: {{ .Values | getOrNil "argocd.name" | default "argocd" }}-namespace
-    component: {{ .Values | getOrNil "argocd.name" | default "argocd" }}
+    chart: argocd-namespace
+    component: argocd
     namespace: kube-system
   values:
-  - app: {{ .Values | getOrNil "argocd.name" | default "argocd" }}
+  - app: argocd
     namespace:
       enabled: true
       name: {{ .Values | getOrNil "argocd.namespace" | default "argo-cd" }}
 
 ## argocd Deployment
 # Values: https://github.com/argoproj/argo-helm/blob/master/charts/argo-cd/values.yaml
-- name: {{ .Values | getOrNil "argocd.name" | default "argocd" }}
+- name: argocd
   chart: {{ .Values | getOrNil "argocd.chart" | default "argocd/argo-cd" }}
   namespace: {{ .Values | getOrNil "argocd.namespace" | default "argo-cd" }}
   version: {{ .Values | getOrNil "argocd.version" | default "2.3.5" }}
   condition: argocd.enabled
   installed: true
+  missingFileHandler: Debug
   labels:
-    chart: {{ .Values | getOrNil "argocd.name" | default "argocd" }}
-    component: {{ .Values | getOrNil "argocd.name" | default "argocd" }}
+    chart: argocd
+    component: argocd
     namespace: {{ .Values | getOrNil "argocd.namespace" | default "argo-cd" }}
   needs:
-    - kube-system/{{ .Values | getOrNil "argocd.name" | default "argocd" }}-namespace
+    - kube-system/argocd-namespace
   values:
   - server:
       # Setup server as insecure so that we can use traefik to expose ingress
@@ -80,18 +81,19 @@ releases:
       - mountPath: /usr/local/bin/helmfile
         name: custom-tools
         subPath: helmfile
+  - "../config/{{ .Environment.Name }}/argocd.override.yaml"
 
-- name: {{ .Values | getOrNil "argocd.name" | default "argocd" }}-ingress
+- name: argocd-ingress
   chart: {{ .Values | getOrNil "raw.chart" | default "incubator/raw" }}
   version: {{ .Values | getOrNil "raw.version" | default "0.2.3" }}
   namespace: {{ .Values | getOrNil "argocd.namespace" | default "argo-cd" }}
   condition: ingress.enabled
   installed: true
   needs:
-  - kube-system/{{ .Values | getOrNil "argocd.name" | default "argocd" }}-namespace
-  - {{ .Values | getOrNil "argocd.namespace" | default "argo-cd" }}/{{ .Values | getOrNil "argocd.name" | default "argocd" }}
+  - kube-system/argocd-namespace
+  - {{ .Values | getOrNil "argocd.namespace" | default "argo-cd" }}/argocd
   labels:
-    chart: {{ .Values | getOrNil "argocd.name" | default "argocd" }}-ingress
+    chart: argocd-ingress
     component: ingress
     namespace: {{ .Values | getOrNil "argocd.namespace" | default "argo-cd" }}
   values:
@@ -99,7 +101,7 @@ releases:
     - apiVersion: traefik.containo.us/v1alpha1
       kind: IngressRoute
       metadata:
-        name: {{ .Values | getOrNil "argocd.name" | default "argocd" }}-ingress
+        name: argocd-ingress
       spec:
         entryPoints:
           - websecure
@@ -107,7 +109,7 @@ releases:
           - match: Host(`argocd.{{ .Values | getOrNil "ingress.internal.zone" | default "int.micro.svc" }}`)
             kind: Rule
             services:
-              - name: {{ .Values | getOrNil "argocd.name" | default "argocd" }}-server
+              - name: argocd-server
                 port: 80
         tls:
           certResolver: default

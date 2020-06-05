@@ -8,36 +8,36 @@ bases:
 ###############
 ## Rancher Deployment
 releases:
-- name: namespace-rancher
+- name: rancher-namespace
   chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
-  version: {{ .Values | getOrNil "archetype.version" | default "0.0.1" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.2" }}
   namespace: kube-system
-  labels:
-    chart: namespace-rancher
-    component: rancher
-    namespace: kube-system
   wait: true
   installed: true
+  labels:
+    chart: rancher-namespace
+    component: rancher
+    namespace: kube-system
   values:
   - app: rancher
     namespace:
       enabled: true
-      name: cattle-system
+      name: {{ .Values | getOrNil "rancher.namespace" | default "cattle-system" }}
 
 ## rancher Deployment
 - name: rancher
-  namespace: cattle-system
+  namespace: {{ .Values | getOrNil "rancher.namespace" | default "cattle-system" }}
+  chart: {{ .Values | getOrNil "rancher.chart" | default "rancher/rancher" }}
   installed: true
-  chart: rancher/rancher
+  missingFileHandler: Debug
   labels:
     chart: rancher
     component: rancher
-    namespace: cattle-system
+    namespace: {{ .Values | getOrNil "rancher.namespace" | default "cattle-system" }}
   needs:
-    - kube-system/namespace-rancher
+    - kube-system/rancher-namespace
   values:
   - hostname: rancher.{{ .Values | getOrNil "ingress.internal.zone" | default "int.micro.svc" }}
-    # ingress:
-    #   extraAnnotations:
-    #     kubernetes.io/ingress.class: {{ .Values | getOrNil "ingress.internal.class" | default "internal" }}
+  - "../config/{{ .Environment.Name }}/rancher.override.yaml"
+
 

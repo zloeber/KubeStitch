@@ -6,18 +6,20 @@ bases:
 ---
 
 releases:
-- name: {{ .Values | getOrNil "metricsserver.name" | default "metricsserver" }}
+- name: metricsserver
   chart: {{ .Values | getOrNil "metricsserver.chart" | default "stable/metrics-server" }}
   namespace: kube-system
-  version: {{ .Values.metricsserver.version }}
+  version: {{ .Values | getOrNil "metricsserver.version" | default "2.11.1" }}
   wait: true
   condition: metricsserver.enabled
   installed: true
+  missingFileHandler: Debug
   labels:
-    chart: {{ .Values | getOrNil "metricsserver.name" | default "metricsserver" }}
-    component: {{ .Values | getOrNil "metricsserver.name" | default "metricsserver" }}
+    chart: metricsserver
+    component: metricsserver
     namespace: kube-system
   values:
   - args:
     - '--kubelet-insecure-tls'
     - '--kubelet-preferred-address-types=InternalIP'
+  - "../config/{{ .Environment.Name }}/metricsserver.override.yaml"

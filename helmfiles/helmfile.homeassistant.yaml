@@ -8,35 +8,36 @@ bases:
 ## HomeAssistant 
 # Link: https://github.com/helm/charts/blob/master/stable/home-assistant/values.yaml
 releases:
-- name: {{ .Values | getOrNil "homeassistant.name" | default "homeassistant" }}-namespace
+- name: homeassistant-namespace
   chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
-  version: {{ .Values | getOrNil "archetype.version" | default "0.0.1" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.2" }}
   namespace: kube-system
   condition: homeassistant.enabled
   installed: true
   wait: true
   labels:
-    chart: {{ .Values | getOrNil "homeassistant.name" | default "homeassistant" }}-namespace
-    component: {{ .Values | getOrNil "homeassistant.name" | default "homeassistant" }}
+    chart: homeassistant-namespace
+    component: homeassistant
     namespace: kube-system
   values:
-  - app: {{ .Values | getOrNil "homeassistant.name" | default "homeassistant" }}
+  - app: homeassistant
     namespace:
       enabled: true
       name: {{ .Values | getOrNil "homeassistant.namespace" | default "homeassistant" }}
 
-- name: {{ .Values | getOrNil "homeassistant.name" | default "homeassistant" }}
+- name: homeassistant
   chart: {{ .Values | getOrNil "homeassistant.chart" | default "stable/home-assistant" }}
   version: {{ .Values | getOrNil "homeassistant.version" | default "0.13.3" }}
   namespace: {{ .Values | getOrNil "homeassistant.namespace" | default "homeassistant" }}
   condition: homeassistant.enabled
   installed: true
+  missingFileHandler: Debug
   labels:
-    chart: {{ .Values | getOrNil "homeassistant.name" | default "homeassistant" }}
-    component: {{ .Values | getOrNil "homeassistant.name" | default "homeassistant" }}
+    chart: homeassistant
+    component: homeassistant
     namespace: {{ .Values | getOrNil "homeassistant.namespace" | default "homeassistant" }}
   needs:
-    - kube-system/{{ .Values | getOrNil "homeassistant.name" | default "homeassistant" }}-namespace
+    - kube-system/homeassistant-namespace
   values:
   - image:
       repository: homeassistant/home-assistant
@@ -65,19 +66,20 @@ releases:
         enabled: {{ .Values | getOrNil "prometheusoperator.enabled" | default "false" }}
     appdaemon:
       enabled: false
+  - "../config/{{ .Environment.Name }}/homeassistant.override.yaml"
 
-- name: {{ .Values | getOrNil "homeassistant.name" | default "homeassistant" }}-dashboard-ingress
+- name: homeassistant-dashboard-ingress
   namespace: {{ .Values | getOrNil "homeassistant.namespace" | default "homeassistant" }}
   chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
-  version: {{ .Values | getOrNil "archetype.version" | default "0.0.1" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.2" }}
   condition: ingress.enabled
   installed: true
   needs:
-  - kube-system/{{ .Values | getOrNil "homeassistant.name" | default "homeassistant" }}-namespace
-  - {{ .Values | getOrNil "homeassistant.namespace" | default "homeassistant" }}/{{ .Values | getOrNil "homeassistant.name" | default "homeassistant" }}
+  - kube-system/homeassistant-namespace
+  - {{ .Values | getOrNil "homeassistant.namespace" | default "homeassistant" }}/homeassistant
   labels:
-    chart: {{ .Values | getOrNil "homeassistant.name" | default "homeassistant" }}-dashboard-ingress
-    component: {{ .Values | getOrNil "homeassistant.name" | default "homeassistant" }}
+    chart: homeassistant-dashboard-ingress
+    component: homeassistant
     namespace: {{ .Values | getOrNil "homeassistant.namespace" | default "homeassistant" }}
   values:
   - app: haas
@@ -96,27 +98,27 @@ releases:
       enabled: true
       tlsEnabled: true
       hosts:
-      - secretName: {{ .Values | getOrNil "homeassistant.name" | default "homeassistant" }}-dashboard-ingress
+      - secretName: homeassistant-dashboard-ingress
         config:
           http:
             paths:
             - path: "/"
               backend:
-                serviceName: {{ .Values | getOrNil "homeassistant.name" | default "homeassistant" }}-home-assistant
+                serviceName: homeassistant-home-assistant
                 servicePort: 8123
 
-- name: {{ .Values | getOrNil "homeassistant.name" | default "homeassistant" }}-vscode-ingress
+- name: homeassistant-vscode-ingress
   namespace: {{ .Values | getOrNil "homeassistant.namespace" | default "homeassistant" }}
   chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
-  version: {{ .Values | getOrNil "archetype.version" | default "0.0.1" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.2" }}
   condition: ingress.enabled
   installed: true
   needs:
-  - kube-system/{{ .Values | getOrNil "homeassistant.name" | default "homeassistant" }}-namespace
-  - {{ .Values | getOrNil "homeassistant.namespace" | default "homeassistant" }}/{{ .Values | getOrNil "homeassistant.name" | default "homeassistant" }}
+  - kube-system/homeassistant-namespace
+  - {{ .Values | getOrNil "homeassistant.namespace" | default "homeassistant" }}/homeassistant
   labels:
-    chart: {{ .Values | getOrNil "homeassistant.name" | default "homeassistant" }}-vscode-ingress
-    component: {{ .Values | getOrNil "homeassistant.name" | default "homeassistant" }}
+    chart: homeassistant-vscode-ingress
+    component: homeassistant
     namespace: {{ .Values | getOrNil "homeassistant.namespace" | default "homeassistant" }}
   values:
   - app: vscode
@@ -135,27 +137,27 @@ releases:
       enabled: true
       tlsEnabled: true
       hosts:
-      - secretName: {{ .Values | getOrNil "homeassistant.name" | default "homeassistant" }}-vscode-ingress
+      - secretName: homeassistant-vscode-ingress
         config:
           http:
             paths:
             - path: "/"
               backend:
-                serviceName: {{ .Values | getOrNil "homeassistant.name" | default "homeassistant" }}-home-assistant
+                serviceName: homeassistant-home-assistant
                 servicePort: 80
 
-- name: {{ .Values | getOrNil "homeassistant.name" | default "homeassistant" }}-configurator-ingress
+- name: homeassistant-configurator-ingress
   namespace: {{ .Values | getOrNil "homeassistant.namespace" | default "homeassistant" }}
   chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
-  version: {{ .Values | getOrNil "archetype.version" | default "0.0.1" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.2" }}
   condition: ingress.enabled
   installed: true
   needs:
-  - kube-system/{{ .Values | getOrNil "homeassistant.name" | default "homeassistant" }}-namespace
-  - {{ .Values | getOrNil "homeassistant.namespace" | default "homeassistant" }}/{{ .Values | getOrNil "homeassistant.name" | default "homeassistant" }}
+  - kube-system/homeassistant-namespace
+  - {{ .Values | getOrNil "homeassistant.namespace" | default "homeassistant" }}/homeassistant
   labels:
-    chart: {{ .Values | getOrNil "homeassistant.name" | default "homeassistant" }}-configurator-ingress
-    component: {{ .Values | getOrNil "homeassistant.name" | default "homeassistant" }}
+    chart: homeassistant-configurator-ingress
+    component: homeassistant
     namespace: {{ .Values | getOrNil "homeassistant.namespace" | default "homeassistant" }}
   values:
   - app: configurator
@@ -174,11 +176,11 @@ releases:
       enabled: true
       tlsEnabled: true
       hosts:
-      - secretName: {{ .Values | getOrNil "homeassistant.name" | default "homeassistant" }}-configurator-ingress
+      - secretName: homeassistant-configurator-ingress
         config:
           http:
             paths:
             - path: "/"
               backend:
-                serviceName: {{ .Values | getOrNil "homeassistant.name" | default "homeassistant" }}-home-assistant
+                serviceName: homeassistant-home-assistant
                 servicePort: 3218

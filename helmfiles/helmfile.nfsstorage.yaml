@@ -6,35 +6,36 @@ bases:
 ---
 
 releases:
-- name: {{ .Values | getOrNil "nfsstorage.name" | default "nfsstorage" }}-namespace
+- name: nfsstorage-namespace
   chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
-  version: {{ .Values | getOrNil "archetype.version" | default "0.0.1" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.2" }}
   namespace: kube-system
   condition: nfsstorage.enabled
   installed: true
   wait: true
   labels:
-    chart: {{ .Values | getOrNil "nfsstorage.name" | default "nfsstorage" }}-namespace
-    component: {{ .Values | getOrNil "nfsstorage.name" | default "nfsstorage" }}
+    chart: nfsstorage-namespace
+    component: nfsstorage
     namespace: kube-system
   values:
-  - app: {{ .Values | getOrNil "nfsstorage.name" | default "nfsstorage" }}
+  - app: nfsstorage
     namespace:
       enabled: true
       name: {{ .Values | getOrNil "nfsstorage.namespace" | default "nfsstorage" }}
 
-- name: {{ .Values | getOrNil "nfsstorage.name" | default "nfsstorage" }}
+- name: nfsstorage
   chart: {{ .Values | getOrNil "nfsstorage.chart" | default "stable/nfs-client-provisioner" }}
   version: {{ .Values | getOrNil "nfsstorage.version" | default "1.2.8" }}
   namespace: {{ .Values | getOrNil "nfsstorage.namespace" | default "nfsstorage" }}
   condition: nfsstorage.enabled
   installed: true
+  missingFileHandler: Debug
   labels:
-    chart: {{ .Values | getOrNil "nfsstorage.name" | default "nfsstorage" }}
-    component: {{ .Values | getOrNil "nfsstorage.name" | default "nfsstorage" }}
+    chart: nfsstorage
+    component: nfsstorage
     namespace: {{ .Values | getOrNil "nfsstorage.namespace" | default "nfsstorage" }}
   needs:
-    - kube-system/{{ .Values | getOrNil "nfsstorage.name" | default "nfsstorage" }}-namespace
+    - kube-system/nfsstorage-namespace
   values:
   - storageClass:
       create: true
@@ -43,3 +44,4 @@ releases:
       server: {{ .Values | getOrNil "nfsstorage.server" | default "127.0.0.1" }}
       path: {{ .Values | getOrNil "nfsstorage.path" | default "/mnt/nfs/kube" }}
       mountOptions:
+  - "../config/{{ .Environment.Name }}/nfsstorage.override.yaml"

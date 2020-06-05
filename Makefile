@@ -10,7 +10,6 @@ TEMP_PATH := $(HOME_PATH)/tmp
 APP_PATH := $(HOME_PATH)/apps
 SCRIPT_PATH ?= $(ROOT_PATH)/scripts
 DEPLOY_PATH ?= $(ROOT_PATH)/deploy
-ENVIRONMENT ?= default
 PROFILE ?= default
 
 yq := $(BIN_PATH)/yq
@@ -26,6 +25,7 @@ endif
 ## List of sane defaults for local makefile building/testing
 # Note: all values in here should be ?= in case they are already set upstream
 CLOUD ?= local
+ENVIRONMENT ?= default
 KUBE_PROVIDER ?= kind
 CLUSTER ?= cicd
 KUBE_VERSION ?= 1.18.0

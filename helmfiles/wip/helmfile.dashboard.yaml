@@ -339,7 +339,7 @@ releases:
 - name: ingress-kubernetes-dashboard
   namespace: kubernetes-dashboard
   chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
-  version: {{ .Values | getOrNil "archetype.version" | default "0.0.1" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.2" }}
   installed: true
   needs:
   - kube-system/namespace-dashboard

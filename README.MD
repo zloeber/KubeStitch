@@ -238,20 +238,25 @@ If you add a new provider ensure that the 'cluster/*' tasks exist to bring up an
 
 ## Helmfile
 
-I use helmfile extensively to declaratively stitch together my deployments from other helm charts, my own monochart (called archetype), and the raw helm chart. Helmfile uses 'environments' to help breakdown multiple configuration paths.
+Helmfile is used extensively to declaratively stitch together deployments from external helm charts, my own monochart (called archetype), and the raw helm chart. Common repositories and default helmfile values are sourced into the various helmfiles using a common block at the top of each helmfile.
 
-### Helmfile Environments
+Helmfile uses 'environments' to help breakdown multiple configuration paths more effectively.
 
-The per-environment values files are defined in `config/environments.yaml`. This just points to the individual values files first with optional override values afterwards. Common repositories and default helmfile values are sourced into the various helmfiles using a common block at the top of each helmfile.
+### Environments
 
-The idea is that I can create new environments in one location and create custom values files later for specific pipelines later if so desired.
+Environments are defined in `config/environments.yaml`. This points to an individual values file that contains any default values first. Optional override values can then be manually defined afterwards. Additionally, each relevant helmfile includes an optional override value file that can be used to rewrite the helm deployment for each environment if so desired. Any override files should be dropped in the environment folder in this format:
+
+```bash
+./config/<environment>/<chart>.override.yaml
+```
 
 To target another environment for helmfile follow a few extra steps.
 
-1. Modify `config/environments.yaml` to add a new environment and values file
-2. Copy the `config/default` folder to `config/<your_environment>`
-3. Update any files in `config/<your_environment>` to suit your needs
-3. Then whenever you are targeting a helmfile to the environment commands include `ENVIRONMENT=<your_environment>` (or set ENVIRONMENT in your top level profile)
+1. Modify `config/environments.yaml` to add a new environment (copy/paste the default one to start if you like)
+2. Minor changes can be made right in the environments.yaml file beneath the default values
+3. For larger changes, create/update any override files as needed in `config/<your_environment>/`
+
+Then, whenever you are targeting a specific environment, include `ENVIRONMENT=<your_environment>`. Optionally, you can create a new profile and set ENVIRONMENT within it instead.
 
 I try to keep all settings in the default helmfile environment yaml definition and overwrite their installation in the environment level file when I need to do so.
 In this example, I disable monitoring elements from being deployed to the default environment even though the same setting in the `./config/default/values.yaml` file is enabled.
@@ -408,7 +413,7 @@ That is it, then start lens again and your running cluster will be the first one
 make lens
 ```
 
-# Additional Info
+# Additional Tips
 
 - `cluster/start` will always first try to destroy the cluster before starting it.
 - `cluster/start` always spins up a bare deployment (no helmfile stacks applied)
@@ -419,7 +424,7 @@ make lens
 - Along the same lines as the prior statement, there are a ton eof 'helmfiles' in the helmfile/wip folder that worked with env vars at one point. I'll slowly move these out of wip when I'm able to do so or the need comes up.
 - MetalLB is used when a loadbalancer is required.
 - ~~Currently the loadbalancer deployment will use IP addresses between 172.17.0.100 and 172.17.0.110. This is the bridge IP subnet of docker on my workstation. You can modify this range in the config file within `./deploy/metallb/metallb-config.yaml`.~~ This is/was only for kind and is now automatically determined when metallb is deployed to the cluster. You can still override this in the `./config/environment.default.yaml` file by adding `stacks.ingress.internalLBSubnet` and assigning it a CIDR subnet instead. Otherwise it grabs the `DOCKER_NETWORK` subnet and replaces the last digits with 1.0/24 (in my case it now ends up being 172.21.1.0/24 since I kept screwing around with the bridge network...whoops.)
-- Currently I source in all used repositories regardless if they are used or not, this slows down initial syncing and probably can be improved upon somehow.
+- Currently I source in all used repositories regardless if they are used or not, this slows down initial syncing and probably can be improved upon somehow. If you have already run `make helmfile/sync` once and thus have remote chart repositories already synced up, you can more quickly itterate over local helmfile changes by switching over to using `make helmfile/charts STACK=<yourstack>` instead. The helmfile charts subcommand is meant for offline chart deployments.
 - The `dnsforward/*` tasks are a bit janky as it is really hard to account for all possible scenarios. Generically, only use dnsforward tasks for local cluster testing (and make any additional forwarding updates/changes via the web interface if the logic is not working for you).
 
 ## Why Makefiles?

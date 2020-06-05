@@ -32,7 +32,8 @@ endif
 .PHONY: show/vault
 show/vault: ## Show vault env vars
 	@echo "export VAULT_TOKEN=$(shell $(kubecmd) -n vault logs vault-0 vault | grep 'Root Token' | cut -d ' ' -f 3)"
-	@echo "export VAULT_ADDR=http://$(shell $(kubecmd) -n vault get svc -o jsonpath='{.items[?(@.spec.type=="LoadBalancer")].status.loadBalancer.ingress[0].ip}'):8200"
+	@echo "export VAULT_ADDR=http://$(shell $(MAKE) .helmfile/lookup/lookup_internalDNSZone)"
+
 
 .PHONY: vault/addr
 vault/addr: ## Show vault address
@@ -41,7 +42,7 @@ vault/addr: ## Show vault address
 .PHONY: vault/sync
 vault/sync: ## Use vault-sync to setup initial vault policies and secrets
 	export VAULT_TOKEN=$(shell $(kubecmd) -n vault logs vault-0 vault | grep 'Root Token' | cut -d ' ' -f 3) && \
-	export VAULT_ADDR=http://$(shell $(kubecmd) -n vault get svc -o jsonpath='{.items[?(@.spec.type=="LoadBalancer")].status.loadBalancer.ingress[0].ip}'):8200 && \
+	export VAULT_ADDR=http://$(shell $(MAKE) .helmfile/lookup/lookup_internalDNSZone) && \
 	$(vault-sync) sync \
 		--sync-full \
 		-c $(DEPLOY_PATH)/vault/config.yml \

@@ -19,7 +19,11 @@ kubeadmConfigPatches:
 
 nodes:
 - role: control-plane
-- role: worker
+  - |
+    kind: InitConfiguration
+    nodeRegistration:
+      kubeletExtraArgs:
+        node-labels: "ingress-ready=true"
   extraPortMappings:
   - containerPort: 31080
     hostPort: 31080

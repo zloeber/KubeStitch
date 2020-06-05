@@ -9,36 +9,37 @@ bases:
 # Values - https://github.com/containous/traefik-helm-chart/blob/master/traefik/values.yaml
 # Dashboard - http://traefik.int.micro.svc/dashboard/#/
 releases:
-- name: {{ .Values | getOrNil "traefik.name" | default "traefik" }}-namespace
+- name: traefik-namespace
   chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
-  version: {{ .Values | getOrNil "archetype.version" | default "0.0.1" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.2" }}
   namespace: kube-system
   condition: ingress.enabled
   installed: true
   wait: true
   labels:
-    chart: {{ .Values | getOrNil "traefik.name" | default "traefik" }}-namespace
-    component: {{ .Values | getOrNil "traefik.name" | default "traefik" }}
+    chart: traefik-namespace
+    component: traefik
     namespace: kube-system
   values:
-  - app: {{ .Values | getOrNil "traefik.name" | default "traefik" }}
+  - app: traefik
     namespace:
       enabled: true
       name: {{ .Values | getOrNil "ingress.internal.namespace" | default "ingress-int" }}
 
 ## traefik Deployment
-- name: {{ .Values | getOrNil "traefik.name" | default "traefik" }}
+- name: traefik
   chart: {{ .Values | getOrNil "traefik.chart" | default "traefik/traefik" }}
   version: {{ .Values | getOrNil "traefik.version" | default "8.2.1" }}
   namespace: {{ .Values | getOrNil "ingress.internal.namespace" | default "ingress-int" }}
   condition: ingress.enabled
   installed: true
+  missingFileHandler: Debug
   labels:
-    chart: {{ .Values | getOrNil "traefik.name" | default "traefik" }}
-    component: {{ .Values | getOrNil "traefik.name" | default "traefik" }}
+    chart: traefik
+    component: traefik
     namespace: {{ .Values | getOrNil "ingress.internal.namespace" | default "ingress-int" }}
   needs:
-  - kube-system/{{ .Values | getOrNil "traefik.name" | default "traefik" }}-namespace
+  - kube-system/traefik-namespace
   values:
   - globalArguments:
     - "--global.checknewversion=false"
@@ -74,25 +75,26 @@ releases:
         expose: true
     nodeSelector:
       ingress-ready: "true"
+  - "../config/{{ .Environment.Name }}/traefik.override.yaml"
 
-- name: {{ .Values | getOrNil "traefik.name" | default "traefik" }}-dashboard
+- name: traefik-dashboard
   chart: {{ .Values | getOrNil "raw.chart" | default "incubator/raw" }}
   version: {{ .Values | getOrNil "raw.version" | default "0.2.3" }}
   namespace: {{ .Values | getOrNil "ingress.internal.namespace" | default "ingress-int" }}
   condition: traefik.enabled
   installed: true
   labels:
-    chart: {{ .Values | getOrNil "traefik.name" | default "traefik" }}-dashboard
+    chart: traefik-dashboard
     component: ingress
     namespace: {{ .Values | getOrNil "ingress.internal.namespace" | default "ingress-int" }}
   needs:
-  - "{{ .Values | getOrNil "ingress.internal.namespace" | default "ingress-int" }}/{{ .Values | getOrNil "traefik.name" | default "traefik" }}"
+  - "{{ .Values | getOrNil "ingress.internal.namespace" | default "ingress-int" }}/traefik"
   values:
   - resources:
     - apiVersion: traefik.containo.us/v1alpha1
       kind: IngressRoute
       metadata:
-        name: {{ .Values | getOrNil "traefik.name" | default "traefik" }}-dashboard
+        name: traefik-dashboard
       spec:
         entryPoints:
           - web

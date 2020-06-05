@@ -1,22 +1,37 @@
 environments:
   default:
+    missingFileHandler: Debug
+    secrets:
+    - ../config/{{ .Environment.Name }}/secrets.yaml
     values:
-    - ../config/default/values.yaml
+    - ../config/{{ .Environment.Name }}/values.yaml
     - prometheusoperator:
         enabled: false
   monitoring:
+    missingFileHandler: Debug
+    secrets:
+    - ../config/{{ .Environment.Name }}/secrets.yaml
     values:
     - ../config/default/values.yaml
+    - ../config/{{ .Environment.Name }}/values.yaml
   istio:
+    missingFileHandler: Debug
+    secrets:
+    - ../config/{{ .Environment.Name }}/secrets.yaml
     values:
     - ../config/default/values.yaml
+    - ../config/{{ .Environment.Name }}/values.yaml
     - prometheusoperator:
         enabled: false
     - traefik:
         enabled: false
   homeassist:
+    missingFileHandler: Debug
+    secrets:
+    - ../config/{{ .Environment.Name }}/secrets.yaml
     values:
     - ../config/default/values.yaml
+    - ../config/{{ .Environment.Name }}/values.yaml
     - ingress:
         internal:
           subnet: "192.168.1.10-192.168.1.20"
@@ -25,8 +40,24 @@ environments:
         server: "10.20.20.1"
         path: /nfs-kube
   vaultha:
+    missingFileHandler: Debug
+    secrets:
+    - ../config/{{ .Environment.Name }}/secrets.yaml
     values:
     - ../config/default/values.yaml
+    - ../config/{{ .Environment.Name }}/values.yaml
+    - prometheusoperator:
+        enabled: false
+    - vault:
+        dev: false
+        ha: true
+  vaultoverride:
+    missingFileHandler: Debug
+    secrets:
+    - ../config/{{ .Environment.Name }}/secrets.yaml
+    values:
+    - ../config/default/values.yaml
+    - ../config/{{ .Environment.Name }}/values.yaml
     - prometheusoperator:
         enabled: false
     - vault:

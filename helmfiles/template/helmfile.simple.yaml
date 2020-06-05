@@ -8,51 +8,53 @@ bases:
 ## Simple Template helmfile
 # Replace 'simple' with your service/chart name
 releases:
-- name: {{ .Values | getOrNil "simple.name" | default "simple" }}-namespace
+- name: simple-namespace
   chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
-  version: {{ .Values | getOrNil "archetype.version" | default "0.0.1" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.2" }}
   namespace: kube-system
   condition: simple.enabled
   installed: true
   wait: true
   labels:
-    chart: {{ .Values | getOrNil "simple.name" | default "simple" }}-namespace
-    component: {{ .Values | getOrNil "simple.name" | default "simple" }}
+    chart: simple-namespace
+    component: simple
     namespace: kube-system
   values:
-  - app: {{ .Values | getOrNil "simple.name" | default "simple" }}
+  - app: simple
     namespace:
       enabled: true
       name: {{ .Values | getOrNil "simple.namespace" | default "simple" }}
 
-- name: {{ .Values | getOrNil "simple.name" | default "simple" }}
+- name: simple
   chart: {{ .Values | getOrNil "simple.chart" | default "simple/simple" }}
   version: {{ .Values | getOrNil "simple.version" | default "0.0.1" }}
   namespace: {{ .Values | getOrNil "simple.namespace" | default "simple" }}
   condition: simple.enabled
   installed: true
+  missingFileHandler: Debug
   labels:
-    chart: {{ .Values | getOrNil "simple.name" | default "simple" }}
-    component: {{ .Values | getOrNil "simple.name" | default "simple" }}
+    chart: simple
+    component: simple
     namespace: {{ .Values | getOrNil "simple.namespace" | default "simple" }}
   needs:
-    - kube-system/{{ .Values | getOrNil "simple.name" | default "simple" }}-namespace
+    - kube-system/simple-namespace
   values:
   - somevalues:
       somevalue1: value
+  - "../config/{{ .Environment.Name }}/simple.override.yaml"
 
-- name: {{ .Values | getOrNil "simple.name" | default "simple" }}-ingress
+- name: simple-ingress
   namespace: {{ .Values | getOrNil "simple.namespace" | default "simple" }}
   chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
-  version: {{ .Values | getOrNil "archetype.version" | default "0.0.1" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.2" }}
   condition: ingress.enabled
   installed: true
   needs:
-  - kube-system/{{ .Values | getOrNil "simple.name" | default "simple" }}-namespace
-  - {{ .Values | getOrNil "simple.namespace" | default "simple" }}/{{ .Values | getOrNil "simple.name" | default "simple" }}
+  - kube-system/simple-namespace
+  - {{ .Values | getOrNil "simple.namespace" | default "simple" }}/simple
   labels:
-    chart: {{ .Values | getOrNil "simple.name" | default "simple" }}-ingress
-    component: {{ .Values | getOrNil "simple.name" | default "simple" }}
+    chart: simple-ingress
+    component: simple
     namespace: {{ .Values | getOrNil "simple.namespace" | default "simple" }}
   values:
   - zone: {{ .Values | getOrNil "simple.zone" | default "internal" }}
@@ -70,11 +72,11 @@ releases:
       enabled: true
       tlsEnabled: true
       hosts:
-      - secretName: {{ .Values | getOrNil "simple.name" | default "simple" }}-ingress
+      - secretName: simple-ingress
         config:
           http:
             paths:
             - path: "/"
               backend:
-                serviceName: {{ .Values | getOrNil "simple.name" | default "simple" }}-ui
+                serviceName: simple-ui
                 servicePort: 80
