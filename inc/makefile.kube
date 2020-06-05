@@ -3,17 +3,18 @@ BIN_PATH ?= $(ROOT_PATH)/.local/bin
 
 METALLB_VERSION ?= 0.9.3
 CLUSTER_CONTEXT ?= $(CLUSTER)
-#DOCKER_NETWORK ?= bridge
 SUBNET_INDEX ?= 1
 KUBE_CONFIG ?= $(ROOT_PATH)/.local/kube.$(CLUSTER).conf
 RESOLV_CONF ?= /etc/resolv.conf
 
 ifeq ($(HOST_PLATFORM),linux)
-RESOLV_CONF ?= /etc/resolv.conf
 DPS_PORTS := -p 5380:5380
 else
 DPS_PORTS := -p 5380:5380 -p 53:53/udp
 endif
+
+## Only change this if you are using an older version of kind (kind.sigs.k8s.io/v1alpha3)
+DOCKER_NETWORK ?= kind
 
 kubectl := $(BIN_PATH)/kubectl
 kustomize := $(BIN_PATH)/kustomize
@@ -84,7 +85,7 @@ kube/config/file: ## Prints the current kube config file location
 	@echo $(KUBE_CONFIG)
 
 kube/untaint/masternodes: ## Untaints master nodes of a cluster
-	@$(kubecmd) taint nodes $$($(kubecmd) get nodes --selector=node-role.kubernetes.io/master | awk 'FNR==2{print $$1}') node-role.kubernetes.io/master-
+	@$(kubecmd) taint nodes $$($(kubecmd) get nodes --selector=node-role.kubernetes.io/master | awk 'FNR==2{print $$1}') node-role.kubernetes.io/master- || true
 
 .PHONY: kube/list/resources
 kube/list/resources: ## Prints kubernetes resources

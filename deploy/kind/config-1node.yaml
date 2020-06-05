@@ -1,0 +1,36 @@
+apiVersion: kind.x-k8s.io/v1alpha4
+kind: Cluster
+networking:
+  apiServerAddress: "0.0.0.0"
+  disableDefaultCNI: true
+
+kubeadmConfigPatches:
+- |
+  kind: ClusterConfiguration
+  metadata:
+    name: config
+  etcd:
+    local:
+      extraArgs:
+        "listen-metrics-urls": "http://0.0.0.0:2378"
+  apiServer:
+    extraArgs:
+      "enable-admission-plugins": "NamespaceLifecycle,LimitRanger,PodNodeSelector,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota"
+
+nodes:
+- role: control-plane
+  kubeadmConfigPatches:
+  - |
+    kind: InitConfiguration
+    nodeRegistration:
+      kubeletExtraArgs:
+        node-labels: "ingress-ready=true"
+  extraPortMappings:
+  - containerPort: 80
+    hostPort: 80
+    listenAddress: "0.0.0.0"
+    protocol: TCP
+  - containerPort: 443
+    hostPort: 443
+    listenAddress: "0.0.0.0"
+    protocol: TCP

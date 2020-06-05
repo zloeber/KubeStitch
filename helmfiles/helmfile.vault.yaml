@@ -40,8 +40,8 @@ releases:
       # affinity: ""
       ha:
         enabled: {{ .Values | getOrNil "vault.ha" | default "false" }}
-      service: 
-        type: LoadBalancer
+      # service: 
+      #   type: LoadBalancer
       dev:
         enabled: {{ .Values | getOrNil "vault.dev" | default "false" }}
       dataStorage:
@@ -50,7 +50,7 @@ releases:
     ui:
       enabled: true
 
-- name: {{ .Values | getOrNil "vault.name" | default "vault" }}-ingress
+- name: {{ .Values | getOrNil "vault.name" | default "vault" }}-ui-ingress
   chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
   version: {{ .Values | getOrNil "archetype.version" | default "0.0.1" }}
   namespace: {{ .Values | getOrNil "vault.namespace" | default "vault" }}
@@ -60,26 +60,56 @@ releases:
   - kube-system/{{ .Values | getOrNil "vault.name" | default "vault" }}-namespace
   - {{ .Values | getOrNil "vault.namespace" | default "vault" }}/{{ .Values | getOrNil "vault.name" | default "vault" }}
   labels:
-    chart: {{ .Values | getOrNil "vault.name" | default "vault" }}-ingress
+    chart: {{ .Values | getOrNil "vault.name" | default "vault" }}-ui-ingress
     component: ingress
     namespace: {{ .Values | getOrNil "vault.namespace" | default "vault" }}
   values:
   - zone: internal
-    app: {{ .Values | getOrNil "vault.name" | default "vault" }}
+    app: {{ .Values | getOrNil "vault.name" | default "vault" }}-ui
     ingressClassMap:
       internal: {{ .Values | getOrNil "ingress.internal.class" | default "internal" }}
     ingress:
       enabled: true
       tlsEnabled: true
       hosts:
-      # - name: vault.{{ .Values | getOrNil "ingress.internal.zone" | default "int.micro.svc" }}
-      - secretName: ingress-vault-dashboard
+      - secretName: {{ .Values | getOrNil "vault.name" | default "vault" }}-ui-ingress
         config:
           http:
             paths:
             - path: "/"
               backend:
-                serviceName: vault-ui
+                serviceName: {{ .Values | getOrNil "vault.name" | default "vault" }}-ui
+                servicePort: 8200
+
+- name: {{ .Values | getOrNil "vault.name" | default "vault" }}-active-ingress
+  chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.1" }}
+  namespace: {{ .Values | getOrNil "vault.namespace" | default "vault" }}
+  condition: ingress.enabled
+  installed: true
+  needs:
+  - kube-system/{{ .Values | getOrNil "vault.name" | default "vault" }}-namespace
+  - {{ .Values | getOrNil "vault.namespace" | default "vault" }}/{{ .Values | getOrNil "vault.name" | default "vault" }}
+  labels:
+    chart: {{ .Values | getOrNil "vault.name" | default "vault" }}-ui-ingress
+    component: ingress
+    namespace: {{ .Values | getOrNil "vault.namespace" | default "vault" }}
+  values:
+  - zone: internal
+    app: {{ .Values | getOrNil "vault.name" | default "vault" }}-active
+    ingressClassMap:
+      internal: {{ .Values | getOrNil "ingress.internal.class" | default "internal" }}
+    ingress:
+      enabled: true
+      tlsEnabled: true
+      hosts:
+      - secretName: {{ .Values | getOrNil "vault.name" | default "vault" }}-active-ingress
+        config:
+          http:
+            paths:
+            - path: "/"
+              backend:
+                serviceName: {{ .Values | getOrNil "vault.name" | default "vault" }}-active
                 servicePort: 8200
 
 ## Role binding needed to do vault auth

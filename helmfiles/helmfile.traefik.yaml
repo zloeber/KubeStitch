@@ -6,6 +6,7 @@ bases:
 ---
 
 ## Traefik
+# Values - https://github.com/containous/traefik-helm-chart/blob/master/traefik/values.yaml
 # Dashboard - http://traefik.int.micro.svc/dashboard/#/
 releases:
 - name: {{ .Values | getOrNil "traefik.name" | default "traefik" }}-namespace
@@ -71,6 +72,8 @@ releases:
     ports:
       traefik:
         expose: true
+    nodeSelector:
+      ingress-ready: "true"
 
 - name: {{ .Values | getOrNil "traefik.name" | default "traefik" }}-dashboard
   chart: {{ .Values | getOrNil "raw.chart" | default "incubator/raw" }}

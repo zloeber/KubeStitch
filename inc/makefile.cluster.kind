@@ -1,7 +1,7 @@
 ROOT_PATH ?= $(abspath $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST))))))
 BIN_PATH ?= $(ROOT_PATH)/.local/bin
 KIND_VERSION ?= 0.8.1
-KIND_CONFIG ?= config-multinode.yaml
+KIND_CONFIG ?= config-1node.yaml
 KIND_VERBOSITY ?= 1
 KIND_IMAGE_POSTFIX ?=
 
