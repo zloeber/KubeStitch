@@ -5,6 +5,10 @@ bases:
 - ../config/repositories.yaml
 ---
 
+
+## Special helmfile that runs helmfile as a job from within the cluster. Uses PROFILE and ENVIRONMENT to determine
+# the cluster helmfile to sync. This is a proof of concept for turning the deployment process along with all helm chart
+# sources into a single immutable artifact.
 releases:
 - name: init-namespace
   chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}

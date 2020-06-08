@@ -35,4 +35,4 @@ ENV ENVIRONMENT=default
 RUN helmfile --environment $ENVIRONMENT -f helmfiles/helmfile.cluster.$CLUSTER.yaml repos
 
 # Run deployment
-CMD helmfile --environment $ENVIRONMENT -f helmfiles/helmfile.cluster.$CLUSTER.yaml charts
+CMD helmfile --environment $ENVIRONMENT -f helmfiles/helmfile.cluster.$CLUSTER.yaml sync --concurrency 1 --skip-deps
