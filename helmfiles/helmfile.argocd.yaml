@@ -48,7 +48,7 @@ releases:
       # https://github.com/travisghansen/argo-cd-helmfile
       config:
         # Argo CD's externally facing base URL (optional). Required when configuring SSO
-        url: https://argocd.{{ .Values | getOrNil "ingress.internal.zone" | default "int.micro.svc" }}
+        url: https://argocd.{{ .Values | getOrNil "ingress.internal.zone" | default "int" }}.{{ .Values | getOrNil "dnsRoot" | default "micro.svc" }}
         application.instanceLabelKey: argocd.argoproj.io/instance
         configManagementPlugins: |
           - name: helmfile
@@ -83,34 +83,68 @@ releases:
         subPath: helmfile
   - "../config/{{ .Environment.Name }}/argocd.override.yaml"
 
+# - name: argocd-ingress
+#   chart: {{ .Values | getOrNil "raw.chart" | default "incubator/raw" }}
+#   version: {{ .Values | getOrNil "raw.version" | default "0.2.3" }}
+#   namespace: {{ .Values | getOrNil "argocd.namespace" | default "argo-cd" }}
+#   condition: ingress.enabled
+#   installed: true
+#   needs:
+#   - kube-system/argocd-namespace
+#   - {{ .Values | getOrNil "argocd.namespace" | default "argo-cd" }}/argocd
+#   labels:
+#     chart: argocd-ingress
+#     component: ingress
+#     namespace: {{ .Values | getOrNil "argocd.namespace" | default "argo-cd" }}
+#   values:
+#   - resources:
+#     - apiVersion: traefik.containo.us/v1alpha1
+#       kind: IngressRoute
+#       metadata:
+#         name: argocd-ingress
+#       spec:
+#         entryPoints:
+#           - websecure
+#         routes:
+#           - match: Host(`argocd.{{ .Values | getOrNil "ingress.internal.zone" | default "int" }}.{{ .Values | getOrNil "dnsRoot" | default "micro.svc" }}`)
+#             kind: Rule
+#             services:
+#               - name: argocd-server
+#                 port: 80
+#         tls:
+#           certResolver: default
+#           options: {}
+
 - name: argocd-ingress
-  chart: {{ .Values | getOrNil "raw.chart" | default "incubator/raw" }}
-  version: {{ .Values | getOrNil "raw.version" | default "0.2.3" }}
-  namespace: {{ .Values | getOrNil "argocd.namespace" | default "argo-cd" }}
+  namespace: {{ .Values | getOrNil "argocd.namespace" | default "argocd" }}
+  chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.2" }}
   condition: ingress.enabled
   installed: true
   needs:
   - kube-system/argocd-namespace
-  - {{ .Values | getOrNil "argocd.namespace" | default "argo-cd" }}/argocd
+  - {{ .Values | getOrNil "argocd.namespace" | default "argocd" }}/argocd
   labels:
     chart: argocd-ingress
     component: ingress
-    namespace: {{ .Values | getOrNil "argocd.namespace" | default "argo-cd" }}
+    namespace: {{ .Values | getOrNil "argocd.namespace" | default "argocd" }}
   values:
-  - resources:
-    - apiVersion: traefik.containo.us/v1alpha1
-      kind: IngressRoute
-      metadata:
-        name: argocd-ingress
-      spec:
-        entryPoints:
-          - websecure
-        routes:
-          - match: Host(`argocd.{{ .Values | getOrNil "ingress.internal.zone" | default "int.micro.svc" }}`)
-            kind: Rule
-            services:
-              - name: argocd-server
-                port: 80
-        tls:
-          certResolver: default
-          options: {}
+  - zone: internal
+    app: argocd
+    dnsRoot: {{ .Values | getOrNil "dnsRoot" | default "micro.svc" }}
+    ingressClassMap:
+      internal: {{ .Values | getOrNil "ingress.internal.class" | default "internal" }}
+    ingress:
+      enabled: true
+      tlsEnabled: true
+      annotations:
+        traefik.ingress.kubernetes.io/pass-tls-cert: "true"
+      hosts:
+      - secretName: argocd-ingress
+        config:
+          http:
+            paths:
+            - path: "/"
+              backend:
+                serviceName: argocd-server
+                servicePort: 80

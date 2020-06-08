@@ -22,7 +22,6 @@ helmfile_binary ?= $(BIN_PATH)/helmfile
 helmfile := $(helmfile_binary) --environment $(ENVIRONMENT)
 helm_binary ?= $(BIN_PATH)/helm
 helm := $(helm_binary)
-helm-x := $(BIN_PATH)/helm-x
 gomplate := $(BIN_PATH)/gomplate
 ct := $(BIN_PATH)/ct
 
@@ -64,10 +63,9 @@ endif
 	@$(helm) plugin install https://github.com/databus23/helm-diff --version master 2> /dev/null || true
 	@$(helm) plugin install https://github.com/futuresimple/helm-secrets 2> /dev/null || true
 	@$(helm) plugin install https://github.com/aslafy-z/helm-git.git 2> /dev/null || true
-#	@$(helm) plugin install https://github.com/mumoshu/helm-x 2> /dev/null || true
 
 .PHONY: .deps/helm
-.deps/helm: .dep/helm .dep/helmfile .helm/plugins ## Install yq, ct, helm, helmfile, helm-x, and plugins locally
+.deps/helm: .dep/helm .dep/helmfile .helm/plugins ## Install yq, helm, helmfile, and plugins locally
 
 .PHONY: helmfile/stacks
 helmfile/stacks: ## Lists all available helmfile stacks

@@ -5,3 +5,10 @@ bin/
 public/
 test/
 .local/
+images/
+templates/
+wip/
+.tool-versions
+LICENSE
+README.MD
+Dockerfile

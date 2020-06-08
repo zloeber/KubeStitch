@@ -67,6 +67,7 @@ releases:
   values:
   - zone: internal
     app: vault-ui
+    dnsRoot: {{ .Values | getOrNil "dnsRoot" | default "micro.svc" }}
     ingressClassMap:
       internal: {{ .Values | getOrNil "ingress.internal.class" | default "internal" }}
     ingress:
@@ -98,6 +99,7 @@ releases:
   values:
   - zone: internal
     app: vault-active
+    dnsRoot: {{ .Values | getOrNil "dnsRoot" | default "micro.svc" }}
     ingressClassMap:
       internal: {{ .Values | getOrNil "ingress.internal.class" | default "internal" }}
     ingress:

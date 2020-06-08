@@ -34,7 +34,6 @@ show/vault: ## Show vault env vars
 	@echo "export VAULT_TOKEN=$(shell $(kubecmd) -n vault logs vault-0 vault | grep 'Root Token' | cut -d ' ' -f 3)"
 	@echo "export VAULT_ADDR=http://$(shell $(MAKE) .helmfile/lookup/lookup_internalDNSZone)"
 
-
 .PHONY: vault/addr
 vault/addr: ## Show vault address
 	@$(kubecmd) -n vault get svc -o jsonpath='{.items[?(@.spec.type=="LoadBalancer")].status.loadBalancer.ingress[0].ip}'

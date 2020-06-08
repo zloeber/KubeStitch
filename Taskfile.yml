@@ -1,0 +1,109 @@
+
+
+version: '2'
+
+expansions: 5
+
+vars:
+  ROOT_PATH: {sh: pwd}
+  HOME_PATH: "{{.ROOT_PATH}}/.local"
+  BIN_PATH: "{{.HOME_PATH}}/bin"
+  CONFIG_PATH: "{{.ROOT_PATH}}/config"
+  HELMFILE: "{{.BIN_PATH}}/helmfile"
+  HELM_BINARY: "{{.BIN_PATH}}/helm"
+  HELMFILE_PATH: "{{.ROOT_PATH}}/helmfiles"
+
+env:
+  XDG_CACHE_HOME: "{{.HOME_PATH}}"
+  XDG_CONFIG_HOME: "{{.HOME_PATH}}"
+  XDG_DATA_HOME: "{{.HOME_PATH}}"
+  CLUSTER: cicd
+  STACK: cluster.cicd
+  HELMFILE_VALUES: "{{.CONFIG_PATH}}/{{.ENVIRONMENT}}/values.yaml"
+
+tasks:
+  show:
+    desc: Show environment and variable settings
+    silent: true
+    cmds:
+      - echo "CLUSTER=$CLUSTER"
+      - echo "ENVIRONMENT=$ENVIRONMENT"
+      - echo "ARCH={{ARCH}}"
+      - echo "OS={{OS}}"
+      - echo "KUBE_VERSION=$KUBE_VERSION"
+      - echo "HELMFILE_PATH={{.HELMFILE_PATH}}"
+      - echo "STACK=$STACK"
+      - echo "HELMFILE_VALUES=$HELMFILE_VALUES"
+
+  show:helm:
+    desc: Show helm settings
+    summary: |
+      Show helm settings used in this task runner.
+
+      This can be useful for exporting the values for sourcing into your own shell
+    silent: true
+    cmds:
+      - echo "export XDG_CACHE_HOME=$XDG_CACHE_HOME"
+      - echo "export XDG_CONFIG_HOME=$XDG_CONFIG_HOME"
+      - echo "export XDG_DATA_HOME=$XDG_DATA_HOME"
+      - echo "alias hlm={{.HELM_BINARY}}"
+  helmfile:stacks:
+    desc: Lists all available helmfile stacks
+    silent: true
+    cmds:
+      - ls {{.HELMFILE_PATH}}/helmfile.*.yaml | xargs -n1 basename | sed -e 's/\.yaml//g' -e 's/helmfile\.//g'
+
+  helmfile:apply:
+    desc: apply all resources from state file only when there are changes
+    cmds:
+      - "{{.HELMFILE}} -b {{.HELM_BINARY}} -f {{.HELMFILE_PATH}}/helmfile.$STACK.yaml apply"
+
+  helmfile:sync:
+    desc: Sync STACK with cluster
+    cmds:
+      - "{{.HELMFILE}} -b {{.HELM_BINARY}} -f {{.HELMFILE_PATH}}/helmfile.$STACK.yaml sync"
+
+  helmfile:charts:
+    desc: Like helmfile:sync but offline with already downloaded charts
+    cmds:
+      - "{{.HELMFILE}} -b {{.HELM_BINARY}} -f {{.HELMFILE_PATH}}/helmfile.$STACK.yaml charts"
+
+  helmfile:repos:
+    desc: Helm repo add and update
+    cmds:
+      - "{{.HELMFILE}} -b {{.HELM_BINARY}} -f {{.HELMFILE_PATH}}/helmfile.$STACK.yaml repos"
+
+  helmfile:list:
+    desc: List resources in state file
+    cmds:
+      - "{{.HELMFILE}} -b {{.HELM_BINARY}} -f {{.HELMFILE_PATH}}/helmfile.$STACK.yaml list"
+
+  helmfile:diff:
+    desc: diffs STACK with cluster
+    cmds:
+      - "{{.HELMFILE}} -b {{.HELM_BINARY}} -f {{.HELMFILE_PATH}}/helmfile.$STACK.yaml diff"
+
+  helmfile:test:
+    desc: Tests STACK on cluster
+    cmds:
+      - "{{.HELMFILE}} -b {{.HELM_BINARY}} -f {{.HELMFILE_PATH}}/helmfile.$STACK.yaml test"
+
+  helmfile:destroy:
+    desc: Removes STACK from cluster
+    cmds:
+      - "{{.HELMFILE}} -b {{.HELM_BINARY}} -f {{.HELMFILE_PATH}}/helmfile.$STACK.yaml destroy"
+
+  helmfile:build:
+    desc: Builds helmfile YAML only
+    cmds:
+      - "{{.HELMFILE}} -b {{.HELM_BINARY}} -f {{.HELMFILE_PATH}}/helmfile.$STACK.yaml build"
+
+  helmfile:template:
+    desc: template STACK yaml manifest for cluster
+    cmds:
+      - "{{.HELMFILE}} -b {{.HELM_BINARY}} -f {{.HELMFILE_PATH}}/helmfile.$STACK.yaml template"
+
+  sync:
+    desc: Shortcut for helmfile:sync task
+    cmds:
+      - task: helmfile:sync

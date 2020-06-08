@@ -14,6 +14,7 @@ PROFILE ?= default
 
 yq := $(BIN_PATH)/yq
 jq := $(BIN_PATH)/jq
+task := $(BIN_PATH)/task
 
 # Import target deployment env vars
 ENVIRONMENT_VARS ?= $(PROFILE_PATH)/profile.$(PROFILE).env
@@ -47,13 +48,19 @@ ifeq (,$(wildcard $(APP_PATH)/githubapp))
 endif
 
 .PHONY: deps
-deps: .githubapps $(DEPTASKS) .dep/yq .dep/jq ## Install general dependencies
+deps: .githubapps $(DEPTASKS) .dep/yq .dep/jq .dep/task ## Install general dependencies
 	@mkdir -p $(TEMP_PATH)
 
 .PHONY: .dep/yq
 .dep/yq: ## Install yq
 ifeq (,$(wildcard $(yq)))
 	@$(MAKE) --no-print-directory -C $(APP_PATH)/githubapp auto mikefarah/yq INSTALL_PATH=$(BIN_PATH)
+endif
+
+.PHONY: .dep/task
+.dep/task: ## Install go-task
+ifeq (,$(wildcard $(task)))
+	@$(MAKE) --no-print-directory -C $(APP_PATH)/githubapp auto go-task/task INSTALL_PATH=$(BIN_PATH)
 endif
 
 .PHONY: .dep/jq
