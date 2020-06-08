@@ -28,8 +28,8 @@ releases:
 
 ## traefik Deployment
 - name: traefik
-  chart: {{ .Values | getOrNil "traefik.chart" | default "traefik/traefik" }}
-  version: {{ .Values | getOrNil "traefik.version" | default "8.2.1" }}
+  chart: {{ .Values | getOrNil "traefik.chart" | default "containous/traefik" }}
+  version: {{ .Values | getOrNil "traefik.version" | default "8.3.0" }}
   namespace: {{ .Values | getOrNil "ingress.internal.namespace" | default "ingress-int" }}
   condition: ingress.enabled
   installed: true
