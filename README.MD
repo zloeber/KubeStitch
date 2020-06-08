@@ -400,7 +400,9 @@ make helmfile/sync STACK=clusterinit
 
 After a few minutes the local cluster will have traefik, certmanager, and rbacmanager installed (and you should see some successful jobs having been run in the cluster-init namespace).
 
-It is a proof of concept only. To make this more secure the docker image should not be latest and an additional dockerfile task shoudl be run to selectively remove the role-binding on the namespace's default service account.
+The docker image itself does the repo and chart dep updates. When the image runs on the cluster we skip this step by using the `--skip-deps` flag in the helmfile sync command.
+
+This is a proof of concept only. Next steps woudl be to make the process more secure by using a versioned image in the job (not latest) and an additional task should be run after the helmfile sync completes to selectively remove the role-binding on the namespace's default service account.
 
 # Secrets
 
