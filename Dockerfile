@@ -36,4 +36,8 @@ ENV APP_PATH=/app
 ADD . ${APP_PATH}
 WORKDIR ${APP_PATH}
 
-CMD helmfile --environment $ENVIRONMENT -f helmfiles/helmfile.cluster.$CLUSTER.yaml sync
+# Pull down repos
+RUN helmfile --environment $ENVIRONMENT -f helmfiles/helmfile.cluster.$CLUSTER.yaml repos
+
+# Run deployment
+CMD helmfile --environment $ENVIRONMENT -f helmfiles/helmfile.cluster.$CLUSTER.yaml charts

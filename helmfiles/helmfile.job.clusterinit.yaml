@@ -1,0 +1,81 @@
+---
+bases:
+- ../config/environments.yaml
+- ../config/helmdefaults.yaml
+- ../config/repositories.yaml
+---
+
+releases:
+- name: init-namespace
+  chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.2" }}
+  namespace: kube-system
+  condition: init.enabled
+  installed: true
+  wait: true
+  labels:
+    chart: init-namespace
+    component: init
+    namespace: kube-system
+  values:
+  - app: cluster-init
+    namespace:
+      enabled: true
+      name: {{ .Values | getOrNil "init.namespace" | default "cluster-init" }}
+
+- name: init
+  chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.2" }}
+  namespace: {{ .Values | getOrNil "init.namespace" | default "init" }}
+  condition: init.enabled
+  installed: true
+  missingFileHandler: Debug
+  labels:
+    chart: init
+    component: init
+    namespace: {{ .Values | getOrNil "init.namespace" | default "init" }}
+  needs:
+    - kube-system/init-namespace
+  values:
+  - app: cluster-init
+    image:
+      repository: zloeber/kubestitcher-init
+      tag: latest
+    configMap:
+      enabled: true
+      name: clusterinit
+      env:
+        ENVIRONMENT: {{ requiredEnv "ENVIRONMENT" }}
+        CLUSTER: {{ requiredEnv "CLUSTER" }}
+    jobs:
+      clusterinit:
+        enabled: true
+        pod:
+          name: init
+
+- name: init-rolebinding
+  chart: {{ .Values | getOrNil "raw.chart" | default "incubator/raw" }}
+  version: {{ .Values | getOrNil "raw.version" | default "0.2.3" }}
+  namespace: {{ .Values | getOrNil "init.namespace" | default "init" }}
+  condition: init.enabled
+  installed: true
+  labels:
+    chart: init-rolebinding
+    component: rbac
+    namespace: {{ .Values | getOrNil "init.namespace" | default "init" }}
+  needs:
+  - kube-system/init-namespace
+  values:
+  - resources:
+    - apiVersion: rbac.authorization.k8s.io/v1beta1
+      kind: ClusterRoleBinding
+      metadata:
+        name: cluster-init-access
+      roleRef:
+        apiGroup: rbac.authorization.k8s.io
+        kind: ClusterRole
+        name: cluster-admin
+      subjects:
+      - kind: ServiceAccount
+        name: default
+        namespace: {{ .Values | getOrNil "init.namespace" | default "init" }}

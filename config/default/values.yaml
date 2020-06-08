@@ -1,5 +1,8 @@
 cloud: local
 dnsRoot: micro.svc
+init:
+  enabled: true
+  namespace: cluster-init  
 ingress:
   enabled: true
   dashboard: true
