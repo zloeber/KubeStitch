@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: jumppod
+spec:
+  containers:
+  - name: jumppod
+    image: zloeber/kubestitcher-init
+    command: ["sleep", "24h"]

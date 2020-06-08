@@ -5,8 +5,8 @@ repositories:
   url: https://kubernetes-charts-incubator.storage.googleapis.com
 - name: zloeber
   url: git+https://github.com/zloeber/archetype-chart@/
-- name: traefik
-  url: git+https://github.com/containous/traefik-helm-chart@/traefik
+- name: containous
+  url: https://containous.github.io/traefik-helm-chart
 - name: jetstack
   url: https://charts.jetstack.io
 - name: hashicorp
