@@ -38,7 +38,6 @@ traefik:
   dashboard: true
   zone: internal
 certmanager:
-  name: certmanager
   enabled: true
   version: "0.15.1"
   chart: jetstack/cert-manager

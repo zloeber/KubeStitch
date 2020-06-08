@@ -1,6 +1,6 @@
 environments:
   default:
-    missingFileHandler: Debug
+    missingFileHandler: Info
     secrets:
     - ../config/{{ .Environment.Name }}/secrets.yaml
     values:
