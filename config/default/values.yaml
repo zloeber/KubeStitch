@@ -33,7 +33,7 @@ istio:
   ingressGateway: istio-ingressgateway
 traefik:
   enabled: true
-  version: "8.3.1"
+  version: "8.3.0"
   chart: containous/traefik
   dashboard: true
   zone: internal
