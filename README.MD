@@ -320,7 +320,7 @@ This is a powerful way to quickly work on various deployments and allows for lay
 
 Here are a few example use cases worth looking over.
 
-## Example 1
+## Example 1 - Local Istio
 
 Here is an example of using a profile to start up a local istio cluster. Istio has a moderately more complex deployment path than a standard helm chart so this is a good example for showing how CICDHelper can be flexible.
 
@@ -357,7 +357,7 @@ If k3d is more your style then you can repeat this entire set of directions with
 make cluster/start istio/deploy istio/start/dnsforward helmfile/sync STACK=bookinfo PROFILE=istio-k3d
 ```
 
-## Example 2
+## Example 2 - K3S with HomeAssistant
 
 This is a somewhat unique example. Basically I used this framework for a bare metal k3s cluster at home for home assistant. I created another kubernetes provider specifically for k3s (`inc/makefile.cluster.k3s`) along with a profile to use it (`profiles/profile.homeassist.env`). With this profile and provider I overwrite the default location of the KUBE_CONFIG so that after installation of the cluster elements the config is automatically updated for my standard account. This particular provider does require sudo rights.
 
@@ -384,7 +384,25 @@ Because I'm using some localized IP addresses for both the nfs provisioner chart
 
 > **NOTE**: In this setup I run the CICDHelper from my server then access it remotely via kubectl. To do this I have to copy over the config file that gets generated to my workstation `scp zloeber@servername:~/.kube/config ~/.kube/config ` then edit it to replace 127.0.0.1 with the IP address of the server.
 
-## Secrets
+## Example 3 - Deployment As an Artifact
+
+I've done a bit of a proof of concept around initializing a cluster's deployed stacks and figured I'd put it as a third example of how you can use this framework. The idea is that I'd like to turn the entire cluster deployment with helmfiles and definitions into a localized immutable artifact. This is because sometimes external helm charts change without notice or helm chart versioning being done.
+
+Also, I just wanted to see what it would take to do a single push deployment to a cluster that then runs all the helmfile logic for that cluster. Turns out it is not so hard. To run such a thing for the default profile we just create a job that uses a dockerfile image created from this repo and set environment variables for ENVIRONMENT and CLUSTER. As long as we run it in a namespace that has cluster-admin rights it will run without issues. I created a helmfile to do this task.
+
+```bash
+# Start the base cluster without any helm charts being synced
+make cluster/start
+
+# Sync the clusterinit stack
+make helmfile/sync STACK=clusterinit
+```
+
+After a few minutes the local cluster will have traefik, certmanager, and rbacmanager installed (and you should see some successful jobs having been run in the cluster-init namespace).
+
+It is a proof of concept only. To make this more secure the docker image should not be latest and an additional dockerfile task shoudl be run to selectively remove the role-binding on the namespace's default service account.
+
+# Secrets
 
 Any secrets should be put into your environment for use in tasksets that require them. For this I personally use direnv with a local .envrc file. 
 
