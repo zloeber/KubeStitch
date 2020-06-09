@@ -160,12 +160,15 @@ This is another proof of concept environment that spins up a kind cluster runnin
 
 You can access both [http://consul.int.micro.svc](http://consul.int.micro.svc) and [http://vault.int.micro.svc](http://vault.int.micro.svc) to immediately start exploring these cool products after bringing up the cluster.
 
-If you use this profile the vault service will be provisioned via a loadbalancer IP which can be accessed using the vault client and some environment variables. To export these variables into your session use the following command:
+If you use this profile the vault service will be provisioned via an ingress address which can be accessed using the vault client and some environment variables. To export these variables into your session use the following command:
 
 ```bash
+make dnsforward/start
 `make show/vault`
 ./.local/bin/vault status
 ```
+
+> **NOTE** - This assumes that dns lookups for your cluster works properly, dnsforward tasks currently only work on Linux hosts. Alternatively, you can update the deployment to expose the service via Loadbalancer IP as well and use the IP address instead.
 
 ### PROFILE - vaultha
 

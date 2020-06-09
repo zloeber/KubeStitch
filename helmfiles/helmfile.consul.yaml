@@ -5,6 +5,8 @@ bases:
 - ../config/repositories.yaml
 ---
 
+## Consul deployment
+# Values - https://www.consul.io/docs/k8s/helm.html
 releases:
 - name: consul-namespace
   chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
@@ -41,6 +43,8 @@ releases:
       enabled: false
     client:
       enabled: true
+    syncCatalog:
+      enabled: true
     server:
       replicas: 1
       bootstrapExpect: 1
@@ -49,13 +53,44 @@ releases:
       storage: 2Gi
     ui:
       enabled: true
-    service:
-      type: LoadBalancer
+    # service:
+    #   type: LoadBalancer
     consulNamespaces:
       consulDestinationNamespace: kube
       mirroringK8S: false
   - "../config/{{ .Environment.Name }}/consul.override.yaml"
 
+- name: consul-ui-ingress
+  namespace: {{ .Values | getOrNil "consul.namespace" | default "consul" }}
+  chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.2" }}
+  condition: ingress.enabled
+  installed: true
+  needs:
+  - kube-system/consul-namespace
+  - {{ .Values | getOrNil "consul.namespace" | default "consul" }}/consul
+  labels:
+    chart: consul-ui-ingress
+    component: ingress
+    namespace: {{ .Values | getOrNil "consul.namespace" | default "consul" }}
+  values:
+  - zone: internal
+    app: consul-ui
+    dnsRoot: {{ .Values | getOrNil "dnsRoot" | default "micro.svc" }}
+    ingressClassMap:
+      internal: {{ .Values | getOrNil "ingress.internal.class" | default "internal" }}
+    ingress:
+      enabled: true
+      tlsEnabled: true
+      hosts:
+      - secretName: consul-ui-ingress
+        config:
+          http:
+            paths:
+            - path: "/"
+              backend:
+                serviceName: consul-consul-ui
+                servicePort: 80
 
 - name: consul-ingress
   namespace: {{ .Values | getOrNil "consul.namespace" | default "consul" }}
@@ -73,7 +108,7 @@ releases:
   values:
   - zone: internal
     app: consul
-    dnsRoot: micro.svc
+    dnsRoot: {{ .Values | getOrNil "dnsRoot" | default "micro.svc" }}
     ingressClassMap:
       internal: {{ .Values | getOrNil "ingress.internal.class" | default "internal" }}
     ingress:
@@ -86,5 +121,5 @@ releases:
             paths:
             - path: "/"
               backend:
-                serviceName: consul-consul-ui
-                servicePort: 80
+                serviceName: consul-consul-server
+                servicePort: 8500

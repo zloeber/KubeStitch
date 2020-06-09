@@ -2,6 +2,7 @@ ROOT_PATH ?= $(abspath $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIS
 BIN_PATH ?= $(ROOT_PATH)/.local/bin
 
 vault := $(BIN_PATH)/vault
+consul := $(BIN_PATH)/consul
 vault-sync := $(BIN_PATH)/vault-sync
 gonsul := $(BIN_PATH)/vault-sync
 
@@ -10,6 +11,13 @@ gonsul := $(BIN_PATH)/vault-sync
 ifeq (,$(wildcard $(vault)))
 	@$(MAKE) --no-print-directory -C $(APP_PATH)/githubapp auto vault INSTALL_PATH=$(BIN_PATH)
 	@echo "Installed: $(vault)"
+endif
+
+.PHONY: .dep/consul
+.dep/consul: ## Install consul locally
+ifeq (,$(wildcard $(consul)))
+	@$(MAKE) --no-print-directory -C $(APP_PATH)/githubapp auto consul INSTALL_PATH=$(BIN_PATH)
+	@echo "Installed: $(consul)"
 endif
 
 .PHONY: .dep/vault-sync
@@ -27,12 +35,13 @@ ifeq (,$(wildcard $(gonsul)))
 endif
 
 .PHONY: .deps/vault
-.deps/vault: .dep/vault .dep/vault-sync ## Install dependencies
+.deps/vault: .dep/vault .dep/consul ## Install dependencies
 
 .PHONY: show/vault
 show/vault: ## Show vault env vars
 	@echo "export VAULT_TOKEN=$(shell $(kubecmd) -n vault logs vault-0 vault | grep 'Root Token' | cut -d ' ' -f 3)"
 	@echo "export VAULT_ADDR=http://vault.$(shell $(MAKE) .helmfile/lookup/lookup_internalDNSZone)"
+	@echo "export CONSUL_HTTP_ADDR=http://consul.$(shell $(MAKE) .helmfile/lookup/lookup_internalDNSZone)"
 
 .PHONY: vault/addr
 vault/addr: ## Show vault address
