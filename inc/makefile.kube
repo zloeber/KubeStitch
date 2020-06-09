@@ -57,7 +57,7 @@ kube/remove/pv/finalizers/%: ## removes finalizers from persistent volumes in a 
 	$(kubecmd) get pv -n $(subst kube/remove/pv/finalizers/,,$@) | tail -n+2 | awk '{print $$1}' | xargs -I{} $(kubectl) patch pv {} -p '{"metadata":{"finalizers":null}}' --type=merge
 
 kube/remove/pod/finalizers/%: ## removes finalizers from pods in a namespace
-	$(kubecmd) get pod -n $(subst kube/remove/pod/finalizers/,,$@) | tail -n+2 | awk '{print $$1}' | xargs -I{} $(kubectl) patch pod {} -p '{"metadata":{"finalizers":null}}' --type=merge
+	$(kubecmd) get pod -n $(subst kube/remove/pod/finalizers/,,$@) | tail -n+2 | awk '{print $$1}' | xargs -I{} $(kubectl) -n $(subst kube/remove/pod/finalizers/,,$@) patch pod {} -p '{"metadata":{"finalizers":null}}' --type=merge
 
 .PHONY: kube/context
 kube/context: ## Set kubectl config context to CLUSTER
