@@ -10,7 +10,8 @@ ENV KUBE_LATEST_VERSION="v1.18.2"
 # Note: Latest version of helm may be found at
 # https://github.com/kubernetes/helm/releases
 ENV HELM_VERSION="v3.2.1"
-ENV HELMFILE_VERSION="0.118.6"
+ENV HELMFILE_VERSION="0.118.7"
+ENV YQ_VERSION="3.3.0"
 
 RUN apk add --no-cache ca-certificates bash git openssh curl \
     && wget -q https://storage.googleapis.com/kubernetes-release/release/${KUBE_LATEST_VERSION}/bin/linux/amd64/kubectl -O /usr/local/bin/kubectl \
@@ -19,7 +20,10 @@ RUN apk add --no-cache ca-certificates bash git openssh curl \
     && curl --retry 3 --retry-delay 5 --fail -sSL -o /usr/local/bin/helmfile https://github.com/roboll/helmfile/releases/download/v${HELMFILE_VERSION}/helmfile_linux_amd64 \
     && chmod +x /usr/local/bin/helmfile \
     && wget -q https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz -O - | tar -xzO linux-amd64/helm > /usr/local/bin/helm \
-    && chmod +x /usr/local/bin/helm
+    && chmod +x /usr/local/bin/helm \
+    && curl --retry 3 --retry-delay 5 --fail -sSL -o /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64 \
+    && chmod +x /usr/local/bin/yq
+
 
 RUN helm plugin install https://github.com/databus23/helm-diff --version master \
     && helm plugin install https://github.com/futuresimple/helm-secrets \

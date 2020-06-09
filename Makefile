@@ -14,7 +14,7 @@ PROFILE ?= default
 
 yq := $(BIN_PATH)/yq
 jq := $(BIN_PATH)/jq
-task := $(BIN_PATH)/task
+#task := $(BIN_PATH)/task
 
 # Import target deployment env vars
 ENVIRONMENT_VARS ?= $(PROFILE_PATH)/profile.$(PROFILE).env
@@ -39,17 +39,13 @@ INCLUDES := $(foreach taskset, $(TASKSETS), $(addprefix $(ROOT_PATH)/inc/makefil
 
 -include $(INCLUDES)
 
-.PHONY: .githubapps
-.githubapps: ## Install githubapp (ghr-installer)
+.PHONY: .dep/githubapps
+.dep/githubapps: ## Install githubapp (ghr-installer)
 ifeq (,$(wildcard $(APP_PATH)/githubapp))
 	@rm -rf $(APP_PATH)
 	@mkdir -p $(APP_PATH)
 	@git clone https://github.com/zloeber/ghr-installer $(APP_PATH)/githubapp
 endif
-
-.PHONY: deps
-deps: .githubapps $(DEPTASKS) .dep/yq .dep/jq .dep/task ## Install general dependencies
-	@mkdir -p $(TEMP_PATH)
 
 .PHONY: .dep/yq
 .dep/yq: ## Install yq
@@ -57,17 +53,21 @@ ifeq (,$(wildcard $(yq)))
 	@$(MAKE) --no-print-directory -C $(APP_PATH)/githubapp auto mikefarah/yq INSTALL_PATH=$(BIN_PATH)
 endif
 
-.PHONY: .dep/task
-.dep/task: ## Install go-task
-ifeq (,$(wildcard $(task)))
-	@$(MAKE) --no-print-directory -C $(APP_PATH)/githubapp auto go-task/task INSTALL_PATH=$(BIN_PATH)
-endif
-
 .PHONY: .dep/jq
 .dep/jq: ## Install jq
 ifeq (,$(wildcard $(jq)))
 	@$(MAKE) --no-print-directory -C $(APP_PATH)/githubapp install jq INSTALL_PATH=$(BIN_PATH)
 endif
+
+# .PHONY: .dep/task
+# .dep/task: ## Install go-task
+# ifeq (,$(wildcard $(task)))
+# 	@$(MAKE) --no-print-directory -C $(APP_PATH)/githubapp auto go-task/task INSTALL_PATH=$(BIN_PATH)
+# endif
+
+.PHONY: deps
+deps: .dep/githubapps $(DEPTASKS) .dep/yq .dep/jq ## Install general dependencies
+	@mkdir -p $(TEMP_PATH)
 
 .PHONY: clean
 clean: ## Remove downloaded dependencies

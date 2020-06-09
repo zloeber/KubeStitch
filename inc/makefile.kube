@@ -44,17 +44,17 @@ endif
 
 .PHONY: kube/show/utilization
 kube/show/utilization: ## Show aks node utilization
-	$(kubecmd) get nodes --no-headers | awk '{print $$1}' | xargs -I {} sh -c 'echo {}; $(kubecmd) describe node {} | grep Allocated -A 5 | grep -ve Event -ve Allocated -ve percent -ve -- ; echo'
+	$(kubecmd) get nodes --no-headers | awk '{print $$1}' | xargs -I {} sh -c 'echo {}; $(kubectl) describe node {} | grep Allocated -A 5 | grep -ve Event -ve Allocated -ve percent -ve -- ; echo'
 
 .PHONY: kube/reset/dns
 kube/reset/dns: ## Deletes coredns pods to restart dns services on k8s cluster
 	$(kubecmd) -n kube-system delete po -l k8s-app=kube-dns
 
 kube/remove/pvc/finalizers/%: ## removes finalizers from a namespace persistent volume claims
-	$(kubecmd) get pvc -n $(subst kube/remove/pvc/finalizers/,,$@) | tail -n+2 | awk '{print $$1}' | xargs -I{} $(kubecmd) -n $(subst kube/remove/pvc/finalizers/,,$@) patch pvc {} -p '{"metadata":{"finalizers": null}}'
+	$(kubecmd) get pvc -n $(subst kube/remove/pvc/finalizers/,,$@) | tail -n+2 | awk '{print $$1}' | xargs -I{} $(kubectl) -n $(subst kube/remove/pvc/finalizers/,,$@) patch pvc {} -p '{"metadata":{"finalizers": null}}'
 
 kube/remove/pv/finalizers/%: ## removes finalizers from a namespace persistent volumes
-	$(kubecmd) get pv -n $(subst kube/remove/pv/finalizers/,,$@) | tail -n+2 | awk '{print $$1}' | xargs -I{} $(kubecmd) patch pv {} -p '{"metadata":{"finalizers": null}}'
+	$(kubecmd) get pv -n $(subst kube/remove/pv/finalizers/,,$@) | tail -n+2 | awk '{print $$1}' | xargs -I{} $(kubectl) patch pv {} -p '{"metadata":{"finalizers": null}}'
 
 .PHONY: kube/context
 kube/context: ## Set kubectl config context to CLUSTER
@@ -66,11 +66,6 @@ kube/create/dockersecret: ## Create docker secret from current .docker/config.js
 	$(kubecmd) create secret generic regcred \
 	--from-file=.dockerconfigjson="$${HOME}/.docker/config.json" \
 	--type=kubernetes.io/dockerconfigjson -n kube-system
-
-#.PHONY: kube/proxy/dashboard
-#kube/proxy/dashboard: ## Starts a proxy to the local cluster dashboard if it exists
-#	PODNAME=$$($(kubecmd) get pods -n kube-system -l "app=kubernetes-dashboard,release=kubernetes-dashboard" -o jsonpath="{.items[0].metadata.name}"); \
-#	$(kubecmd) -n kube-system port-forward $${PODNAME} 9090:9090
 
 .PHONY: kube/deploy/calico
 kube/deploy/calico: ## Deploys the Calico CNI
