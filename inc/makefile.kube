@@ -51,10 +51,10 @@ kube/reset/dns: ## Deletes coredns pods to restart dns services on k8s cluster
 	$(kubecmd) -n kube-system delete po -l k8s-app=kube-dns
 
 kube/remove/pvc/finalizers/%: ## removes finalizers from a namespace persistent volume claims
-	$(kubecmd) get pvc -n $(subst kube/remove/pvc/finalizers/,,$@) | tail -n+2 | awk '{print $$1}' | xargs -I{} $(kubectl) -n $(subst kube/remove/pvc/finalizers/,,$@) patch pvc {} -p '{"metadata":{"finalizers": null}}'
+	$(kubecmd) get pvc -n $(subst kube/remove/pvc/finalizers/,,$@) | tail -n+2 | awk '{print $$1}' | xargs -I{} $(kubectl) -n $(subst kube/remove/pvc/finalizers/,,$@) patch pvc {} -p '{"metadata":{"finalizers": null}}' --type=merge
 
 kube/remove/pv/finalizers/%: ## removes finalizers from a namespace persistent volumes
-	$(kubecmd) get pv -n $(subst kube/remove/pv/finalizers/,,$@) | tail -n+2 | awk '{print $$1}' | xargs -I{} $(kubectl) patch pv {} -p '{"metadata":{"finalizers": null}}'
+	$(kubecmd) get pv -n $(subst kube/remove/pv/finalizers/,,$@) | tail -n+2 | awk '{print $$1}' | xargs -I{} $(kubectl) patch pv {} -p '{"metadata":{"finalizers": null}}' --type=merge
 
 .PHONY: kube/context
 kube/context: ## Set kubectl config context to CLUSTER
