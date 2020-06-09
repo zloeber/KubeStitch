@@ -42,22 +42,19 @@ endif
 .PHONY: .deps/kube
 .deps/kube: .dep/kubectl .dep/stern .dep/kustomize ## Install kube dependencies
 
-.PHONY: kube/show/utilization
-kube/show/utilization: ## Show aks node utilization
+.PHONY: .kube/show/utilization
+.kube/show/utilization: ## Show aks node utilization
 	$(kubecmd) get nodes --no-headers | awk '{print $$1}' | xargs -I {} sh -c 'echo {}; $(kubectl) describe node {} | grep Allocated -A 5 | grep -ve Event -ve Allocated -ve percent -ve -- ; echo'
 
-.PHONY: kube/reset/dns
-kube/reset/dns: ## Deletes coredns pods to restart dns services on k8s cluster
+.PHONY: .kube/reset/dns
+.kube/reset/dns: ## Deletes coredns pods to restart dns services on k8s cluster
 	$(kubecmd) -n kube-system delete po -l k8s-app=kube-dns
 
-kube/remove/pvc/finalizers/%: ## removes finalizers from persistent volume claims in a namespace
-	$(kubecmd) get pvc -n $(subst kube/remove/pvc/finalizers/,,$@) | tail -n+2 | awk '{print $$1}' | xargs -I{} $(kubectl) -n $(subst kube/remove/pvc/finalizers/,,$@) patch pvc {} -p '{"metadata":{"finalizers":null}}' --type=merge
+.kube/remove/pvc/finalizers/%: ## removes finalizers from persistent volume claims in a namespace
+	$(kubecmd) get pvc -n $(subst .kube/remove/pvc/finalizers/,,$@) | tail -n+2 | awk '{print $$1}' | xargs -I{} $(kubectl) -n $(subst kube/remove/pvc/finalizers/,,$@) patch pvc {} -p '{"metadata":{"finalizers":null}}' --type=merge
 
-kube/remove/pv/finalizers/%: ## removes finalizers from persistent volumes in a namespace
-	$(kubecmd) get pv -n $(subst kube/remove/pv/finalizers/,,$@) | tail -n+2 | awk '{print $$1}' | xargs -I{} $(kubectl) patch pv {} -p '{"metadata":{"finalizers":null}}' --type=merge
-
-kube/remove/pod/finalizers/%: ## removes finalizers from pods in a namespace
-	$(kubecmd) get pod -n $(subst kube/remove/pod/finalizers/,,$@) | tail -n+2 | awk '{print $$1}' | xargs -I{} $(kubectl) -n $(subst kube/remove/pod/finalizers/,,$@) patch pod {} -p '{"metadata":{"finalizers":null}}' --type=merge
+.kube/remove/pv/finalizers/%: ## removes finalizers from persistent volumes in a namespace
+	$(kubecmd) get pv -n $(subst .kube/remove/pv/finalizers/,,$@) | tail -n+2 | awk '{print $$1}' | xargs -I{} $(kubectl) patch pv {} -p '{"metadata":{"finalizers":null}}' --type=merge
 
 .PHONY: kube/context
 kube/context: ## Set kubectl config context to CLUSTER
@@ -85,9 +82,9 @@ kube/config/file: ## Prints the current kube config file location
 kube/untaint/masternodes: ## Untaints master nodes of a cluster
 	@$(kubecmd) taint nodes $$($(kubecmd) get nodes --selector=node-role.kubernetes.io/master | awk 'FNR==2{print $$1}') node-role.kubernetes.io/master- || true
 
-.PHONY: kube/list/resources
-kube/list/resources: ## Prints kubernetes resources
-	for kind in `$(kubecmd) api-resources | tail +2 | awk '{ print $$1 }' | sort`; do kubectl explain $$kind ; done | grep -e "KIND:" -e  "VERSION:" | awk '{print $$2}' | paste -sd' \n'
+#.PHONY: kube/list/resources
+#kube/list/resources: ## Prints kubernetes resources
+#	for kind in `$(kubecmd) api-resources | tail +2 | awk '{ print $$1 }' | sort`; do kubectl explain $$kind ; done | grep -e "KIND:" -e  "VERSION:" | awk '{print $$2}' | paste -sd' \n'
 
 .PHONY: kube/bearertoken
 kube/bearertoken: Return bearer token for cluster

@@ -32,7 +32,7 @@ endif
 .PHONY: show/vault
 show/vault: ## Show vault env vars
 	@echo "export VAULT_TOKEN=$(shell $(kubecmd) -n vault logs vault-0 vault | grep 'Root Token' | cut -d ' ' -f 3)"
-	@echo "export VAULT_ADDR=http://$(shell $(MAKE) .helmfile/lookup/lookup_internalDNSZone)"
+	@echo "export VAULT_ADDR=http://vault.$(shell $(MAKE) .helmfile/lookup/lookup_internalDNSZone)"
 
 .PHONY: vault/addr
 vault/addr: ## Show vault address
