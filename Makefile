@@ -76,3 +76,7 @@ clean: ## Remove downloaded dependencies
 
 .PHONY: cluster
 cluster: deps cluster/start helmfile/sync ## Create cluster and apply default helmfile stack
+
+.PHONY: show/profiles
+show/profiles: ## List all profiles
+	@ls $(PROFILE_PATH)/profile.*.env | xargs -n1 basename | sed -e 's/\.env//g' -e 's/profile\.//g'
