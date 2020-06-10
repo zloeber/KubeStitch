@@ -83,38 +83,6 @@ releases:
         subPath: helmfile
   - "../config/{{ .Environment.Name }}/argocd.override.yaml"
 
-# - name: argocd-ingress
-#   chart: {{ .Values | getOrNil "raw.chart" | default "incubator/raw" }}
-#   version: {{ .Values | getOrNil "raw.version" | default "0.2.3" }}
-#   namespace: {{ .Values | getOrNil "argocd.namespace" | default "argo-cd" }}
-#   condition: ingress.enabled
-#   installed: true
-#   needs:
-#   - kube-system/argocd-namespace
-#   - {{ .Values | getOrNil "argocd.namespace" | default "argo-cd" }}/argocd
-#   labels:
-#     chart: argocd-ingress
-#     component: ingress
-#     namespace: {{ .Values | getOrNil "argocd.namespace" | default "argo-cd" }}
-#   values:
-#   - resources:
-#     - apiVersion: traefik.containo.us/v1alpha1
-#       kind: IngressRoute
-#       metadata:
-#         name: argocd-ingress
-#       spec:
-#         entryPoints:
-#           - websecure
-#         routes:
-#           - match: Host(`argocd.{{ .Values | getOrNil "ingress.internal.zone" | default "int" }}.{{ .Values | getOrNil "dnsRoot" | default "micro.svc" }}`)
-#             kind: Rule
-#             services:
-#               - name: argocd-server
-#                 port: 80
-#         tls:
-#           certResolver: default
-#           options: {}
-
 - name: argocd-ingress
   namespace: {{ .Values | getOrNil "argocd.namespace" | default "argocd" }}
   chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}

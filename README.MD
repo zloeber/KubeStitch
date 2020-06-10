@@ -325,40 +325,82 @@ Here are a few example use cases worth looking over.
 
 ## Example 1 - Local Istio
 
-Here is an example of using a profile to start up a local istio cluster. Istio has a moderately more complex deployment path than a standard helm chart so this is a good example for showing how CICDHelper can be flexible.
+Here is an example of using a profile to start up a local istio cluster. Istio has a moderately more complex deployment path than a standard helm chart so this is a good example for showing how CICDHelper can be flexible. The profile definition is copied from the default profile and renamed with a few changes.
+
+```bash
+KUBE_PROVIDER=kind
+CLUSTER=istio
+KUBE_VERSION=1.18.2
+KIND_IMAGE_POSTFIX=@sha256:7b27a6d0f2517ff88ba444025beae41491b016bc6af573ba467b70c5e8e0d85f
+ENVIRONMENT=istio
+ADDITIONAL_TASKSETS=istio k9s metallb
+```
+
+Because istio will want to run its own ingress (and egress) gateways within the istio-system namespace we create another helmfile profile which looks very similar to the default profile:
+
+```yaml
+  istio:
+    missingFileHandler: Debug
+    secrets:
+    - ../config/{{ .Environment.Name }}/secrets.yaml
+    values:
+    - ../config/default/values.yaml
+    - ../config/{{ .Environment.Name }}/values.yaml
+    - prometheusoperator:
+        enabled: false
+    - ingress:
+        internal:
+          namespace: istio-system
+    - traefik:
+        enabled: false
+```
+
+We don't actually use any secrets or even a specific environment values.yaml file but we define them anyways (in case we ever want to drop overrides for chart locations, versions, or anything else that veers from the ../config/default/values.yaml definitions). We then put in a few overrides that will prevent deployment of the prometheus-operator and traefik (though the default cluster helmfile stack for the 'istio' cluster defined in the profile does not have these defined anyway). Finally, the ingress internal namespace is overwritten from the default values in here as well. We use this for the dnsforwarding tasks.
+
+The istio operator chart wants to create its own namespace via its chart template so we let it do so via the istio-operator chart by using the helm-git plugin to point directly to the chart location within the parent project and simply not defining a namespace within the helmfile. istio-operator.yaml file. We also deploy the demo profile for istio using the CRD definition and a simple raw helm chart in the helmfile.istio.yaml file.
 
 ```bash
 # Ensure we get the correct profile for the remaining commands
 export PROFILE=istio
 
 # Start the cluster
-make deps cluster/start istio/deploy helmfile/sync STACK=bookinfo dnsforward/start
+make cluster
+
+# If you are on linux you can also start forwarding dns
+make dnsforward/start
 ```
 
-At this point you should be able to go to the example bookinfo microservice deployment by visiting [http://bookinfo.int.micro.svc/productpage](http://bookinfo.int.micro.svc/productpage) from your local machine. There are more things you may want to do though:
+This installs the istio operator, istio itself, and some dashboard ingress definitions for these things.
+
+> **NOTE** Because we are using the operator, it can take a few minutes for the istio deployment to get rolled out.
+
+If you want to see more than just a base deployment deploy the bookinfo helmfile stack as well. 
 
 ```bash
-# configure local kubectl to access your kind cluster
-export KUBECONFIG=`make kube/config/file`
-kubectl get pods -n istio-system
-
-make helmfile/sync STACK=istiodashboards
+# Deploy bookinfo demo app if you like
+make helmfile/sync STACK=bookinfo
 ```
 
-Open the kiali dashboard at [http://kiali.int.micro.svc](http://kiali.int.micro.svc) (login: admin/admin)
+At this point you should be able to go to the example bookinfo microservice deployment by visiting [http://bookinfo.int.micro.svc/productpage](http://bookinfo.int.micro.svc/productpage) from your local machine. Open the kiali dashboard at [http://kiali.int.micro.svc](http://kiali.int.micro.svc) (login: admin/admin) to see the istio magic at work.
 
-To clean things up;
+You can then screw around with the cluster to your heart's content.
+
+```bash
+# configure local kubectl to access your cluster
+export KUBECONFIG=`make kube/config/file`
+
+# view the virtual services (ingresses) for the dashboards
+kubectl -n istio-system get virtualservice
+```
+
+To clean things up.
 
 ```bash
 make dnsforward/stop cluster/stop
 unset PROFILE KUBECONFIG
 ```
 
-If k3d is more your style then you can repeat this entire set of directions with another profile I setup and tested in a few minutes after doing this with kind. Just use the istio-k3d profile instead! Here is the short version of the above steps to start things.
-
-```bash
-make cluster/start istio/deploy istio/start/dnsforward helmfile/sync STACK=bookinfo PROFILE=istio-k3d
-```
+If k3d is more your style then you can repeat this entire set of directions with another profile I setup and tested in a few minutes after doing this with kind. Just use the istio-k3d profile instead!
 
 ## Example 2 - K3S with HomeAssistant
 
@@ -420,21 +462,21 @@ export GITLAB_TOKEN=<your token>
 
 Lens is a particularly useful GUI app for rucking about in Kubernetes. It is also cross-platform. If you are running a linux host you can use this framework to automatically download the app and access clusters with it. I've added some scriptwork to automatically clear the lens clusters and add new configuration in a few commands. Here is how it works.
 
-> **NOTE** the lens taskset is targeted towards linux hosts. For a cross-platform console dashboard you can also use the `make k9s` task!
-
 ```bash
-# First download lens and run it at least once
+# First ensure that the taskset gets loaded (it should not be in any profile by default)
+export CUSTOM_TASKSETS=lens
+
+# Download the lens AppImage and run it at least once then close out of it
 make deps lens
 
-# Then, assuming your cluster has been started (make cluster/start) you can add it to the lens cluster store/config. By default, this will first clear any added clusters in the configuration (localized in the ./.local/Lens/lens-cluster-store.json file)
-make lens/addcluster
+# Assuming your cluster has been started already, you can add it to the lens config automatically then restart the app.
+# By default, this will first clear any added clusters in the configuration (localized in the ./.local/Lens/lens-cluster-store.json file)
+make lens/addcluster lens
 ```
 
-That is it, then start lens again and your running cluster will be the first one in the list (at the upper left).
+The running cluster will be the first one in the list (at the upper left). Lens stores entire cluster configurations in its backend store so you will need to do this each time you rebuild a cluster and wish to use this app to manage it.
 
-```bash
-make lens
-```
+> **NOTE** The Lens app is cross platform but the taskset is targeted towards linux hosts only currently as the AppImage format is a single download and able to be automated without root access. For a cross-platform console dashboard you can also use the `k9s` taskset. Otherwise you will have to manually download the appropriate version of Lens for your platform and remove/add the cluster configurations manually at this time.
 
 # Additional Tips
 

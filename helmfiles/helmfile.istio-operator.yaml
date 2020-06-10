@@ -1,0 +1,29 @@
+---
+bases:
+- ../config/environments.yaml
+- ../config/helmdefaults.yaml
+- ../config/repositories.yaml
+---
+
+## Installs the istio operator only
+# Values - https://github.com/istio/istio/blob/master/manifests/charts/istio-operator/values.yaml
+releases:
+- name: istiooperator
+  chart: {{ .Values | getOrNil "istiooperator.chart" | default "istiooperator/istio-operator" }}
+  #namespace: {{ .Values | getOrNil "istiooperator.namespace" | default "istio-operator" }}
+  version: {{ .Values | getOrNil "istiooperator.version" | default "2.3.5" }}
+  condition: istiooperator.enabled
+  installed: true
+  missingFileHandler: Debug
+  labels:
+    chart: istiooperator
+    component: istiooperator
+    #namespace: {{ .Values | getOrNil "istiooperator.namespace" | default "istio-operator" }}
+  # needs:
+  #   - kube-system/istiooperator-namespace
+  values:
+  - hub: docker.io/istio
+    tag: 1.6.1
+    operatorNamespace: {{ .Values | getOrNil "istiooperator.namespace" | default "istio-operator" }}
+    istioNamespace: {{ .Values | getOrNil "istio.namespace" | default "istio-system" }}
+  - "../config/{{ .Environment.Name }}/istiooperator.override.yaml"

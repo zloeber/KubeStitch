@@ -1,0 +1,88 @@
+---
+bases:
+- ../config/environments.yaml
+- ../config/helmdefaults.yaml
+- ../config/repositories.yaml
+---
+
+releases:
+- name: istio-dashboard-ingress
+  chart: {{ .Values | getOrNil "raw.chart" | default "incubator/raw" }}
+  version: {{ .Values | getOrNil "raw.version" | default "0.2.3" }}
+  namespace: {{ .Values | getOrNil "istio.namespace" | default "istio-system" }}
+  condition: ingress.enabled
+  installed: true
+  labels:
+    chart: istio-dashboard-ingress
+    component: ingress
+    namespace: {{ .Values | getOrNil "istio.namespace" | default "istio-system" }}
+  values:
+  - resources:
+    - apiVersion: networking.istio.io/v1beta1
+      kind: Gateway
+      metadata:
+        name: istio-dashboard-gateway
+      spec:
+        selector:
+          istio: ingressgateway
+        servers:
+        - hosts:
+          - '*'
+          port:
+            name: http
+            number: 80
+            protocol: HTTP
+    - apiVersion: networking.istio.io/v1beta1
+      kind: VirtualService
+      metadata:
+        name: istio-kiali-virtualservice
+      spec:
+        gateways:
+        - istio-dashboard-gateway
+        hosts:
+        - 'kiali.{{ .Values | getOrNil "ingress.internal.zone" | default "int" }}.{{ .Values | getOrNil "dnsRoot" | default "micro.svc" }}'
+        http:
+        - match:
+          - uri:
+              prefix: /
+          route:
+          - destination:
+              host: kiali
+              port:
+                number: 20001
+    - apiVersion: networking.istio.io/v1beta1
+      kind: VirtualService
+      metadata:
+        name: istio-prometheus-virtualservice
+      spec:
+        gateways:
+        - istio-dashboard-gateway
+        hosts:
+        - 'prometheus.{{ .Values | getOrNil "ingress.internal.zone" | default "int" }}.{{ .Values | getOrNil "dnsRoot" | default "micro.svc" }}'
+        http:
+        - match:
+          - uri:
+              prefix: /
+          route:
+          - destination:
+              host: prometheus
+              port:
+                number: 9090
+    - apiVersion: networking.istio.io/v1beta1
+      kind: VirtualService
+      metadata:
+        name: istio-grafana-virtualservice
+      spec:
+        gateways:
+        - istio-dashboard-gateway
+        hosts:
+        - 'grafana.{{ .Values | getOrNil "ingress.internal.zone" | default "int" }}.{{ .Values | getOrNil "dnsRoot" | default "micro.svc" }}'
+        http:
+        - match:
+          - uri:
+              prefix: /
+          route:
+          - destination:
+              host: grafana
+              port:
+                number: 3000

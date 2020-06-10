@@ -7,13 +7,6 @@ environments:
     - ../config/{{ .Environment.Name }}/values.yaml
     - prometheusoperator:
         enabled: false
-  monitoring:
-    missingFileHandler: Debug
-    secrets:
-    - ../config/{{ .Environment.Name }}/secrets.yaml
-    values:
-    - ../config/default/values.yaml
-    - ../config/{{ .Environment.Name }}/values.yaml
   istio:
     missingFileHandler: Debug
     secrets:
@@ -23,8 +16,18 @@ environments:
     - ../config/{{ .Environment.Name }}/values.yaml
     - prometheusoperator:
         enabled: false
+    - ingress:
+        internal:
+          namespace: istio-system
     - traefik:
         enabled: false
+  monitoring:
+    missingFileHandler: Debug
+    secrets:
+    - ../config/{{ .Environment.Name }}/secrets.yaml
+    values:
+    - ../config/default/values.yaml
+    - ../config/{{ .Environment.Name }}/values.yaml
   homeassist:
     missingFileHandler: Debug
     secrets:

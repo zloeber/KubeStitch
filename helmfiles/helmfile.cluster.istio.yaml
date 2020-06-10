@@ -6,4 +6,6 @@ bases:
 helmfiles:
 - ../helmfiles/helmfile.certmanager.yaml
 - ../helmfiles/helmfile.rbacmanager.yaml
-- ../helmfiles/helmfile.metricsserver.yaml
+- ../helmfiles/helmfile.istio-operator.yaml
+- ../helmfiles/helmfile.istio.yaml
+- ../helmfiles/helmfile.istio-dashboards.yaml

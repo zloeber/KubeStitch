@@ -19,3 +19,5 @@ repositories:
   url: https://argoproj.github.io/argo-helm
 - name: kubefledged
   url: git+https://github.com/senthilrch/kube-fledged@/deploy/kubefledged-operator/helm-charts/kubefledged
+- name: istiooperator
+  url: git+https://github.com/istio/istio@/manifests/charts/istio-operator

@@ -1,0 +1,48 @@
+---
+bases:
+- ../config/environments.yaml
+- ../config/helmdefaults.yaml
+- ../config/repositories.yaml
+---
+
+## Installs istio
+releases:
+- name: istio-namespace
+  chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.2" }}
+  namespace: kube-system
+  condition: istio.enabled
+  installed: true
+  wait: true
+  labels:
+    chart: istio-namespace
+    component: istio
+    namespace: kube-system
+  values:
+  - app: istio
+    namespace:
+      enabled: true
+      name: {{ .Values | getOrNil "istio.namespace" | default "istio-system" }}
+
+- name: istio
+  chart: {{ .Values | getOrNil "raw.chart" | default "incubator/raw" }}
+  namespace: {{ .Values | getOrNil "istio.namespace" | default "istio-system" }}
+  version: {{ .Values | getOrNil "raw.version" | default "0.2.3" }}
+  condition: istio.enabled
+  installed: true
+  missingFileHandler: Debug
+  labels:
+    chart: istio
+    component: istio
+    namespace: {{ .Values | getOrNil "istio.namespace" | default "istio-system" }}
+  needs:
+  - kube-system/istio-namespace
+  values:
+  - resources:
+    - apiVersion: install.istio.io/v1alpha1
+      kind: IstioOperator
+      metadata:
+        name: {{ .Values | getOrNil "istio.name" | default "istiocontrolplane" }}
+      spec:
+        profile: {{ .Values | getOrNil "istio.profile" | default "demo" }}
+  - "../config/{{ .Environment.Name }}/istio.override.yaml"

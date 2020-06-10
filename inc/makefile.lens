@@ -37,5 +37,3 @@ lens/addcluster: lens/clearclusters ## Adds current kube cluster to lens
 lens/clearclusters: ## Remove all clusters from lens
 	@$(jq) '. + {clusters: []}'	<$(LENS_CLUSTER_STORE) >$(LENS_CLUSTER_STORE).tmp
 	@cp $(LENS_CLUSTER_STORE).tmp $(LENS_CLUSTER_STORE)
-
-	

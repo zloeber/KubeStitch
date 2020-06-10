@@ -28,9 +28,17 @@ archetype:
 raw:
   version: "0.2.3"
   chart: incubator/raw
+istiooperator:
+  enabled: true
+  chart: istiooperator/istio-operator
+  version: "1.6.0"
+  namespace: istio-operator
 istio:
   enabled: true
   ingressGateway: istio-ingressgateway
+  namespace: istio-system
+  name: istiocontrolplane
+  profile: demo
 traefik:
   enabled: true
   version: "8.3.0"

@@ -14,34 +14,27 @@ endif
 .PHONY: .deps/istio
 .deps/istio: .dep/istioctl ## Install dependencies
 
-.PHONY: istio/verify
-istio/verify: ## Verify istio install
-	$(istioctl) verify-install \
-	  --kubeconfig $(KUBE_CONFIG) \
-	  --context $(CLUSTER_CONTEXT)
+#.PHONY: istio/verify
+#istio/verify: ## Verify istio install
+#	$(istioctl) verify-install \
+#	  --kubeconfig $(KUBE_CONFIG) \
+#	  --context $(CLUSTER_CONTEXT)
 
-.PHONY: istio/deploy
-istio/deploy: istio/verify ## Deploy istio
-	$(istioctl) operator init \
-		--operatorNamespace=istio-operator \
-		--istioNamespace=istio-system \
-		-f=$(DEPLOY_PATH)/istio/profile.yaml \
-		--wait \
-		--kubeconfig $(KUBE_CONFIG) \
-		--context $(CLUSTER_CONTEXT)
+#.PHONY: istio/deploy/operator
+#istio/deploy/operator: ## Deploy istio operator
+#	$(istioctl) operator init \
+#		--kubeconfig $(KUBE_CONFIG) \
+#		--context $(CLUSTER_CONTEXT)
 
-.PHONY: istio/generate
-istio/generate: ## Generate the istio operator manifest
-	$(istioctl) manifest generate -f $(DEPLOY_PATH)/istio/profile.yaml
+#.PHONY: istio/deploy
+#istio/deploy: istio/deploy/operator ## Deploy istio
+#	$(istioctl) operator init \
+#		--kubeconfig $(KUBE_CONFIG) \
+#		--context $(CLUSTER_CONTEXT)
 
-.PHONY: istio/remove
-istio/remove: ## Remove istio
-	tmpdir=$$(mktemp -d) && echo "$${tmpdir}" && \
-	export STACK_INGRESS_INTERNALZONE=$(shell $(MAKE) .helmfile/lookup/lookup_internalDNSZone) && \
-	$(gomplate) --file $(DEPLOY_PATH)/istio/profile.yaml --out "$${tmpdir}/profile.yaml" && \
-	$(istioctl) manifest generate \
-	  -f $${tmpdir}/profile.yaml | \
-	  	$(kubecmd) delete -f -
+#.PHONY: istio/generate
+#istio/generate: ## Generate the istio operator manifest
+#	$(istioctl) manifest generate -f $(DEPLOY_PATH)/istio/profile.yaml
 
 .PHONY: istio/dashboard
 istio/dashboard/%: ## Access istio dashboard
