@@ -91,7 +91,7 @@ releases:
                 port:
                   number: 20001
       - name: prometheus
-        hostName: 'prometheus.{{ .Values | getOrNil "ingress.internal.zone" | default "int" }}.{{ .Values | getOrNil "dnsRoot" | default "micro.svc" }}'
+        hostName: prometheus.{{ .Values | getOrNil "ingress.internal.zone" | default "int" }}.{{ .Values | getOrNil "dnsRoot" | default "micro.svc" }}
         config:
           http:
           - match:
@@ -103,7 +103,7 @@ releases:
                 port:
                   number: 9090
       - name: grafana
-        hostName: 'grafana.{{ .Values | getOrNil "ingress.internal.zone" | default "int" }}.{{ .Values | getOrNil "dnsRoot" | default "micro.svc" }}'
+        hostName: grafana.{{ .Values | getOrNil "ingress.internal.zone" | default "int" }}.{{ .Values | getOrNil "dnsRoot" | default "micro.svc" }}
         config:
           http:
           - match:
