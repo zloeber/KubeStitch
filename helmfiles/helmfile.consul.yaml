@@ -84,13 +84,11 @@ releases:
       tlsEnabled: true
       hosts:
       - secretName: consul-ui-ingress
-        config:
-          http:
-            paths:
-            - path: "/"
-              backend:
-                serviceName: consul-consul-ui
-                servicePort: 80
+        paths:
+        - path: "/"
+          backend:
+            serviceName: consul-consul-ui
+            servicePort: 80
 
 - name: consul-ingress
   namespace: {{ .Values | getOrNil "consul.namespace" | default "consul" }}
@@ -116,10 +114,8 @@ releases:
       tlsEnabled: true
       hosts:
       - secretName: consul-ingress
-        config:
-          http:
-            paths:
-            - path: "/"
-              backend:
-                serviceName: consul-consul-server
-                servicePort: 8500
+        paths:
+        - path: "/"
+          backend:
+            serviceName: consul-consul-server
+            servicePort: 8500

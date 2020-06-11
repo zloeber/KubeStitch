@@ -1,0 +1,35 @@
+---
+bases:
+- ../config/environments.yaml
+- ../config/helmdefaults.yaml
+- ../config/repositories.yaml
+---
+
+## Prometheus Operator
+# site: https://github.com/helm/charts/blob/master/stable/prometheus-operator/values.yaml
+releases:
+- name: po-prometheus-ingress
+  namespace: {{ .Values | getOrNil "prometheusoperator.namespace" | default "prometheus-operator" }}
+  chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.2" }}
+  condition: ingress.enabled
+  installed: true
+  labels:
+    chart: po-prometheus-ingress
+    component: po
+    namespace: {{ .Values | getOrNil "prometheusoperator.namespace" | default "prometheus-operator" }}
+  values:
+  - app: prometheus
+    dnsRoot: {{ .Values | getOrNil "dnsRoot" | default "micro.svc" }}
+    zone: internal
+    ingress:
+      enabled: true
+      tlsEnabled: true
+      hosts:
+      - name: prometheus
+        secretName: po-prometheus-ingress
+        paths:
+        - path: "/"
+          backend:
+            serviceName: po-prometheus
+            servicePort: 9090

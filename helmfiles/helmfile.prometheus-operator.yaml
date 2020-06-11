@@ -64,28 +64,18 @@ releases:
   values:
   - app: grafana
     dnsRoot: {{ .Values | getOrNil "dnsRoot" | default "micro.svc" }}
-    zone: {{ .Values | getOrNil "prometheusoperator.zone" | default "internal" }}
-    ingressClassMap:
-      internal: {{ .Values | getOrNil "ingress.internal.class" | default "internal" }}
-      external: {{ .Values | getOrNil "ingress.external.class" | default "external" }}
-      stage: {{ .Values | getOrNil "ingress.stage.class" | default "stage" }}
-    zoneMap:
-      internal: {{ .Values | getOrNil "ingress.internal.zone" | default "int" }}
-      external: {{ .Values | getOrNil "ingress.external.zone" | default "ext" }}
-      staging: {{ .Values | getOrNil "ingress.stage.zone" | default "stage" }}
-      default: ""
+    zone: internal
     ingress:
       enabled: true
       tlsEnabled: true
       hosts:
-      - secretName: po-grafana-ingress
-        config:
-          http:
-            paths:
-            - path: "/"
-              backend:
-                serviceName: po-grafana
-                servicePort: 80
+      - name: grafana
+        secretName: po-grafana-ingress
+        paths:
+        - path: "/"
+          backend:
+            serviceName: po-grafana
+            servicePort: 80
 
 - name: po-prometheus-ingress
   namespace: {{ .Values | getOrNil "prometheusoperator.namespace" | default "prometheus-operator" }}
@@ -103,28 +93,18 @@ releases:
   values:
   - app: prometheus
     dnsRoot: {{ .Values | getOrNil "dnsRoot" | default "micro.svc" }}
-    zone: {{ .Values | getOrNil "prometheusoperator.zone" | default "internal" }}
-    ingressClassMap:
-      internal: {{ .Values | getOrNil "ingress.internal.class" | default "internal" }}
-      external: {{ .Values | getOrNil "ingress.external.class" | default "external" }}
-      stage: {{ .Values | getOrNil "ingress.stage.class" | default "stage" }}
-    zoneMap:
-      internal: {{ .Values | getOrNil "ingress.internal.zone" | default "int" }}
-      external: {{ .Values | getOrNil "ingress.external.zone" | default "ext" }}
-      staging: {{ .Values | getOrNil "ingress.stage.zone" | default "stage" }}
-      default: ""
+    zone: internal
     ingress:
       enabled: true
       tlsEnabled: true
       hosts:
-      - secretName: po-prometheus-ingress
-        config:
-          http:
-            paths:
-            - path: "/"
-              backend:
-                serviceName: po-prometheus
-                servicePort: 9090
+      - name: prometheus
+        secretName: po-prometheus-ingress
+        paths:
+        - path: "/"
+          backend:
+            serviceName: po-prometheus
+            servicePort: 9090
 
 - name: po-alertmanager-ingress
   namespace: {{ .Values | getOrNil "prometheusoperator.namespace" | default "prometheus-operator" }}
@@ -142,25 +122,15 @@ releases:
   values:
   - app: alertmanager
     dnsRoot: {{ .Values | getOrNil "dnsRoot" | default "micro.svc" }}
-    zone: {{ .Values | getOrNil "prometheusoperator.zone" | default "internal" }}
-    ingressClassMap:
-      internal: {{ .Values | getOrNil "ingress.internal.class" | default "internal" }}
-      external: {{ .Values | getOrNil "ingress.external.class" | default "external" }}
-      stage: {{ .Values | getOrNil "ingress.stage.class" | default "stage" }}
-    zoneMap:
-      internal: {{ .Values | getOrNil "ingress.internal.zone" | default "int" }}
-      external: {{ .Values | getOrNil "ingress.external.zone" | default "ext" }}
-      staging: {{ .Values | getOrNil "ingress.stage.zone" | default "stage" }}
-      default: ""
+    zone: internal
     ingress:
       enabled: true
       tlsEnabled: true
       hosts:
-      - secretName: po-alertmanager-ingress
-        config:
-          http:
-            paths:
-            - path: "/"
-              backend:
-                serviceName: po-alertmanager
-                servicePort: 9093
+      - name: alertmanager
+        secretName: po-alertmanager-ingress
+        paths:
+        - path: "/"
+          backend:
+            serviceName: po-alertmanager
+            servicePort: 9093

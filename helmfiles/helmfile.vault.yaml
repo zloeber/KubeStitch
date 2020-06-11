@@ -75,13 +75,11 @@ releases:
       tlsEnabled: true
       hosts:
       - secretName: vault-ui-ingress
-        config:
-          http:
-            paths:
-            - path: "/"
-              backend:
-                serviceName: vault-ui
-                servicePort: 8200
+        paths:
+        - path: "/"
+          backend:
+            serviceName: vault-ui
+            servicePort: 8200
 
 - name: vault-active-ingress
   chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
@@ -107,13 +105,11 @@ releases:
       tlsEnabled: true
       hosts:
       - secretName: vault-active-ingress
-        config:
-          http:
-            paths:
-            - path: "/"
-              backend:
-                serviceName: vault-active
-                servicePort: 8200
+        paths:
+        - path: "/"
+          backend:
+            serviceName: vault-active
+            servicePort: 8200
 
 - name: vault-ingress
   chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
@@ -138,13 +134,11 @@ releases:
       tlsEnabled: true
       hosts:
       - secretName: vault-ingress
-        config:
-          http:
-            paths:
-            - path: "/"
-              backend:
-                serviceName: vault
-                servicePort: 8200
+        paths:
+        - path: "/"
+          backend:
+            serviceName: vault
+            servicePort: 8200
 
 ## Role binding needed to do vault auth
 - name: vault-rolebinding

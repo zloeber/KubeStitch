@@ -63,54 +63,29 @@ releases:
   - app: istio
     dnsRoot: {{ .Values | getOrNil "dnsRoot" | default "micro.svc" }}
     zone: {{ .Values | getOrNil "istio.zone" | default "internal" }}
-    ingressClassMap:
-      internal: {{ .Values | getOrNil "ingress.internal.class" | default "internal" }}
-      external: {{ .Values | getOrNil "ingress.external.class" | default "external" }}
-      stage: {{ .Values | getOrNil "ingress.stage.class" | default "stage" }}
-    zoneMap:
-      internal: {{ .Values | getOrNil "ingress.internal.zone" | default "int" }}
-      external: {{ .Values | getOrNil "ingress.external.zone" | default "ext" }}
-      staging: {{ .Values | getOrNil "ingress.stage.zone" | default "stage" }}
-      default: ""
+    istio:
+      gateway:
+        enabled: true
     ingress:
       enabled: true
       type: istio
-      gateway:
-        enabled: true
       hosts:
-      - name: kiali
-        hostName: kiali.{{ .Values | getOrNil "ingress.internal.zone" | default "int" }}.{{ .Values | getOrNil "dnsRoot" | default "micro.svc" }}
-        config:
-          http:
-          - match:
-            - uri:
-                prefix: /
-            route:
-            - destination:
-                host: kiali
-                port:
-                  number: 20001
       - name: prometheus
-        hostName: prometheus.{{ .Values | getOrNil "ingress.internal.zone" | default "int" }}.{{ .Values | getOrNil "dnsRoot" | default "micro.svc" }}
-        config:
-          http:
-          - match:
-            - uri:
-                prefix: /
-            route:
-            - destination:
-                host: prometheus
-                port:
-                  number: 9090
+        paths:
+        - path: "/"
+          backend:
+            serviceName: prometheus
+            servicePort: 9090
+      - name: kiali
+        paths:
+        - path: "/"
+          backend:
+            serviceName: kiali
+            servicePort: 20001
       - name: grafana
-        hostName: grafana.{{ .Values | getOrNil "ingress.internal.zone" | default "int" }}.{{ .Values | getOrNil "dnsRoot" | default "micro.svc" }}
-        config:
-          http:
-          - match:
-            - uri:
-                prefix: /
-            route:
-            - destination:
-                host: grafana
-                port:
-                  number: 3000
+        paths:
+        - path: "/"
+          backend: 
+            serviceName: grafana
+            servicePort: 3000
+

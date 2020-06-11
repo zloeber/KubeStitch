@@ -85,27 +85,16 @@ releases:
   - app: haas
     dnsRoot: {{ .Values | getOrNil "dnsRoot" | default "micro.svc" }}
     zone: {{ .Values | getOrNil "homeassistant.zone" | default "internal" }}
-    ingressClassMap:
-      internal: {{ .Values | getOrNil "ingress.internal.class" | default "internal" }}
-      external: {{ .Values | getOrNil "ingress.external.class" | default "external" }}
-      stage: {{ .Values | getOrNil "ingress.stage.class" | default "stage" }}
-    zoneMap:
-      internal: {{ .Values | getOrNil "ingress.internal.zone" | default "int" }}
-      external: {{ .Values | getOrNil "ingress.external.zone" | default "ext" }}
-      staging: {{ .Values | getOrNil "ingress.stage.zone" | default "stage" }}
-      default: ""
     ingress:
       enabled: true
       tlsEnabled: true
       hosts:
       - secretName: homeassistant-dashboard-ingress
-        config:
-          http:
-            paths:
-            - path: "/"
-              backend:
-                serviceName: homeassistant-home-assistant
-                servicePort: 8123
+        paths:
+        - path: "/"
+          backend:
+            serviceName: homeassistant-home-assistant
+            servicePort: 8123
 
 - name: homeassistant-vscode-ingress
   namespace: {{ .Values | getOrNil "homeassistant.namespace" | default "homeassistant" }}
@@ -124,27 +113,16 @@ releases:
   - app: vscode
     dnsRoot: {{ .Values | getOrNil "dnsRoot" | default "micro.svc" }}
     zone: {{ .Values | getOrNil "homeassistant.zone" | default "internal" }}
-    ingressClassMap:
-      internal: {{ .Values | getOrNil "ingress.internal.class" | default "internal" }}
-      external: {{ .Values | getOrNil "ingress.external.class" | default "external" }}
-      stage: {{ .Values | getOrNil "ingress.stage.class" | default "stage" }}
-    zoneMap:
-      internal: {{ .Values | getOrNil "ingress.internal.zone" | default "int" }}
-      external: {{ .Values | getOrNil "ingress.external.zone" | default "ext" }}
-      staging: {{ .Values | getOrNil "ingress.stage.zone" | default "stage" }}
-      default: ""
     ingress:
       enabled: true
       tlsEnabled: true
       hosts:
       - secretName: homeassistant-vscode-ingress
-        config:
-          http:
-            paths:
-            - path: "/"
-              backend:
-                serviceName: homeassistant-home-assistant
-                servicePort: 80
+        paths:
+        - path: "/"
+          backend:
+            serviceName: homeassistant-home-assistant
+            servicePort: 80
 
 - name: homeassistant-configurator-ingress
   namespace: {{ .Values | getOrNil "homeassistant.namespace" | default "homeassistant" }}
@@ -163,24 +141,13 @@ releases:
   - app: configurator
     dnsRoot: {{ .Values | getOrNil "dnsRoot" | default "micro.svc" }}
     zone: {{ .Values | getOrNil "homeassistant.zone" | default "internal" }}
-    ingressClassMap:
-      internal: {{ .Values | getOrNil "ingress.internal.class" | default "internal" }}
-      external: {{ .Values | getOrNil "ingress.external.class" | default "external" }}
-      stage: {{ .Values | getOrNil "ingress.stage.class" | default "stage" }}
-    zoneMap:
-      internal: {{ .Values | getOrNil "ingress.internal.zone" | default "int" }}
-      external: {{ .Values | getOrNil "ingress.external.zone" | default "ext" }}
-      staging: {{ .Values | getOrNil "ingress.stage.zone" | default "stage" }}
-      default: ""
     ingress:
       enabled: true
       tlsEnabled: true
       hosts:
       - secretName: homeassistant-configurator-ingress
-        config:
-          http:
-            paths:
-            - path: "/"
-              backend:
-                serviceName: homeassistant-home-assistant
-                servicePort: 3218
+        paths:
+        - path: "/"
+          backend:
+            serviceName: homeassistant-home-assistant
+            servicePort: 3218

@@ -18,9 +18,6 @@ releases:
   labels:
     chart: istiooperator
     component: istiooperator
-    #namespace: {{ .Values | getOrNil "istiooperator.namespace" | default "istio-operator" }}
-  # needs:
-  #   - kube-system/istiooperator-namespace
   values:
   - hub: docker.io/istio
     tag: 1.6.1

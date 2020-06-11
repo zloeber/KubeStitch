@@ -97,8 +97,7 @@ releases:
     component: ingress
     namespace: {{ .Values | getOrNil "argocd.namespace" | default "argocd" }}
   values:
-  - zone: internal
-    app: argocd
+  - app: argocd
     dnsRoot: {{ .Values | getOrNil "dnsRoot" | default "micro.svc" }}
     ingressClassMap:
       internal: {{ .Values | getOrNil "ingress.internal.class" | default "internal" }}
@@ -109,10 +108,8 @@ releases:
         traefik.ingress.kubernetes.io/pass-tls-cert: "true"
       hosts:
       - secretName: argocd-ingress
-        config:
-          http:
-            paths:
-            - path: "/"
-              backend:
-                serviceName: argocd-server
-                servicePort: 80
+        paths:
+        - path: "/"
+          backend:
+            serviceName: argocd-server
+            servicePort: 80

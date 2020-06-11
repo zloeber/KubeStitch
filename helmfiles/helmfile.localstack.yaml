@@ -152,13 +152,11 @@ releases:
       hosts:
       - name: localstack-dashboard.{{ .Values | getOrNil "ingress.internal.zone" | default "int.micro.svc" }}
         secretName: ingress-localstack-dashboard
-        config:
-          http:
-            paths:
-            - path: "/"
-              backend:
-                serviceName: localstack
-                servicePort: 8080
+        paths:
+        - path: "/"
+          backend:
+            serviceName: localstack
+            servicePort: 8080
 
 - name: localstack-ingress-api
   namespace: {{ .Values.localstack.namespace }}
@@ -183,10 +181,8 @@ releases:
       hosts:
       - name: localstack.{{ .Values | getOrNil "ingress.internal.zone" | default "int.micro.svc" }}
         secretName: ingress-localstack-api
-        config:
-          http:
-            paths:
-            - path: "/"
-              backend:
-                serviceName: localstack
-                servicePort: 4566
+        paths:
+        - path: "/"
+          backend:
+            serviceName: localstack
+            servicePort: 4566

@@ -23,8 +23,8 @@ ingress:
     zone: stage
     ip: ""
 archetype:
-  version: "0.0.2"
-  chart: zloeber/archetype
+  version: "0.0.5"
+  chart: archetype/archetype
 raw:
   version: "0.2.3"
   chart: incubator/raw
