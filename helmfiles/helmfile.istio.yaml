@@ -46,3 +46,71 @@ releases:
       spec:
         profile: {{ .Values | getOrNil "istio.profile" | default "demo" }}
   - "../config/{{ .Environment.Name }}/istio.override.yaml"
+
+- name: istio-dashboard-ingress
+  namespace: {{ .Values | getOrNil "istio.namespace" | default "istio" }}
+  chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.2" }}
+  condition: ingress.enabled
+  installed: true
+  needs:
+  - {{ .Values | getOrNil "istio.namespace" | default "istio-system" }}/istio
+  labels:
+    chart: istio-dashboard-ingress
+    component: istio
+    namespace: {{ .Values | getOrNil "istio.namespace" | default "istio-system" }}
+  values:
+  - app: istio
+    dnsRoot: {{ .Values | getOrNil "dnsRoot" | default "micro.svc" }}
+    zone: {{ .Values | getOrNil "istio.zone" | default "internal" }}
+    ingressClassMap:
+      internal: {{ .Values | getOrNil "ingress.internal.class" | default "internal" }}
+      external: {{ .Values | getOrNil "ingress.external.class" | default "external" }}
+      stage: {{ .Values | getOrNil "ingress.stage.class" | default "stage" }}
+    zoneMap:
+      internal: {{ .Values | getOrNil "ingress.internal.zone" | default "int" }}
+      external: {{ .Values | getOrNil "ingress.external.zone" | default "ext" }}
+      staging: {{ .Values | getOrNil "ingress.stage.zone" | default "stage" }}
+      default: ""
+    ingress:
+      enabled: true
+      type: istio
+      gateway:
+        enabled: true
+      hosts:
+      - name: kiali
+        hostName: kiali.{{ .Values | getOrNil "ingress.internal.zone" | default "int" }}.{{ .Values | getOrNil "dnsRoot" | default "micro.svc" }}
+        config:
+          http:
+          - match:
+            - uri:
+                prefix: /
+            route:
+            - destination:
+                host: kiali
+                port:
+                  number: 20001
+      - name: prometheus
+        hostName: 'prometheus.{{ .Values | getOrNil "ingress.internal.zone" | default "int" }}.{{ .Values | getOrNil "dnsRoot" | default "micro.svc" }}'
+        config:
+          http:
+          - match:
+            - uri:
+                prefix: /
+            route:
+            - destination:
+                host: prometheus
+                port:
+                  number: 9090
+      - name: grafana
+        hostName: 'grafana.{{ .Values | getOrNil "ingress.internal.zone" | default "int" }}.{{ .Values | getOrNil "dnsRoot" | default "micro.svc" }}'
+        config:
+          http:
+          - match:
+            - uri:
+                prefix: /
+            route:
+            - destination:
+                host: grafana
+                port:
+                  number: 3000

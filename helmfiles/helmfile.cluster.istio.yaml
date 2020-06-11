@@ -8,4 +8,3 @@ helmfiles:
 - ../helmfiles/helmfile.rbacmanager.yaml
 - ../helmfiles/helmfile.istio-operator.yaml
 - ../helmfiles/helmfile.istio.yaml
-- ../helmfiles/helmfile.istio-dashboards.yaml
