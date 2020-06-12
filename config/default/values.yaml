@@ -24,7 +24,7 @@ ingress:
     ip: ""
 archetype:
   version: "0.0.7"
-  chart: archetype-incubator/archetype
+  chart: archetype/archetype
 descendant:
   enabled: true
   version: "0.0.2"

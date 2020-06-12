@@ -66,3 +66,14 @@ environments:
     - vault:
         dev: false
         ha: true
+  proxy:
+    missingFileHandler: Debug
+    secrets:
+    - ../config/{{ .Environment.Name }}/secrets.yaml
+    values:
+    - ../config/{{ .Environment.Name }}/values.yaml
+    - prometheusoperator:
+        enabled: false
+    - archetype:
+        version: "0.0.8"
+        chart: archetype-incubator/archetype
