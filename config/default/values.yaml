@@ -23,12 +23,12 @@ ingress:
     zone: stage
     ip: ""
 archetype:
-  version: "0.0.6"
-  chart: archetype/archetype
+  version: "0.0.7"
+  chart: archetype-incubator/archetype
 descendant:
-  version: "0.0.1"
-  chart: descendant/descendant-service
-  namespace: descendant-service
+  enabled: true
+  version: "0.0.2"
+  chart: descendant-incubator/descendant-service
 raw:
   version: "0.2.3"
   chart: incubator/raw

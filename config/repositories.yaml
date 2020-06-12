@@ -25,3 +25,5 @@ repositories:
   url: git+https://github.com/istio/istio@/manifests/charts/istio-operator
 - name: archetype-incubator
   url: git+https://github.com/zloeber/archetype-chart@/
+- name: descendant-incubator
+  url: git+https://github.com/zloeber/descendant-chart@/

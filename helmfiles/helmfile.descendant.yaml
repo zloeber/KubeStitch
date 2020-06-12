@@ -1,0 +1,19 @@
+---
+bases:
+- ../config/environments.yaml
+- ../config/helmdefaults.yaml
+- ../config/repositories.yaml
+---
+
+releases:
+- name: descendant
+  chart: {{ .Values | getOrNil "descendant.chart" | default "descendant/descendant-chart" }}
+  version: {{ .Values | getOrNil "descendant.version" | default "0.0.1" }}
+  wait: true
+  condition: descendant.enabled
+  installed: true
+  labels:
+    chart: descendant
+    component: descendant
+  values:
+  - placeholder: null
