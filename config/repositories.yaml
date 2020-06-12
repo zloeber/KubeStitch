@@ -4,7 +4,9 @@ repositories:
 - name: incubator
   url: https://kubernetes-charts-incubator.storage.googleapis.com
 - name: archetype
-  url: https://zloeber.github.io/archetype-chart 
+  url: https://zloeber.github.io/archetype-chart
+- name: descendant
+  url: https://zloeber.github.io/descendant-chart 
 - name: containous
   url: https://containous.github.io/traefik-helm-chart
 - name: jetstack
@@ -21,5 +23,5 @@ repositories:
   url: git+https://github.com/senthilrch/kube-fledged@/deploy/kubefledged-operator/helm-charts/kubefledged
 - name: istiooperator
   url: git+https://github.com/istio/istio@/manifests/charts/istio-operator
-- name: zloeber
+- name: archetype-incubator
   url: git+https://github.com/zloeber/archetype-chart@/
