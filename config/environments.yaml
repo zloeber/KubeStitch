@@ -71,7 +71,7 @@ environments:
     secrets:
     - ../config/{{ .Environment.Name }}/secrets.yaml
     values:
-    - ../config/{{ .Environment.Name }}/values.yaml
+    - ../config/default/values.yaml
     - prometheusoperator:
         enabled: false
     - archetype:

@@ -5,165 +5,27 @@ bases:
 - ../config/repositories.yaml
 ---
 
-## Hashicorp vault
-# Values - https://github.com/hashicorp/vault-helm/blob/master/values.yaml
 releases:
-- name: vault-namespace
+- name: dnsproxy
   chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
-  version: {{ .Values | getOrNil "archetype.version" | default "0.0.2" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.7" }}
   namespace: kube-system
-  condition: vault.enabled
+  condition: ingress.enabled
   installed: true
-  wait: true
   labels:
-    chart: vault-namespace
-    component: vault
+    chart: dnsproxy
+    component: service
     namespace: kube-system
   values:
-  - app: vault-namespace
-    namespace:
-      enabled: true
-      name: {{ .Values | getOrNil "vault.namespace" | default "vault" }}
-
-- name: vault
-  chart: {{ .Values | getOrNil "vault.chart" | default "vault/vault" }}
-  version: {{ .Values | getOrNil "vault.version" | default "0.6.0" }}
-  namespace: {{ .Values | getOrNil "vault.namespace" | default "vault" }}
-  condition: vault.enabled
-  installed: true
-  missingFileHandler: Debug
-  labels:
-    chart: vault
-    component: vault
-    namespace: {{ .Values | getOrNil "vault.namespace" | default "vault" }}
-  needs:
-    - kube-system/vault-namespace
-  values:
-  - server:
-      ha:
-        enabled: {{ .Values | getOrNil "vault.ha" | default "false" }}
-      dev:
-        enabled: {{ .Values | getOrNil "vault.dev" | default "true" }}
-      dataStorage:
-        enabled: true
-        size: 2Gi
-    ui:
-      enabled: true
-  - "../config/{{ .Environment.Name }}/vault.override.yaml"
-
-- name: vault-ui-ingress
-  chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
-  version: {{ .Values | getOrNil "archetype.version" | default "0.0.2" }}
-  namespace: {{ .Values | getOrNil "vault.namespace" | default "vault" }}
-  condition: ingress.enabled
-  installed: true
-  needs:
-  - kube-system/vault-namespace
-  - {{ .Values | getOrNil "vault.namespace" | default "vault" }}/vault
-  labels:
-    chart: vault-ui-ingress
-    component: ingress
-    namespace: {{ .Values | getOrNil "vault.namespace" | default "vault" }}
-  values:
   - zone: internal
-    app: vault-ui
-    dnsRoot: {{ .Values | getOrNil "dnsRoot" | default "micro.svc" }}
-    ingressClassMap:
-      internal: {{ .Values | getOrNil "ingress.internal.class" | default "internal" }}
-    ingress:
+    app: dnsproxy
+    service:
       enabled: true
-      tlsEnabled: true
-      hosts:
-      - secretName: vault-ui-ingress
-        paths:
-        - path: "/"
-          backend:
-            serviceName: vault-ui
-            servicePort: 8200
-
-- name: vault-active-ingress
-  chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
-  version: {{ .Values | getOrNil "archetype.version" | default "0.0.2" }}
-  namespace: {{ .Values | getOrNil "vault.namespace" | default "vault" }}
-  condition: ingress.enabled
-  installed: {{ eq (.Values | getOrNil "vault.ha" | default "false") "true" }}
-  needs:
-  - kube-system/vault-namespace
-  - {{ .Values | getOrNil "vault.namespace" | default "vault" }}/vault
-  labels:
-    chart: vault-active-ingress
-    component: ingress
-    namespace: {{ .Values | getOrNil "vault.namespace" | default "vault" }}
-  values:
-  - zone: internal
-    app: vault-active
-    dnsRoot: {{ .Values | getOrNil "dnsRoot" | default "micro.svc" }}
-    ingressClassMap:
-      internal: {{ .Values | getOrNil "ingress.internal.class" | default "internal" }}
-    ingress:
-      enabled: true
-      tlsEnabled: true
-      hosts:
-      - secretName: vault-active-ingress
-        paths:
-        - path: "/"
-          backend:
-            serviceName: vault-active
-            servicePort: 8200
-
-- name: vault-ingress
-  chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
-  version: {{ .Values | getOrNil "archetype.version" | default "0.0.2" }}
-  namespace: {{ .Values | getOrNil "vault.namespace" | default "vault" }}
-  condition: ingress.enabled
-  installed:  {{ eq (.Values | getOrNil "vault.ha" | default "false") "false" }}
-  needs:
-  - kube-system/vault-namespace
-  - {{ .Values | getOrNil "vault.namespace" | default "vault" }}/vault
-  labels:
-    chart: vault-ingress
-    component: ingress
-    namespace: {{ .Values | getOrNil "vault.namespace" | default "vault" }}
-  values:
-  - zone: internal
-    app: vault
-    ingressClassMap:
-      internal: {{ .Values | getOrNil "ingress.internal.class" | default "internal" }}
-    ingress:
-      enabled: true
-      tlsEnabled: true
-      hosts:
-      - secretName: vault-ingress
-        paths:
-        - path: "/"
-          backend:
-            serviceName: vault
-            servicePort: 8200
-
-## Role binding needed to do vault auth
-- name: vault-rolebinding
-  chart: {{ .Values | getOrNil "raw.chart" | default "incubator/raw" }}
-  version: {{ .Values | getOrNil "raw.version" | default "0.2.3" }}
-  namespace: {{ .Values | getOrNil "vault.namespace" | default "vault" }}
-  condition: vault.enabled
-  installed: true
-  needs:
-  - {{ .Values | getOrNil "vault.namespace" | default "vault" }}/vault
-  labels:
-    chart: vault-rolebinding
-    component: vault
-    namespace: {{ .Values | getOrNil "vault.namespace" | default "vault" }}
-  values:
-  - resources:
-    - apiVersion: rbacmanager.reactiveops.io/v1beta1
-      kind: RBACDefinition
-      metadata:
-        name: rolebinding-vault
-      rbacBindings:
-      - name: example-service-account
-        subjects:
-          - kind: ServiceAccount
-            name: vault
-            namespace: {{ .Values | getOrNil "vault.namespace" | default "vault" }}
-        clusterRoleBindings:
-          - clusterRole: system:auth-delegator
+      type: LoadBalancer
+      ports:
+        dns:
+          protocol: UDP
+          port: 53
+          targetPort: 53
+      selector:
+        k8s-app: "kube-dns"
