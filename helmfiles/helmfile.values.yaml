@@ -1,0 +1,18 @@
+---
+bases:
+- ../config/environments.yaml
+- ../config/helmdefaults.yaml
+- ../config/repositories.yaml
+---
+
+## This special chart does not deploy anything but is used in conjunction with helmfile build
+## to create a lookup of some values that may change between environments.
+releases:
+- name: values
+  chart: none/values
+  namespace: none
+  version: 0.0.1
+  installed: false
+  values:
+  - rawValues:
+      {{ .Values | toYaml | nindent 6 }}

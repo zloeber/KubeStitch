@@ -202,6 +202,12 @@ Performs a local install/uninstall of a single node k3s cluster for use in a bar
 
 **NOTE:** To do the same deployment locally via kind use the 'kind_homeassist' profile instead.
 
+### PROFILE - testing
+
+**File:** ./profiles/testing.env
+
+I use this to work on charts before they are published for a new release version. This uses the `testing` environment with overrides to the archetype chart source so that it uses the direct git repo master branch instead of the released version.
+
 ## Tasksets
 
 Sometimes there are additional commands required to vet out a particular solution. To accommodate for this need, you can add a new makefile directly in the 'inc' folder as `./inc/makefile.<taskset>` and then add the `<taskset>` into your profile's `ADDITIONAL_TASKSETS` definition (space delimited if there is more than one). This will source in your new script tasks automatically only when the profile is used.
@@ -282,6 +288,11 @@ This effectively makes the `../config/default/values.yaml` our default settings 
 
 > **NOTE:** In the past I've utilized many environment variables for these kinds of settings. While it is tempting to do so I recommend against this style of chart authoring as it makes for more complex pipelines and a less declarative approach to deployments.
 
+If you wish to see the applied values after all these layers are merged, we can use a specially crafted helmfile stack to display the rendered values.
+
+```bash
+make helmfile/build STACK=values PROFILE=<profile you wish to see merged values for>
+```
 
 ### Helmfile Stacks
 
@@ -447,7 +458,7 @@ After a few minutes the local cluster will have traefik, certmanager, and rbacma
 
 The docker image itself does the repo and chart dep updates. When the image runs on the cluster we skip this step by using the `--skip-deps` flag in the helmfile sync command.
 
-This is a proof of concept only. Next steps woudl be to make the process more secure by using a versioned image in the job (not latest) and an additional task should be run after the helmfile sync completes to selectively remove the role-binding on the namespace's default service account.
+This is a proof of concept only. Next steps would be to make the process more secure by using a versioned image in the job (not latest) and an additional task should be run after the helmfile sync completes to selectively remove the role-binding on the namespace's default service account.
 
 # Secrets
 
