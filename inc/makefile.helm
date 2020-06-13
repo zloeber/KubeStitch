@@ -79,6 +79,10 @@ helmfile/apply: ## apply all resources from state file only when there are chang
 helmfile/sync: ## Sync STACK with cluster
 	$(helmfile) -b $(helm_binary) -f $(HELMFILE_PATH)/helmfile.$(STACK).yaml sync
 
+.PHONY: helmfile/deploy
+helmfile/deploy: ## Deploy STACK with cluster without syncing repos first
+	$(helmfile) -b $(helm_binary) -f $(HELMFILE_PATH)/helmfile.$(STACK).yaml sync --skip-deps
+
 .PHONY: helmfile/charts
 helmfile/charts: ## Like helmfile/sync but offline with already downloaded charts
 	$(helmfile) -b $(helm_binary) -f $(HELMFILE_PATH)/helmfile.$(STACK).yaml charts

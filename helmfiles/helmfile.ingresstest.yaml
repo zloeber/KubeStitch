@@ -11,7 +11,7 @@ releases:
 - name: po-prometheus-ingress
   namespace: {{ .Values | getOrNil "prometheusoperator.namespace" | default "prometheus-operator" }}
   chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
-  version: {{ .Values | getOrNil "archetype.version" | default "0.0.2" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.8" }}
   condition: ingress.enabled
   installed: true
   labels:

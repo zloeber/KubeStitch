@@ -11,7 +11,7 @@ bases:
 releases:
 - name: traefik-namespace
   chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
-  version: {{ .Values | getOrNil "archetype.version" | default "0.0.2" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.8" }}
   namespace: kube-system
   condition: ingress.enabled
   installed: true

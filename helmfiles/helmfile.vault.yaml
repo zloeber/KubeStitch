@@ -10,7 +10,7 @@ bases:
 releases:
 - name: vault-namespace
   chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
-  version: {{ .Values | getOrNil "archetype.version" | default "0.0.2" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.8" }}
   namespace: kube-system
   condition: vault.enabled
   installed: true
@@ -53,7 +53,7 @@ releases:
 
 - name: vault-ui-ingress
   chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
-  version: {{ .Values | getOrNil "archetype.version" | default "0.0.2" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.8" }}
   namespace: {{ .Values | getOrNil "vault.namespace" | default "vault" }}
   condition: ingress.enabled
   installed: true
@@ -83,7 +83,7 @@ releases:
 
 - name: vault-active-ingress
   chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
-  version: {{ .Values | getOrNil "archetype.version" | default "0.0.2" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.8" }}
   namespace: {{ .Values | getOrNil "vault.namespace" | default "vault" }}
   condition: ingress.enabled
   installed: {{ eq (.Values | getOrNil "vault.ha" | default "false") "true" }}
@@ -113,7 +113,7 @@ releases:
 
 - name: vault-ingress
   chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
-  version: {{ .Values | getOrNil "archetype.version" | default "0.0.2" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.8" }}
   namespace: {{ .Values | getOrNil "vault.namespace" | default "vault" }}
   condition: ingress.enabled
   installed:  {{ eq (.Values | getOrNil "vault.ha" | default "false") "false" }}

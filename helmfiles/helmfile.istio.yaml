@@ -9,7 +9,7 @@ bases:
 releases:
 - name: istio-namespace
   chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
-  version: {{ .Values | getOrNil "archetype.version" | default "0.0.2" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.8" }}
   namespace: kube-system
   condition: istio.enabled
   installed: true
@@ -50,14 +50,14 @@ releases:
 - name: istio-dashboard-ingress
   namespace: {{ .Values | getOrNil "istio.namespace" | default "istio" }}
   chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
-  version: {{ .Values | getOrNil "archetype.version" | default "0.0.2" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.8" }}
   condition: ingress.enabled
   installed: true
   needs:
   - {{ .Values | getOrNil "istio.namespace" | default "istio-system" }}/istio
   labels:
     chart: istio-dashboard-ingress
-    component: istio
+    component: ingress
     namespace: {{ .Values | getOrNil "istio.namespace" | default "istio-system" }}
   values:
   - app: istio

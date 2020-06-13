@@ -10,7 +10,7 @@ bases:
 releases:
 - name: consul-namespace
   chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
-  version: {{ .Values | getOrNil "archetype.version" | default "0.0.2" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.8" }}
   namespace: kube-system
   condition: consul.enabled
   installed: true
@@ -63,7 +63,7 @@ releases:
 - name: consul-ui-ingress
   namespace: {{ .Values | getOrNil "consul.namespace" | default "consul" }}
   chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
-  version: {{ .Values | getOrNil "archetype.version" | default "0.0.2" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.8" }}
   condition: ingress.enabled
   installed: true
   needs:
@@ -93,7 +93,7 @@ releases:
 - name: consul-ingress
   namespace: {{ .Values | getOrNil "consul.namespace" | default "consul" }}
   chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
-  version: {{ .Values | getOrNil "archetype.version" | default "0.0.2" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.8" }}
   condition: ingress.enabled
   installed: true
   needs:

@@ -10,7 +10,7 @@ bases:
 releases:
 - name: homeassistant-namespace
   chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
-  version: {{ .Values | getOrNil "archetype.version" | default "0.0.2" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.8" }}
   namespace: kube-system
   condition: homeassistant.enabled
   installed: true
@@ -71,7 +71,7 @@ releases:
 - name: homeassistant-dashboard-ingress
   namespace: {{ .Values | getOrNil "homeassistant.namespace" | default "homeassistant" }}
   chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
-  version: {{ .Values | getOrNil "archetype.version" | default "0.0.2" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.8" }}
   condition: ingress.enabled
   installed: true
   needs:
@@ -99,7 +99,7 @@ releases:
 - name: homeassistant-vscode-ingress
   namespace: {{ .Values | getOrNil "homeassistant.namespace" | default "homeassistant" }}
   chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
-  version: {{ .Values | getOrNil "archetype.version" | default "0.0.2" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.8" }}
   condition: ingress.enabled
   installed: true
   needs:
@@ -127,7 +127,7 @@ releases:
 - name: homeassistant-configurator-ingress
   namespace: {{ .Values | getOrNil "homeassistant.namespace" | default "homeassistant" }}
   chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
-  version: {{ .Values | getOrNil "archetype.version" | default "0.0.2" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.8" }}
   condition: ingress.enabled
   installed: true
   needs:

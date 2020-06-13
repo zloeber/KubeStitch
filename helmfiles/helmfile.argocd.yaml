@@ -8,7 +8,7 @@ bases:
 releases:
 - name: argocd-namespace
   chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
-  version: {{ .Values | getOrNil "archetype.version" | default "0.0.2" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.8" }}
   namespace: kube-system
   condition: argocd.enabled
   installed: true
@@ -86,7 +86,7 @@ releases:
 - name: argocd-ingress
   namespace: {{ .Values | getOrNil "argocd.namespace" | default "argocd" }}
   chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
-  version: {{ .Values | getOrNil "archetype.version" | default "0.0.2" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.8" }}
   condition: ingress.enabled
   installed: true
   needs:

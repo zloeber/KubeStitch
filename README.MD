@@ -1,29 +1,55 @@
-## CICD Helper
+# KubeStitch
 
-This repo contains all manifests and templates required for a local kubernetes CICD environment. In some way's this is more like the playground of a madman's journey with Kubernetes all mashed up together with Makefiles and love.
+An easy to use tool for stitching together customized Kubernetes cluster environments that run locally the same as they do in the cloud.
+
+## About
+
+A default deployment of Kubernetes is not extremely useful. Usually, one needs to layer several stacks of technology on top of Kubernetes before even beginning to think about pipelining specific workloads to the cluster. To start extracting real value from this powerful new platform one needs to stitch together their base environment. KubeStitch attempts to help with this task by making it much easier to vet out technical solutions for the base deployment level of a Kuberentes cluster. It squarely targets that middle section between the custom workloads and the kubernetes cluster deployment itself.
+
+![](./docs/cluster-components.jpg)
+
+The diagram shows a few elements which may need deployment to your clusters. These can be done in one Istio operator driven deployment, as individual stacks, starting with ArgoCD which then gets used to deploy each stack as an 'App of Apps' GitOps approach, or any other method which suits your fancy. KubeStitch can help aid your efforts.
 
 ## Goal
 
-The goal of this repo is a CICD scratchpad to quickly bring up and tear down various kubernetes environments for testing and vetting out solutions. I've made this somewhat modular so multiple Kubernetes clustering technologies can be swapped out relatively quickly and easily using a single environment variable file. To see what this might look like, explore the Istio example further down in this document.
+The short goal for this project would be to narrow the gap in feature parity between what your local environment looks like versus your deployment environment. One can use kubestitch to quickly bring up and tear down local kubernetes environments for testing and vetting out Kubernetes solutions that then get deployed remotely. Additionally, multiple Kubernetes clustering technologies can be swapped out relatively quickly and easily using a single file with few variables.
 
 ## Requirements
 
-Everything in this repo uses standard bash scripts and currently only supports Linux as a host OS. The following should be available on the system running these scripts.
+This project currently uses standard bash scripts, make, and docker. It has been tested on Linux and Mac. The following should be available on the system running these scripts.
 
 - bash
 - docker
 
-Where required, stand-alone cli tools will be installed to a `./.local/` path within this folder to ensure portability.
+Where required, all other stand-alone cli tools will be installed to a `./.local/` path within this folder to ensure portability.
 
-I've tested all the profiles on an Ubuntu based Linux host and have also done some work towards ensuring that this also works on a Mac (mileage may vary on the Mac side of things though...).
+If you ever run a git pull to update this project locally, it would be safe to run a `make clean` to ensure that all the latest updates are pulled down when running `make cluster`.
 
-If you ever run a git pull to update this project locally and there are changes it would be safe to run a `make clean deps` to ensure that all the latest updates are pulled down.
+> **NOTE** Mac users should be aware that while the dns-proxy-server will spin up with the correct dns internal zone forwarding configured to the correct ingress internal IP, it will not work from the mac automatically. First you will need to reconfigure your DNS resolver to point to 127.0.0.1. I could not figure out a way to make this work automatically due to how mdnsResponder takes over the DNS lookup process on Macs. I welcome pull requests to help resolve this automation snafu.
 
-> **NOTE** Mac users should be aware that while the dns-proxy-server will spin up with the correct dns internal zone forwarding configured to the correct ingress internal IP, it will not work from the mac automatically. First you will need to reconfigure your DNS resolver to point to 127.0.0.1. I could not figure out a way to make this work automatically due to how mdnsResponder takes over the DNS lookup process on Macs, sorry. :(
+## Installing
+
+This project is only a makefile with some scripts. So clone the repo, cd to it, then run make. If you want to run it from anywhere on your system then you will have to create an alias for the command like this.
+
+```bash
+alias kubestitch="make --no-print-directory -C $(pwd)"
+```
+
+Then you can run any tasks using the `kubestitch` command.
+
+```bash
+kubestitch show
+kubestitch PROFILE=monitoring show
+
+# Note that the placement of override env vars in the command does not matter
+kubestitch cluster PROFILE=vault
+```
+
+The rest of this document will use `make` in any examples.
 
 ## Usage
 
-Standard usage is pretty simple. After cloning this repo you can start a default kind cluster with one command:
+Standard usage is pretty simple. After cloning this repo you can start a default kind-based cluster with one command:
 
 ```bash
 make cluster
@@ -41,25 +67,27 @@ make deps
 # Start a local kind cluster and create a local kube
 make cluster/start
 
-# Run tests on the cluster and watch the output with stern (press ctrl+c to exit)
-make cluster/test
-
 # Perform a default deployment of helmfiles for the cluster defined in the profile (default: cicd)
 make helmfile/sync
+```
 
-# Destroy the cluster you just created
+When you are done you can destroy the cluster you just created.
+
+```bash
 make cluster/stop
 ```
 
 ## Clusters
 
-Before going into profiles, it is important to be aware that each cluster that gets created will create its own configuration file within the `./.local/` path in the form of `kube.<clustername>.conf` unless `KUBE_CONFIG` is overwritten in the profile. This ensures your personal user kubernetes configuration does not get polluted with testing cluster detritus. But this also means that, by default, you will not be able to interface with the cluster without some additional work. The simple way around this is to just point your 'KUBECONFIG' env var to the config file that gets generated. This can be done easily with the following command after the cluster has been created:
+Before diving into profiles, it is important to be aware that each cluster that gets created will create its own configuration file within the `./.local/` path in the form of `kube.<clustername>.conf` (unless the `KUBE_CONFIG` environment variable is overwritten). This ensures your personal user kubernetes config file does not get polluted with KubeStitch testing cluster detritus. 
+
+This also means that, by default, you will not be able to interface with the cluster without some additional work. The simple way around this is to just point your 'KUBECONFIG' env var to the config file that gets generated. This can be done easily with the following command after the cluster has been created:
 
 ```bash
 export KUBECONFIG=`make kube/config/file` 
 ```
 
-You only need to do this once for any cluster you are working on (per console session). If you recreate the cluster in your journey (done easily via `make cluster/start`) this file may get recreated but it shouldn't matter so much.
+You only need to do this once for any cluster you are working on (per console session). If you recreate the cluster in your journey (done easily via `make cluster`) this file may get recreated but it shouldn't matter so much.
 
 If you are tinkering with multiple versions of Kubernetes, then it may be useful to also set an alias for the kubectl binary as well.
 
@@ -317,11 +345,20 @@ helmfiles:
 What makes this fun is that I have a whole other profile called 'vault' that creates its own cluster (aptly named 'vault') that I put together simply for the convenience of bringing up a full cluster configured with consul and vault in a single command. But I don't need to use the vault profile to run consul and vault. We can also add individual helmfile stacks or the entire cluster helmfile stack definition at any time to any cluster while in any profile.
 
 ```bash
-unset PROFILE   # Use the default profile
-make deps cluster/start helmfile/sync # Setup a default cluster
-make helmfile/sync STACK=consul # Install only the consul stack
-make helmfile/sync STACK=cluster.vault # Or apply the cluster stack entirely outside of the vault profile (note that consul is already applied and will not be applied again even though it is listed in the cluster.vault helmfile)
-make helmfile/destroy STACK=consul # Now remove just consul for the hell of it
+# Use the default profile
+unset PROFILE
+
+# Setup a default cluster
+make cluster
+
+# Install only the consul stack
+make helmfile/sync STACK=consul
+
+# Or apply the cluster stack entirely outside of the vault profile (note that consul is already applied and will not be applied again even though it is listed in the cluster.vault helmfile)
+make helmfile/sync STACK=cluster.vault 
+
+# Now remove just consul for the hell of it (likely breaking vault though)
+make helmfile/destroy STACK=consul
 ```
 
 This is a powerful way to quickly work on various deployments and allows for layering of stacks to get the results you are looking for in an iterative manner.
@@ -336,7 +373,7 @@ Here are a few example use cases worth looking over.
 
 ## Example 1 - Local Istio
 
-Here is an example of using a profile to start up a local istio cluster. Istio has a moderately more complex deployment path than a standard helm chart so this is a good example for showing how CICDHelper can be flexible. The profile definition is copied from the default profile and renamed with a few changes.
+Here is an example of using a profile to start up a local istio cluster. Istio has a moderately more complex deployment path than a standard helm chart so this is a good example for showing how KubeStitch can be flexible. The profile definition is copied from the default profile and renamed with a few changes.
 
 ```bash
 KUBE_PROVIDER=kind
@@ -368,7 +405,7 @@ Because istio will want to run its own ingress (and egress) gateways within the 
 
 We don't actually use any secrets or even a specific environment values.yaml file but we define them anyways (in case we ever want to drop overrides for chart locations, versions, or anything else that veers from the ../config/default/values.yaml definitions). We then put in a few overrides that will prevent deployment of the prometheus-operator and traefik (though the default cluster helmfile stack for the 'istio' cluster defined in the profile does not have these defined anyway). Finally, the ingress internal namespace is overwritten from the default values in here as well. We use this for the dnsforwarding tasks.
 
-The istio operator chart wants to create its own namespace via its chart template so we let it do so via the istio-operator chart by using the helm-git plugin to point directly to the chart location within the parent project and simply not defining a namespace within the helmfile. istio-operator.yaml file. We also deploy the demo profile for istio using the CRD definition and a simple raw helm chart in the helmfile.istio.yaml file.
+The istio operator chart wants to create its own namespace via its chart template so we let it do so via the istio-operator chart by not defining a namespace within the helmfile release. We also deploy the demo profile for istio using the CRD definition and a simple raw helm chart in the helmfile.istio.yaml file.
 
 ```bash
 # Ensure we get the correct profile for the remaining commands
@@ -438,7 +475,7 @@ You may notice that I use the cicd cluster for the local kind install as I know 
 
 Because I'm using some localized IP addresses for both the nfs provisioner chart and traefik, I created another helmfile profile in 'config/environments.yaml' with these override settings in place. I do not yet know how to extract the extrapolated values yaml from helmfile so for now I also have to put these values in the 'config/homeassist/values.yaml' file for the Metallb deployment scripts to locate and for dnsforward tasks to use.
 
-> **NOTE**: In this setup I run the CICDHelper from my server then access it remotely via kubectl. To do this I have to copy over the config file that gets generated to my workstation `scp zloeber@servername:~/.kube/config ~/.kube/config ` then edit it to replace 127.0.0.1 with the IP address of the server.
+> **NOTE**: In this setup I run the KubeStitch from my server then access it remotely via kubectl. To do this I have to copy over the config file that gets generated to my workstation `scp zloeber@servername:~/.kube/config ~/.kube/config ` then edit it to replace 127.0.0.1 with the IP address of the server.
 
 ## Example 3 - Deployment As an Artifact
 
