@@ -35,13 +35,16 @@ endif
 $(BIN_PATH): ## Stage build directory if it does not exist
 	@mkdir -p $(BIN_PATH)
 
-.PHONY: prompt/yesno
-prompt/yesno: ## Are you sure?
+.PHONY: .prompt/yesno
+.prompt/yesno: ## Are you sure?
 	@( read -p "Are you sure?!? [y/N]: " sure && case "$$sure" in [yY]) true;; *) false;; esac )
 
 .PHONY: help
-help: ## Help
-	@grep --no-filename -E '^[a-zA-Z_%/-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+help: ## Help (standard)
+	@grep --no-filename -E '^[a-zA-Z_/-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+
+help/all: ## Help (all tasks, including hidden ones)
+	@grep --no-filename -E '^[a-zA-Z_%/-\.]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 .print-%: # Print a make variable for github actions
 	@echo '$*::$($*)'

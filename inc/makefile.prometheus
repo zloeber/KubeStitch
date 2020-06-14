@@ -18,6 +18,6 @@ endif
 .PHONY: .deps/prometheus
 .deps/prometheus: .dep/promtool ## Install dependencies
 
-.PHONY: prom/grafana/password
-prom/grafana/password: ## Retrieves the grafana dashboard admin password
+.PHONY: .prom/grafana/password
+.prom/grafana/password: ## Retrieves the grafana dashboard admin password
 	@$(kubecmd) get secret --namespace $(STACK_PROM_NAMESPACE) $(STACK_PROM_NAME)-grafana -o jsonpath="{.data.admin-password}" | base64 --decode ; echo

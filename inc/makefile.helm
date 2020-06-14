@@ -67,49 +67,75 @@ endif
 .PHONY: .deps/helm
 .deps/helm: .dep/helm .dep/helmfile .helm/plugins ## Install yq, helm, helmfile, and plugins locally
 
-.PHONY: helmfile/stacks
-helmfile/stacks: ## Lists all available helmfile stacks
+.PHONY: .helmfile/stacks
+.helmfile/stacks: ## Lists all available helmfile stacks
 	@ls $(HELMFILE_PATH)/helmfile.*.yaml | xargs -n1 basename | sed -e 's/\.yaml//g' -e 's/helmfile\.//g'
 
-.PHONY: helmfile/apply
-helmfile/apply: ## apply all resources from state file only when there are changes
+.PHONY: stacks
+stacks: .helmfile/stacks ## Lists all available helmfile stacks
+
+.PHONY: .helmfile/apply
+.helmfile/apply: ## Apply all resources only when there are changes
 	$(helmfile) -b $(helm_binary) -f $(HELMFILE_PATH)/helmfile.$(STACK).yaml apply
 
-.PHONY: helmfile/sync
-helmfile/sync: ## Sync STACK with cluster
+.PHONY: apply
+apply: .helmfile/apply ## Apply all resources only when there are changes
+
+.PHONY: .helmfile/sync
+.helmfile/sync: ## Sync STACK with cluster
 	$(helmfile) -b $(helm_binary) -f $(HELMFILE_PATH)/helmfile.$(STACK).yaml sync
 
-.PHONY: helmfile/deploy
-helmfile/deploy: ## Deploy STACK with cluster without syncing repos first
+.PHONY: sync
+sync: .helmfile/sync ## Sync STACK with cluster
+
+.PHONY: .helmfile/deploy
+.helmfile/deploy: ## Deploy STACK with cluster without syncing repos first
 	$(helmfile) -b $(helm_binary) -f $(HELMFILE_PATH)/helmfile.$(STACK).yaml sync --skip-deps
 
-.PHONY: helmfile/charts
-helmfile/charts: ## Like helmfile/sync but offline with already downloaded charts
-	$(helmfile) -b $(helm_binary) -f $(HELMFILE_PATH)/helmfile.$(STACK).yaml charts
+.PHONY: deploy
+deploy: .helmfile/deploy ## Deploy STACK with cluster without syncing repos first
 
-.PHONY: helmfile/repos
-helmfile/repos: ## Helm repo add and update
+.PHONY: .helmfile/repos
+.helmfile/repos: ## Helm repo add and update
 	$(helmfile) -b $(helm_binary) -f $(HELMFILE_PATH)/helmfile.$(STACK).yaml repos
 
-.PHONY: helmfile/list
-helmfile/list: ## List resources in state file
+.PHONY: repos
+repos: .helmfile/repos ## Helm repo sync only
+
+.PHONY: .helmfile/list
+.helmfile/list: ## List releases in helmfile environment
 	$(helmfile) -b $(helm_binary) -f $(HELMFILE_PATH)/helmfile.$(STACK).yaml list
 
-.PHONY: helmfile/diff
-helmfile/diff: ## diffs STACK with cluster
+.PHONY: list
+list: .helmfile/list ## List releases in helmfile environment
+
+.PHONY: .helmfile/diff
+.helmfile/diff: ## diffs STACK with cluster
 	$(helmfile) -b $(helm_binary) -f $(HELMFILE_PATH)/helmfile.$(STACK).yaml diff
 
-.PHONY: helmfile/test
-helmfile/test: ## Tests STACK on cluster
+.PHONY: diff
+diff: .helmfile/diff ## diffs STACK with cluster
+
+.PHONY: .helmfile/test
+.helmfile/test: ## Tests STACK on cluster
 	$(helmfile) -b $(helm_binary) -f $(HELMFILE_PATH)/helmfile.$(STACK).yaml test
 
-.PHONY: helmfile/destroy
-helmfile/destroy: prompt/yesno ## Removes STACK from cluster
+.PHONY: test
+test: .helmfile/test ## Tests STACK on cluster
+
+.PHONY: .helmfile/destroy
+.helmfile/destroy: .prompt/yesno ## Removes STACK from cluster
 	$(helmfile) -b $(helm_binary) -f $(HELMFILE_PATH)/helmfile.$(STACK).yaml destroy
 
-.PHONY: helmfile/build
-helmfile/build: ## Builds helmfile YAML only
+.PHONY: destroy
+destroy: .helmfile/destroy ## Removes STACK from cluster
+
+.PHONY: .helmfile/build
+.helmfile/build: ## Builds helmfile YAML only
 	$(helmfile) -b $(helm_binary) -f $(HELMFILE_PATH)/helmfile.$(STACK).yaml build
+
+.PHONY: build
+build: .helmfile/build ## Builds helmfile YAML only
 
 .PHONY: .helmfile/lookups
 .helmfile/lookups: ## Builds helmfile YAML for looking ups
@@ -119,16 +145,25 @@ helmfile/build: ## Builds helmfile YAML only
 .helmfile/lookup/%: ## lookup % value in constructed chart values
 	@$(helmfile) -b $(helm_binary) -f $(HELMFILE_PATH)/lookup.placeholder.yaml build | grep -e "$(subst .helmfile/lookup/,,$@): .*$$" | sed -e 's/^[ \t]*//' | cut -d" " -f2
 
-.PHONY: helmfile/template
-helmfile/template: ## template STACK yaml manifest for cluster
+.PHONY: .helmfile/template
+.helmfile/template: ## template STACK yaml manifest for cluster
 	$(helmfile) -b $(helm_binary) -f $(HELMFILE_PATH)/helmfile.$(STACK).yaml template $(HELM_ARGS)
 
-.PHONY: helmfile/reload
-helmfile/reload: helmfile/destroy helmfile/sync ## Removes then adds STACK from cluster
+.PHONY: template
+template: .helmfile/template ## template STACK yaml manifest for cluster
 
-.PHONY: helmfile/scorch
-helmfile/scorch: helmfile/destroy ## (WARNING!) Removes stack then its namespace if possible
-	$(kubecmd) delete namespace $(STACK)
+.PHONY: .helmfile/reload
+.helmfile/reload: .helmfile/destroy .helmfile/sync ## Removes then adds STACK from cluster
+
+.PHONY: reload
+reload: .helmfile/reload ## Removes then adds STACK from cluster
+
+.PHONY: .helmfile/scorch
+.helmfile/scorch: .helmfile/destroy ## (WARNING!) Removes stack then its namespace if possible
+	$(kubecmd) delete namespace $(STACK) || true
+
+.PHONY: scorch
+scorch: .helmfile/scorch ## (WARNING!) Removes stack then its namespace if possible
 
 .PHONY: show/helm
 show/helm: ## Show helm settings

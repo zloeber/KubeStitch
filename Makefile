@@ -75,8 +75,12 @@ clean: ## Remove downloaded dependencies
 	@rm -rf $(INSTALL_PATH)/*
 
 .PHONY: cluster
-cluster: deps cluster/start helmfile/sync ## Create cluster and apply default helmfile stack
+cluster: deps cluster/start .helmfile/sync ## Create cluster and apply default helmfile stack
 
 .PHONY: show/profiles
 show/profiles: ## List all profiles
 	@ls $(PROFILE_PATH)/profile.*.env | xargs -n1 basename | sed -e 's/\.env//g' -e 's/profile\.//g'
+
+.PHONY: show/tasksets
+show/tasksets: ## List all available tasksets
+	@ls $(ROOT_PATH)/inc/makefile.* | xargs -n1 basename | sed -e 's/makefile\.//g'

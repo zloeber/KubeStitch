@@ -31,7 +31,7 @@ endif
 	cat $(shell $(k3d) get-kubeconfig --name=$(CLUSTER)) > $(KUBE_CONFIG)
 
 .PHONY: cluster/start
-cluster/start: cluster/stop .k3d/create/cluster .k3d/cluster/config kube/context ## Start cluster
+cluster/start: cluster/stop .k3d/create/cluster .k3d/cluster/config .kube/context ## Start cluster
 
 .PHONY: cluster/stop
 cluster/stop: ## Stop and delete cluster

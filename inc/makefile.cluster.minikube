@@ -10,7 +10,7 @@ minikube/stop/cluster: ## Stop minikube so we can use it
 	minikube delete
 
 minikube/config: ## Configure minikube
-	#$(MAKE)  metallb/install
+	#$(MAKE)  .metallb/install
 	#minikube addons disable ingress || true
 	#minikube addons disable dashboard || true
 	kubectl apply -f $(ROOT_PATH)/deploy/k8s/minikube-storage-provisioner.yaml

@@ -56,19 +56,19 @@ endif
 .kube/remove/pv/finalizers/%: ## removes finalizers from persistent volumes in a namespace
 	$(kubecmd) get pv -n $(subst .kube/remove/pv/finalizers/,,$@) | tail -n+2 | awk '{print $$1}' | xargs -I{} $(kubectl) patch pv {} -p '{"metadata":{"finalizers":null}}' --type=merge
 
-.PHONY: kube/context
-kube/context: ## Set kubectl config context to CLUSTER
+.PHONY: .kube/context
+.kube/context: ## Set kubectl config context to CLUSTER
 	$(kubecmd) config set-context $(CLUSTER_CONTEXT)
 	$(kubecmd) config use-context $(CLUSTER_CONTEXT)
 
-.PHONY: kube/create/dockersecret
-kube/create/dockersecret: ## Create docker secret from current .docker/config.json
+.PHONY: .kube/create/dockersecret
+.kube/create/dockersecret: ## Create docker secret from current .docker/config.json
 	$(kubecmd) create secret generic regcred \
 	--from-file=.dockerconfigjson="$${HOME}/.docker/config.json" \
 	--type=kubernetes.io/dockerconfigjson -n kube-system
 
-.PHONY: kube/deploy/calico
-kube/deploy/calico: ## Deploys the Calico CNI
+.PHONY: .kube/deploy/calico
+.kube/deploy/calico: ## Deploys the Calico CNI
 	@$(kubecmd) apply -f https://docs.projectcalico.org/manifests/calico.yaml
 
 .PHONY: kube/config
@@ -79,7 +79,7 @@ kube/config: ## Exports a copy of the current kube config
 kube/config/file: ## Prints the current kube config file location
 	@echo $(KUBE_CONFIG)
 
-kube/untaint/masternodes: ## Untaints master nodes of a cluster
+.kube/untaint/masternodes: ## Untaints master nodes of a cluster
 	@$(kubecmd) taint nodes $$($(kubecmd) get nodes --selector=node-role.kubernetes.io/master | awk 'FNR==2{print $$1}') node-role.kubernetes.io/master- || true
 
 #.PHONY: kube/list/resources
@@ -90,21 +90,31 @@ kube/untaint/masternodes: ## Untaints master nodes of a cluster
 kube/bearertoken: Return bearer token for cluster
 	@echo $(shell $(kubecmd) get secrets -o jsonpath="{.items[?(@.metadata.annotations['kubernetes\.io/service-account\.name']=='default')].data.token}"|base64 --decode))
 
-.PHONY: kube/loadbalancer/ip
-kube/loadbalancer/ip: ## Show external loadbalancer ip
+.PHONY: .kube/loadbalancer/ip
+.kube/loadbalancer/ip: ## Show external loadbalancer ip
 	@$(kubecmd) -n $(shell $(MAKE) .helmfile/lookup/lookup_ingressInternalNamespace) get svc -o jsonpath='{.items[?(@.spec.type=="LoadBalancer")].status.loadBalancer.ingress[0].ip}'
 
-.PHONY: kube/loadbalancer/subnet
-kube/loadbalancer/subnet: ## Show docker bridge subnet
+.PHONY: .kube/loadbalancer/subnet
+.kube/loadbalancer/subnet: ## Show docker bridge subnet
 	@INTERNALSUBNET=$(shell $(MAKE) .helmfile/lookup/lookup_internalIngressSubnet) && \
 		[[ ! -z "$$INTERNALSUBNET" ]] && \
 		echo "$$INTERNALSUBNET" || \
 		echo `docker network inspect $(DOCKER_NETWORK) | $(jq) '.[0].IPAM.Config[0].Gateway' | sed -e 's/\0.1/$(SUBNET_INDEX).0\/24/g'`
 
+.PHONY: .kube/ingress/hosts
+.kube/ingress/hosts: ## Show ingress hosts
+	@$(kubecmd) get ingress --all-namespaces -o jsonpath="{..spec.rules.*.host}" \
+	| tr -s '[[:space:]]' '\n' | sort
+
+.PHONY: .kube/pod/images
+.kube/pod/images: ## Show pod images
+	@$(kubecmd) get pods --all-namespaces -o jsonpath="{..image}" |\
+	tr -s '[[:space:]]' '\n' | sort | uniq -c
+
 .PHONY: dnsforward/start
 dnsforward/start: dnsforward/stop ## Forwards all dns requests to a local dns-proxy-server
 	tmpdir=$$(mktemp -d) && \
-	export STACK_INGRESS_INTERNALIP=$(shell $(MAKE) kube/loadbalancer/ip) && \
+	export STACK_INGRESS_INTERNALIP=$(shell $(MAKE) .kube/loadbalancer/ip) && \
 	export STACK_INGRESS_INTERNALDNSZONE=$(shell $(MAKE) .helmfile/lookup/lookup_internalDNSZone) && \
 	echo "STACK_INGRESS_INTERNALIP=$${STACK_INGRESS_INTERNALIP}" && \
 	echo "STACK_INGRESS_INTERNALDNSZONE=$${STACK_INGRESS_INTERNALDNSZONE}" && \

@@ -33,8 +33,8 @@ CLUSTER_CONTEXT := default
 	sudo ufw enable
 
 .PHONY: cluster/start
-cluster/start: cluster/stop .k3s/create/cluster .k3s/cluster/config kube/context .k3s/cluster/disabledefaultstorageclass ## Start cluster
+cluster/start: cluster/stop .k3s/create/cluster .k3s/cluster/config .kube/context .k3s/cluster/disabledefaultstorageclass ## Start cluster
 
 .PHONY: cluster/stop
-cluster/stop: prompt/yesno ## Stop and delete cluster
+cluster/stop: .prompt/yesno ## Stop and delete cluster
 	sudo /usr/local/bin/k3s-uninstall.sh || true
