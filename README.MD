@@ -81,19 +81,15 @@ make cluster/stop
 
 Before diving into profiles, it is important to be aware that each cluster that gets created will create its own configuration file within the `./.local/` path in the form of `kube.<clustername>.conf` (unless the `KUBE_CONFIG` environment variable is overwritten). This ensures your personal user kubernetes config file does not get polluted with KubeStitch testing cluster detritus. 
 
-This also means that, by default, you will not be able to interface with the cluster without some additional work. The simple way around this is to just point your 'KUBECONFIG' env var to the config file that gets generated. This can be done easily with the following command after the cluster has been created:
+This also means that, by default, you will not be able to interface with the cluster without some additional work. The simple way around this is to just point your 'KUBECONFIG' env var to the config file that gets generated. If you are tinkering with multiple versions of Kubernetes, then it may be useful to also set an alias for the kubectl binary that gets downloaded as well.
+
+Both tasks can be done easily with the following single command after the cluster has been created (note that we are sourcing the output of make config as a command using backticks!).
 
 ```bash
-export KUBECONFIG=`make kube/config/file` 
+`make config`
 ```
 
 You only need to do this once for any cluster you are working on (per console session). If you recreate the cluster in your journey (done easily via `make cluster`) this file may get recreated but it shouldn't matter so much.
-
-If you are tinkering with multiple versions of Kubernetes, then it may be useful to also set an alias for the kubectl binary as well.
-
-```bash
-alias kube=$(pwd)/.local/bin/kubectl
-```
 
 If you are changing between versions of Kubernetes using this framework you will have to clear out the kubectl binary when changing versions (between cluster builds) with `make clean`. Just ensure you also rerun the deps task to get the correct kubectl binary version afterwards.
 
@@ -113,11 +109,11 @@ make deps cluster/start PROFILE=k3d
 make deps cluster/start PROFILE=default
 
 ## Look at your first cluster
-export KUBECONFIG=`make kube/config/file PROFILE=k3d`
+export KUBECONFIG=`make .kube/config/file PROFILE=k3d`
 kubectl get nodes
 
 ## And your second one too
-export KUBECONFIG=`make kube/config/file PROFILE=default`
+export KUBECONFIG=`make .kube/config/file PROFILE=default`
 kubectl get nodes
 
 ## Destroy both clusters
@@ -430,7 +426,7 @@ You can then screw around with the cluster to your heart's content.
 
 ```bash
 # configure local kubectl to access your cluster
-export KUBECONFIG=`make kube/config/file`
+export KUBECONFIG=`make .kube/config/file`
 
 # view the virtual services (ingresses) for the dashboards
 kubectl -n istio-system get virtualservice
@@ -470,7 +466,7 @@ You may notice that I use the cicd cluster for the local kind install as I know 
 
 Because I'm using some localized IP addresses for both the nfs provisioner chart and traefik, I created another helmfile profile in 'config/environments.yaml' with these override settings in place. I do not yet know how to extract the extrapolated values yaml from helmfile so for now I also have to put these values in the 'config/homeassist/values.yaml' file for the Metallb deployment scripts to locate and for dnsforward tasks to use.
 
-> **NOTE**: In this setup I run the KubeStitch from my server then access it remotely via kubectl. To do this I have to copy over the config file that gets generated to my workstation `scp zloeber@servername:~/.kube/config ~/.kube/config ` then edit it to replace 127.0.0.1 with the IP address of the server.
+> **NOTE**: In this setup I run the KubeStitch from my server then access it remotely via kubectl. To do this I have to copy over the config file that gets generated to my workstation `scp zloeber@servername:~/..kube/config ~/..kube/config ` then edit it to replace 127.0.0.1 with the IP address of the server.
 
 ## Example 3 - Deployment As an Artifact
 

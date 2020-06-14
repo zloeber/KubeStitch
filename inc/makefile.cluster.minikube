@@ -4,18 +4,18 @@ minikube ?= $(BIN_PATH)/minkube
 
 minikube/start/cluster: ## Start minikube so we can use it
 	minikube start --kubernetes-version=$(KUBE_VERSION) --cpus=6 || true
-	$(MAKE) minikube/config
+	$(MAKE) mini.kube/config
 
 minikube/stop/cluster: ## Stop minikube so we can use it
 	minikube delete
 
-minikube/config: ## Configure minikube
+mini.kube/config: ## Configure minikube
 	#$(MAKE)  .metallb/install
 	#minikube addons disable ingress || true
 	#minikube addons disable dashboard || true
 	kubectl apply -f $(ROOT_PATH)/deploy/k8s/minikube-storage-provisioner.yaml
 
-minikube: minikube/start minikube/config ## Start and configure minikube for cicd
+minikube: minikube/start mini.kube/config ## Start and configure minikube for cicd
 
 minikube/dnsforward/start: ## Forwards all dns requests to dns-proxy-server
 	tmpdir=$$(mktemp -d) && echo "$${tmpdir}" && \
