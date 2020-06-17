@@ -80,8 +80,12 @@ endif
 	@echo $(KUBE_CONFIG)
 
 .PHONY: config
-config: ## Prints commands to alias kube and export KUBECONFIG 
-	@echo "alias kube='$(BIN_PATH)/kubectl'; export KUBECONFIG=$(KUBE_CONFIG)"
+config: ## Prints the KUBECONFIG export command
+	@echo "export KUBECONFIG=$(KUBE_CONFIG)"
+
+.PHONY: kube/alias
+kube/alias: ## command to create kubectl alias
+	@echo "alias kube='$(BIN_PATH)/kubectl'"
 
 .kube/untaint/masternodes: ## Untaints master nodes of a cluster
 	@$(kubecmd) taint nodes $$($(kubecmd) get nodes --selector=node-role.kubernetes.io/master | awk 'FNR==2{print $$1}') node-role.kubernetes.io/master- || true

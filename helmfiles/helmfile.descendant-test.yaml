@@ -1,0 +1,94 @@
+---
+bases:
+- ../config/environments.yaml
+- ../config/helmdefaults.yaml
+- ../config/repositories.yaml
+---
+
+releases:
+- name: descendant-namespace
+  chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.8" }}
+  namespace: kube-system
+  condition: descendant.enabled
+  installed: true
+  wait: true
+  labels:
+    chart: descendant-namespace
+    component: descendant
+    namespace: kube-system
+  values:
+  - app: descendant
+    namespace:
+      enabled: true
+      name: {{ .Values | getOrNil "descendant.namespace" | default "descendant" }}
+- name: descendant
+  chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.8" }}
+  namespace: {{ .Values | getOrNil "descendant.namespace" | default "descendant" }}
+  installed: true
+  wait: true
+  labels:
+    chart: descendant
+    component: descendant
+    namespace: {{ .Values | getOrNil "descendant.namespace" | default "descendant" }}
+  needs:
+  - kube-system/descendant-namespace
+  values:
+  - app: descendant
+    zone: internal
+    dnsRoot: micro.svc
+    zoneMap:
+      internal: int
+      external: ext
+      staging: stage
+      default: ""
+    ingressClassMap:
+      internal: internal
+      external: external
+      staging: stage
+      default: internal
+    certIssuerMap:
+      internal:
+        cert-manager.io/cluster-issuer: "default"
+      external:
+        cert-manager.io/cluster-issuer: "letsencrypt-prod"
+      staging:
+        cert-manager.io/cluster-issuer: "letsencrypt-staging"
+      default:
+        cert-manager.io/cluster-issuer: "default"
+    ports:
+      internal: 8000
+      external: 80
+    image:
+      repository: zloeber/hello-world-pipeline
+      tag: 'latest'
+      pullPolicy: IfNotPresent
+    resources:
+      requests:
+        memory: "1Gi"
+      limits:
+        memory: "1Gi"
+    deployment:
+      enabled: true
+      ports:
+        svc: 8000
+      readinessProbe:
+        enabled: true
+        probe:
+          httpGet:
+            path: /
+            port: 8000
+      livelinessProbe:
+        enabled: true
+        probe:
+          httpGet:
+            path: /
+            port: 8000
+    service:
+      enabled: true
+    ingress:
+      enabled: true
+      tlsEnabled: true
+      hosts:
+      - secretName: descendant

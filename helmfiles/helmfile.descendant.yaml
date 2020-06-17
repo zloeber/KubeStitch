@@ -6,12 +6,32 @@ bases:
 ---
 
 releases:
+- name: descendant-namespace
+  chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.8" }}
+  namespace: kube-system
+  condition: descendant.enabled
+  installed: true
+  wait: true
+  labels:
+    chart: descendant-namespace
+    component: descendant
+    namespace: kube-system
+  values:
+  - app: descendant
+    namespace:
+      enabled: true
+      name: {{ .Values | getOrNil "descendant.namespace" | default "descendant" }}
+
 - name: descendant
   chart: {{ .Values | getOrNil "descendant.chart" | default "descendant/descendant-chart" }}
   version: {{ .Values | getOrNil "descendant.version" | default "0.0.1" }}
+  namespace: {{ .Values | getOrNil "descendant.namespace" | default "descendant" }}
   wait: true
   condition: descendant.enabled
   installed: true
+  needs:
+  - kube-system/descendant-namespace
   labels:
     chart: descendant
     component: descendant

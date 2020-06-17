@@ -68,7 +68,7 @@ make deps
 make cluster/start
 
 # Perform a default deployment of helmfiles for the cluster defined in the profile (default: cicd)
-make .helmfile/sync
+make sync
 ```
 
 When you are done you can destroy the cluster you just created.
@@ -99,7 +99,7 @@ This project was originally created to support multiple clusters and teams. I've
 
 To create a whole new target environment you can copy and modify the `./profiles/default.env` to `./profiles/<newprofile>.env` then pass in `PROFILE=<newprofile>` to all make commands (or export it at the start of your session). If you need a separate environment or helmfile cluster deployment then further files will need to be created to accommodate.
 
-> **NOTE** `PROFILE` is for using different cluster types and configurations. Testing the same set of helm charts to both k3d and kind (or any other target for that matter) might be facilitated by using a profile. An `ENVIRONMENT` is what you would use to create helmfile deployment environment configuration. `ENVIRONMENT` is always 'default' unless manually passed in and is only used in the .helmfile/* tasks. You can set `ENVIRONMENT` within the profile definition or overwrite it when calling the tasks via the command line. The istio example uses an Environment to define a set of istio specific helm settings to deploy.
+> **NOTE** `PROFILE` is for using different cluster types and configurations. Testing the same set of helm charts to both k3d and kind (or any other target for that matter) might be facilitated by using a profile. An `ENVIRONMENT` is what you would use to create helmfile deployment environment configuration. `ENVIRONMENT` is always 'default' unless manually passed in and is only used in the * tasks. You can set `ENVIRONMENT` within the profile definition or overwrite it when calling the tasks via the command line. The istio example uses an Environment to define a set of istio specific helm settings to deploy.
 
 ```bash
 ## Launch a local k3d based kube cluster
@@ -310,7 +310,7 @@ This effectively makes the `../config/default/values.yaml` our default settings 
 If you wish to see the applied values after all these layers are merged, we can use a specially crafted helmfile stack to display the rendered values.
 
 ```bash
-make .helmfile/build STACK=values PROFILE=<profile you wish to see merged values for>
+make build STACK=values PROFILE=<profile you wish to see merged values for>
 ```
 
 ### Helmfile Stacks
@@ -343,18 +343,18 @@ unset PROFILE
 make cluster
 
 # Install only the consul stack
-make .helmfile/sync STACK=consul
+make sync STACK=consul
 
 # Or apply the cluster stack entirely outside of the vault profile (note that consul is already applied and will not be applied again even though it is listed in the cluster.vault helmfile)
-make .helmfile/sync STACK=cluster.vault 
+make sync STACK=cluster.vault 
 
 # Now remove just consul for the hell of it (likely breaking vault though)
-make .helmfile/destroy STACK=consul
+make destroy STACK=consul
 ```
 
 This is a powerful way to quickly work on various deployments and allows for layering of stacks to get the results you are looking for in an iterative manner.
 
-> **NOTE 1** Sometimes you may have to wait for the initial cluster to fully come up before running the .helmfile/apply for the entire cluster.
+> **NOTE 1** Sometimes you may have to wait for the initial cluster to fully come up before running the apply for the entire cluster.
 
 > **NOTE 2** Because many of the lookups involved with this framework are just simple scripts and I found no other good way to look up the helmfile values in a post rendered state, I use a special helmfile that is never meant to be deployed that is called lookup.placeholder.yaml. This allows me to render values based on environment using the helmfile build command. Then the output is parsed for the values I need. I use this workaround and a hidden task to render out ingress internal dns zone information for the dns proxy task for instance.
 
@@ -417,7 +417,7 @@ If you want to see more than just a base deployment deploy the bookinfo helmfile
 
 ```bash
 # Deploy bookinfo demo app if you like
-make .helmfile/sync STACK=bookinfo
+make sync STACK=bookinfo
 ```
 
 At this point you should be able to go to the example bookinfo microservice deployment by visiting [http://bookinfo.int.micro.svc/productpage](http://bookinfo.int.micro.svc/productpage) from your local machine. Open the kiali dashboard at [http://kiali.int.micro.svc](http://kiali.int.micro.svc) (login: admin/admin) to see the istio magic at work.
@@ -459,7 +459,7 @@ While I was testing this out on an old Shuttle PC I found out that some memory s
 ```bash
 export PROFILE=kind_homeassist
 make cluster
-make .helmfile/sync STACK=homeassistant
+make sync STACK=homeassistant
 ```
 
 You may notice that I use the cicd cluster for the local kind install as I know it works locally and since I'm not using nfs mounts or anything like that in my docker based cluster it makes sense for me to use a default baseline cluster and simply manually add the stacks in that I'm testing afterwards.
@@ -479,7 +479,7 @@ Also, I just wanted to see what it would take to do a single push deployment to 
 make cluster/start
 
 # Sync the clusterinit stack
-make .helmfile/sync STACK=clusterinit
+make sync STACK=clusterinit
 ```
 
 After a few minutes the local cluster will have traefik, certmanager, and rbacmanager installed (and you should see some successful jobs having been run in the cluster-init namespace).
@@ -521,14 +521,14 @@ The running cluster will be the first one in the list (at the upper left). Lens 
 
 - `cluster/start` will always first try to destroy the cluster before starting it.
 - `cluster/start` always spins up a bare deployment (no helmfile stacks applied)
-- `.helmfile/sync` will default to `STACK=cluster.$(CLUSTER)`
-- The above information means `make cluster/start .helmfile/sync` will always recreate a cluster from scratch then install the default cluster helmfile stack of charts for the current profile's cluster.
+- `sync` will default to `STACK=cluster.$(CLUSTER)`
+- The above information means `make cluster/start sync` will always recreate a cluster from scratch then install the default cluster helmfile stack of charts for the current profile's cluster.
 - All of the commands above are condensed into `make cluster`
 - There is a ton of extra 'stuff' in this repo that still needs to be cleaned out or revisited, not all files serve a purpose (yet)
-- Along the same lines as the prior statement, there are a ton eof 'helmfiles' in the .helmfile/wip folder that worked with env vars at one point. I'll slowly move these out of wip when I'm able to do so or the need comes up.
+- Along the same lines as the prior statement, there are a ton eof 'helmfiles' in the wip folder that worked with env vars at one point. I'll slowly move these out of wip when I'm able to do so or the need comes up.
 - MetalLB is used when a loadbalancer is required.
 - ~~Currently the loadbalancer deployment will use IP addresses between 172.17.0.100 and 172.17.0.110. This is the bridge IP subnet of docker on my workstation. You can modify this range in the config file within `./deploy/.metallb/metallb-config.yaml`.~~ This is/was only for kind and is now automatically determined when metallb is deployed to the cluster. You can still override this in the `./config/environment.default.yaml` file by adding `stacks.ingress.internalLBSubnet` and assigning it a CIDR subnet instead. Otherwise it grabs the `DOCKER_NETWORK` subnet and replaces the last digits with 1.0/24 (in my case it now ends up being 172.21.1.0/24 since I kept screwing around with the bridge network...whoops.)
-- Currently I source in all used repositories regardless if they are used or not, this slows down initial syncing and probably can be improved upon somehow. If you have already run `make .helmfile/sync` once and thus have remote chart repositories already synced up, you can more quickly itterate over local helmfile changes by switching over to using `make .helmfile/charts STACK=<yourstack>` instead. The helmfile charts subcommand is meant for offline chart deployments.
+- Currently I source in all used repositories regardless if they are used or not, this slows down initial syncing and probably can be improved upon somehow. If you have already run `make sync` once and thus have remote chart repositories already synced up, you can more quickly itterate over local helmfile changes by switching over to using `make charts STACK=<yourstack>` instead. The helmfile charts subcommand is meant for offline chart deployments.
 - The `dnsforward/*` tasks are a bit janky as it is really hard to account for all possible scenarios. Generically, only use dnsforward tasks for local cluster testing (and make any additional forwarding updates/changes via the web interface if the logic is not working for you).
 
 ## Why Makefiles?
@@ -543,7 +543,7 @@ Great question! One which I sometimes struggle to answer. There are dozens of ot
 
 [My Archetype Chart](https://github.com/zloeber/archetype-chart) - I use this quite a bit for standardized ingress among other things
 
-[Manage Helm Charts With Helmfile](https://www.arthurkoziel.com/managing-helm-charts-with-.helmfile/) - Good article on some techniques to implement DRY helmfile deployments
+[Manage Helm Charts With Helmfile](https://www.arthurkoziel.com/managing-helm-charts-with-) - Good article on some techniques to implement DRY helmfile deployments
 
 [Helm Secrets Plugin](https://github.com/zendesk/helm-secrets) - Helm plugin for secrets management
 
