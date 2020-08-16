@@ -1,0 +1,18 @@
+ROOT_PATH ?= $(abspath $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST))))))
+BIN_PATH ?= $(ROOT_PATH)/.local/bin
+
+loft := $(BIN_PATH)/loft
+
+.PHONY: .dep/loft
+.dep/loft: ## Install loft locally
+ifeq (,$(wildcard $(loft)))
+	@$(MAKE) --no-print-directory -C $(APP_PATH)/githubapp auto loft-sh/loft INSTALL_PATH=$(BIN_PATH)
+	@echo "Installed: $(loft)"
+endif
+
+.PHONY: .deps/loft
+.deps/loft: .dep/loft .dep/consul ## Install dependencies
+
+.PHONY: loft/connect
+loft/use: ## Connect loft to environment
+	$(loft) use vcluster cluster-1 --cluster local --space vcluster-cluster-1

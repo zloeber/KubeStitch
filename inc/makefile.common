@@ -72,6 +72,7 @@ show/env: ## Show our environment settings
 	@echo "HELMFILE_VALUES: $(HELMFILE_VALUES)"
 	@echo "ENVIRONMENT_VARS: $(ENVIRONMENT_VARS)"
 	@echo "ADDITIONAL_TASKSETS: $(ADDITIONAL_TASKSETS)"
+	@echo "CUSTOM_TASKSETS: $(CUSTOM_TASKSETS)"
 	@echo "TASKSETS: $(TASKSETS)"
 
 .PHONY: show
