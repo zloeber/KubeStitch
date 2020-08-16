@@ -62,16 +62,8 @@ releases:
     fullnameOverride: ""
     ingress:
       enabled: false
-      host: {{ .Values | getOrNil "ingress.internal.zone" | default "int.micro.svc" }}
-      name: loft
-      path: /
-      tls:
-        clusterIssuer: {{ .Values | getOrNil "certmanager.issuerDefault" | default "default" }}
-        enabled: true
-        secret: tls-loft
     livenessProbe:
       enabled: true
-    nameOverride: ""
     readinessProbe:
       enabled: true
     replicaCount: 1
