@@ -23,3 +23,4 @@
 .m2/
 .local
 .envrc
+.terraform

@@ -80,6 +80,8 @@ deps: .dep/githubapps $(DEPTASKS) .dep/yq .dep/jq .dep/terraform ## Install gene
 clean: ## Remove downloaded dependencies
 	@rm -rf $(APP_PATH)/githubapp
 	@rm -rf $(INSTALL_PATH)/*
+	@rm -rf $(ROOT_PATH)/.terraform
+	@rm -rf $(ROOT_PATH)/terraform.tfstate*
 
 .PHONY: cluster
 cluster: deps cluster/start .helmfile/sync ## Create cluster and apply default helmfile stack
