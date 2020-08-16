@@ -14,6 +14,7 @@ PROFILE ?= default
 
 yq := $(BIN_PATH)/yq
 jq := $(BIN_PATH)/jq
+terraform := $(BIN_PATH)/terraform
 #task := $(BIN_PATH)/task
 
 # Import target deployment env vars
@@ -59,6 +60,12 @@ ifeq (,$(wildcard $(jq)))
 	@$(MAKE) --no-print-directory -C $(APP_PATH)/githubapp install jq INSTALL_PATH=$(BIN_PATH)
 endif
 
+.PHONY: .dep/terraform
+.dep/jq: ## Install terraform
+ifeq (,$(wildcard $(terraform)))
+	@$(MAKE) --no-print-directory -C $(APP_PATH)/githubapp install terraform INSTALL_PATH=$(BIN_PATH)
+endif
+
 # .PHONY: .dep/task
 # .dep/task: ## Install go-task
 # ifeq (,$(wildcard $(task)))
@@ -66,7 +73,7 @@ endif
 # endif
 
 .PHONY: deps
-deps: .dep/githubapps $(DEPTASKS) .dep/yq .dep/jq ## Install general dependencies
+deps: .dep/githubapps $(DEPTASKS) .dep/yq .dep/jq .dep/terraform ## Install general dependencies
 	@mkdir -p $(TEMP_PATH)
 
 .PHONY: clean

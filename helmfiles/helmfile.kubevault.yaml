@@ -1,0 +1,103 @@
+---
+bases:
+- ../config/environments.yaml
+- ../config/helmdefaults.yaml
+- ../config/repositories.yaml
+---
+
+## KubeVault deployment
+# https://kubevault.com/docs/v0.3.0/setup/operator/install/
+releases:
+- name: kubevault-namespace
+  chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.8" }}
+  namespace: kube-system
+  condition: kubevault.enabled
+  installed: true
+  wait: true
+  labels:
+    chart: kubevault-namespace
+    component: kubevault
+    namespace: kube-system
+  values:
+  - app: kubevault
+    namespace:
+      enabled: true
+      name: {{ .Values | getOrNil "kubevault.namespace" | default "kubevault" }}
+
+- name: kubevault
+  chart: {{ .Values | getOrNil "kubevault.chart" | default "appscode/vault-operator" }}
+  version: {{ .Values | getOrNil "kubevault.version" | default "0.3.0" }}
+  namespace: {{ .Values | getOrNil "kubevault.namespace" | default "kubevault" }}
+  condition: kubevault.enabled
+  installed: true
+  missingFileHandler: Debug
+  labels:
+    chart: kubevault
+    component: kubevault
+    namespace: {{ .Values | getOrNil "kubevault.namespace" | default "kubevault" }}
+  needs:
+    - kube-system/kubevault-namespace
+  values:
+  - '--enable-analytics=false'
+  - "../config/{{ .Environment.Name }}/kubevault.override.yaml"
+
+- name: kubevault-ui-ingress
+  namespace: {{ .Values | getOrNil "kubevault.namespace" | default "kubevault" }}
+  chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.8" }}
+  condition: ingress.enabled
+  installed: true
+  needs:
+  - kube-system/kubevault-namespace
+  - {{ .Values | getOrNil "kubevault.namespace" | default "kubevault" }}/kubevault
+  labels:
+    chart: kubevault-ui-ingress
+    component: ingress
+    namespace: {{ .Values | getOrNil "kubevault.namespace" | default "kubevault" }}
+  values:
+  - zone: internal
+    app: kubevault-ui
+    dnsRoot: {{ .Values | getOrNil "dnsRoot" | default "micro.svc" }}
+    ingressClassMap:
+      internal: {{ .Values | getOrNil "ingress.internal.class" | default "internal" }}
+    ingress:
+      enabled: true
+      tlsEnabled: true
+      hosts:
+      - secretName: kubevault-ui-ingress
+        paths:
+        - path: "/"
+          backend:
+            serviceName: kubevault-kubevault-ui
+            servicePort: 80
+
+- name: kubevault-ingress
+  namespace: {{ .Values | getOrNil "kubevault.namespace" | default "kubevault" }}
+  chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.8" }}
+  condition: ingress.enabled
+  installed: true
+  needs:
+  - kube-system/kubevault-namespace
+  - {{ .Values | getOrNil "kubevault.namespace" | default "kubevault" }}/kubevault
+  labels:
+    chart: kubevault-ingress
+    component: ingress
+    namespace: {{ .Values | getOrNil "kubevault.namespace" | default "kubevault" }}
+  values:
+  - zone: internal
+    app: kubevault
+    dnsRoot: {{ .Values | getOrNil "dnsRoot" | default "micro.svc" }}
+    ingressClassMap:
+      internal: {{ .Values | getOrNil "ingress.internal.class" | default "internal" }}
+    ingress:
+      enabled: true
+      tlsEnabled: true
+      hosts:
+      - secretName: kubevault-ingress
+        paths:
+        - path: "/"
+          backend:
+            serviceName: kubevault-kubevault-server
+            servicePort: 8500

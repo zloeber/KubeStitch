@@ -1,0 +1,121 @@
+---
+bases:
+- ../config/environments.yaml
+- ../config/helmdefaults.yaml
+- ../config/repositories.yaml
+---
+
+releases:
+- name: loft-namespace
+  chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.8" }}
+  namespace: kube-system
+  condition: loft.enabled
+  installed: true
+  wait: true
+  labels:
+    chart: loft-namespace
+    component: loft
+    namespace: kube-system
+  values:
+  - app: loft
+    namespace:
+      enabled: true
+      name: {{ .Values | getOrNil "loft.namespace" | default "loft" }}
+
+- name: loft
+  chart: {{ .Values | getOrNil "loft.chart" | default "devspace/loft" }}
+  version: {{ .Values | getOrNil "loft.version" | default "0.3.8" }}
+  namespace: {{ .Values | getOrNil "loft.namespace" | default "loft" }}
+  condition: loft.enabled
+  installed: true
+  missingFileHandler: Debug
+  labels:
+    chart: loft
+    component: loft
+    namespace: {{ .Values | getOrNil "loft.namespace" | default "loft" }}
+  needs:
+    - kube-system/loft-namespace
+  values:
+  - admin:
+      accessKeySecret: loft-user-accesskey-admin
+      create: true
+      name: admin
+      password: "password"
+      username: admin
+    apiService:
+      enabled: true
+    certIssuer:
+      create: false
+      email: ""
+      httpResolver:
+        enabled: true
+        ingressClass: {{ .Values | getOrNil "ingress.internal.class" | default "internal" }}
+      name: {{ .Values | getOrNil "certmanager.issuerDefault" | default "default" }}
+      resolvers: []
+      secretName: loft-letsencrypt-credentials
+      server: https://acme-v02.api.letsencrypt.org/directory
+    cluster:
+      connect:
+        local: true
+    env: {}
+    fullnameOverride: ""
+    ingress:
+      enabled: false
+      host: {{ .Values | getOrNil "ingress.internal.zone" | default "int.micro.svc" }}
+      name: loft
+      path: /
+      tls:
+        clusterIssuer: {{ .Values | getOrNil "certmanager.issuerDefault" | default "default" }}
+        enabled: true
+        secret: tls-loft
+    livenessProbe:
+      enabled: true
+    nameOverride: ""
+    readinessProbe:
+      enabled: true
+    replicaCount: 1
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+    service:
+      manager:
+        port: 80
+        targetPort: 8080
+      type: ClusterIP
+    serviceAccount:
+      clusterRole: cluster-admin
+      create: true
+      name: loft
+  - "../config/{{ .Environment.Name }}/loft.override.yaml"
+
+- name: loft-ingress
+  namespace: {{ .Values | getOrNil "loft.namespace" | default "loft" }}
+  chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.8" }}
+  condition: ingress.enabled
+  installed: true
+  needs:
+  - kube-system/loft-namespace
+  - {{ .Values | getOrNil "loft.namespace" | default "loft" }}/loft
+  labels:
+    chart: loft-ingress
+    component: ingress
+    namespace: {{ .Values | getOrNil "loft.namespace" | default "loft" }}
+  values:
+  - zone: internal
+    app: loft
+    dnsRoot: {{ .Values | getOrNil "dnsRoot" | default "micro.svc" }}
+    ingressClassMap:
+      internal: {{ .Values | getOrNil "ingress.internal.class" | default "internal" }}
+    ingress:
+      enabled: true
+      tlsEnabled: false
+      hosts:
+      - paths:
+        - path: "/"
+          backend:
+            serviceName: loft
+            servicePort: 80
+

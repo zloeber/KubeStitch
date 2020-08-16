@@ -10,7 +10,7 @@ A default deployment of Kubernetes is not extremely useful. Usually, one needs t
 
 The diagram shows a few elements which may need deployment to your clusters. These can be done in one Istio operator driven deployment, as individual stacks, starting with ArgoCD which then gets used to deploy each stack as an 'App of Apps' GitOps approach, or any other method which suits your fancy. KubeStitch can help aid your efforts.
 
-## Goal
+## Goals
 
 The short goal for this project would be to narrow the gap in feature parity between what your local environment looks like versus your deployment environment. One can use kubestitch to quickly bring up and tear down local kubernetes environments for testing and vetting out Kubernetes solutions that then get deployed remotely. Additionally, multiple Kubernetes clustering technologies can be swapped out relatively quickly and easily using a single file with few variables.
 
@@ -234,15 +234,15 @@ I use this to work on charts before they are published for a new release version
 
 ## Tasksets
 
-Sometimes there are additional commands required to vet out a particular solution. To accommodate for this need, you can add a new makefile directly in the 'inc' folder as `./inc/makefile.<taskset>` and then add the `<taskset>` into your profile's `ADDITIONAL_TASKSETS` definition (space delimited if there is more than one). This will source in your new script tasks automatically only when the profile is used.
+Sometimes there are additional commands required to vet out a particular solution. To accommodate for this need, we can add a new makefile directly in the 'inc' folder as `./inc/makefile.<taskset>` and then add the `<taskset>` into your profile's `ADDITIONAL_TASKSETS` variable (space delimited if there is more than one). This will source in your new script tasks automatically when the profile is used.
 
-You can see the tasksets which are available within the 'inc' folder of this repo. Alternatively, run `make show/tasksets` to list out all thost that are available.
+You can see the tasksets which are available by listing the files within the 'inc' folder of this repo. Alternatively, run `make show/tasksets` to list out all those that are available.
 
-Most tasksets are cross platform and will download and then run binaries specific to your platform. 
+Most tasksets are cross platform and will download and then run binaries specific to your platform (Linux/Mac only at this time).
 
-> **NOTE:** The Lens taskset is not so it is excluded from the default profile. You can insert this or any other non-profile specific taskset by adding `CUSTOM_TASKSETS=lens` to your make commands.
+> **NOTE:** The Lens taskset is not cross platform so it is excluded from the default profile. You can insert this or any other non-profile specific taskset by adding `CUSTOM_TASKSETS=lens` to your make commands.
 
-Not all of these tasks are useful for every scenario and simply don't get loaded. But the following tasksets are loaded by default and are considered essential.
+The following tasksets are loaded by default and are considered essential for KubeStitch to operate.
 
 - helm
 - kube
@@ -516,6 +516,10 @@ make lens/addcluster lens
 The running cluster will be the first one in the list (at the upper left). Lens stores entire cluster configurations in its backend store so you will need to do this each time you rebuild a cluster and wish to use this app to manage it.
 
 > **NOTE** The Lens app is cross platform but the taskset is targeted towards linux hosts only currently as the AppImage format is a single download and able to be automated without root access. For a cross-platform console dashboard you can also use the `k9s` taskset. Otherwise you will have to manually download the appropriate version of Lens for your platform and remove/add the cluster configurations manually at this time.
+
+# Troubleshooting
+
+To enable helm debugging pass in `DEBUG_MODE=on` to any command.
 
 # Additional Tips
 

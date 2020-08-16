@@ -27,3 +27,9 @@ repositories:
   url: git+https://github.com/zloeber/archetype-chart@/
 - name: descendant-incubator
   url: git+https://github.com/zloeber/descendant-chart@/
+- name: gitlab
+  url: https://charts.gitlab.io
+- name: appscode
+  url: https://charts.appscode.com/stable/
+- name: devspace
+  url: https://charts.devspace.sh/

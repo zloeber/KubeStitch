@@ -7,9 +7,13 @@ HELMFILE_PATH ?= $(ROOT_PATH)/helmfiles
 STACK ?= cluster.$(CLUSTER)
 HELMFILE_VERSION ?= 0.109.0
 HELM_VERSION ?= 3.2.0
-## Swap the following to show helm yaml rendered even if there are errors
-HELM_FLAGS ?= 
-#HELM_FLAGS ?= --args --debug
+
+ifeq ($(DEBUG_MODE),on)
+HELM_FLAGS ?= --args --debug
+else
+HELM_FLAGS ?=
+endif
+
 ENVIRONMENT ?= default
 HELMFILE_VALUES ?= $(CONFIG_PATH)/$(ENVIRONMENT)/values.yaml
 

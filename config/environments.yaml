@@ -77,3 +77,12 @@ environments:
     - archetype:
         version: "0.0.10"
         chart: archetype-incubator/archetype
+  gitlab:
+    missingFileHandler: Debug
+    secrets:
+    - ../config/{{ .Environment.Name }}/secrets.yaml
+    values:
+    - ../config/default/values.yaml
+    - ../config/{{ .Environment.Name }}/values.yaml
+    - prometheusoperator:
+        enabled: false

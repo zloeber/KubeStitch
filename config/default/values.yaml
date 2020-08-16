@@ -129,3 +129,17 @@ homeassistant:
   chart: stable/home-assistant
   namespace: home-assistant
   zone: internal
+gitlab:
+  enabled: true
+  version: "4.2.2"
+  chart: gitlab/gitlab
+  namespace: gitlab
+  zone: internal
+  gitlabVersion: "13.2.2"
+loft:
+  enabled: true
+  version: "0.3.8"
+  chart: devspace/loft
+  namespace: loft
+  zone: internal
+

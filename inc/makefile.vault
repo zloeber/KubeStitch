@@ -55,3 +55,17 @@ vault/sync: ## Use vault-sync to setup initial vault policies and secrets
 		--sync-full \
 		-c $(DEPLOY_PATH)/vault/config.yml \
 		-p $(DEPLOY_PATH)/vault/policies
+
+.PHONY: vault/init
+vault/init: ## Setup initial vault environment
+	$(terraform) init \
+		$(DEPLOY_PATH)/vault
+	$(terraform) plan \
+		$(DEPLOY_PATH)/vault
+	$(terraform) apply --auto-approve \
+		$(DEPLOY_PATH)/vault
+
+.PHONY: vault/clean
+vault/clean: ## Clean up after deployment
+	rm -rf $(ROOT_PATH)/tfstate.*
+	rm -rf $(ROOT_PATH)/.terraform
