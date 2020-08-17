@@ -10,7 +10,7 @@ data:
         method "kubernetes" {
             mount_path = "auth/kubernetes"
             config = {
-                role = "$role"
+                role = "${role}"
             }
         }
 
@@ -27,7 +27,7 @@ data:
     <html>
     <body>
     <p>Some secrets:</p>
-    {{- with secret "$kvpath/data/$name/config" }}
+    {{- with secret "${kvpath}/data/$name/config" }}
     <ul>
     <li><pre>username: {{ .Data.data.username }}</pre></li>
     <li><pre>password: {{ .Data.data.password }}</pre></li>
@@ -39,4 +39,4 @@ data:
     }
 kind: ConfigMap
 metadata:
-  name: $name-vaultagent-config
+  name: ${name}-vaultagent-config
