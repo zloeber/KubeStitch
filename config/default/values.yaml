@@ -142,4 +142,21 @@ loft:
   chart: devspace/loft
   namespace: loft
   zone: internal
-
+csi:
+  enabled: true
+  version: "0.0.12"
+  chart: csidriver/secrets-store-csi-driver
+  namespace: csi
+  zone: internal
+awx:
+  enabled: true
+  version: "1.2.1"
+  chart: lifen/awx
+  namespace: awx
+  zone: internal
+akri:
+  enabled: true
+  version: "0.0.36"
+  chart: deislabs/akri
+  namespace: akri
+  zone: internal

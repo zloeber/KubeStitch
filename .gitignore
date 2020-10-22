@@ -4,6 +4,8 @@
 # .tfstate files
 **/*.tfstate
 **/*.tfstate.*
+*.tfstate
+*.tfstate.*
 
 # .tfvars files
 **/backend.tfvars
@@ -19,8 +21,8 @@
 **.yaml.dec
 
 **/.backups/**
-
 .m2/
 .local
 .envrc
 .terraform
+.vagrant

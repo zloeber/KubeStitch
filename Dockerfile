@@ -1,4 +1,4 @@
-FROM alpine:3.11
+FROM alpine:3.12
 
 # Metadata
 LABEL MAINTAINER="Zachary Loeber"
@@ -23,7 +23,6 @@ RUN apk add --no-cache ca-certificates bash git openssh curl \
     && chmod +x /usr/local/bin/helm \
     && curl --retry 3 --retry-delay 5 --fail -sSL -o /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64 \
     && chmod +x /usr/local/bin/yq
-
 
 RUN helm plugin install https://github.com/databus23/helm-diff --version master \
     && helm plugin install https://github.com/futuresimple/helm-secrets \
