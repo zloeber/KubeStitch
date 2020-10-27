@@ -1,0 +1,14 @@
+apiVersion: v2
+appVersion: 1.15.2
+description: ESPHome
+home: https://github.com/k8s-at-home/charts/tree/master/charts/esphome
+icon: https://esphome.io/_images/logo-text.svg
+keywords:
+- esphome
+maintainers:
+- email: jeff@billimek.com
+  name: billimek
+name: esphome
+sources:
+- https://github.com/esphome/esphome
+version: 2.2.0

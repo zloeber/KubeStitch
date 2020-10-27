@@ -39,3 +39,5 @@ repositories:
   url: https://honestica.github.io/lifen-charts
 - name: deislabs
   url: https://deislabs.github.io/akri/
+- name: k8s-at-home
+  url: https://k8s-at-home.com/charts/

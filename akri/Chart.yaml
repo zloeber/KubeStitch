@@ -1,6 +1,0 @@
-apiVersion: v2
-appVersion: 0.0.36
-description: A Helm chart for Akri
-name: akri
-type: application
-version: 0.0.36

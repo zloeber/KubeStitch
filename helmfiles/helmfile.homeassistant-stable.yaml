@@ -39,44 +39,33 @@ releases:
   needs:
     - kube-system/homeassistant-namespace
   values:
-  - persistence:
+  - image:
+      repository: homeassistant/home-assistant
+      tag: latest
+    persistence:
       enabled: true
-      size: 30Gi
+      size: 40Gi
+    hostNetwork: false
     git:
-      enabled: {{ .Values | getOrNil "homeassistant.git_enabled" | default "false" }}
-      image:
-        repository: causticlab/hass-configurator-docker
-        tag: 0.3.5-x86_64
-        pullPolicy: IfNotPresent
-
-      ## Specify the command that runs in the git-sync container to pull in configuration.
-      # command: []
-
-      # Committer settings
+      enabled: false
       user:
-        name: {{ .Values | getOrNil "homeassistant.git_user" | default "zloeber" }}
-        email: {{ .Values | getOrNil "homeassistant.git_email" | default "zloeber@gmail.com" }}
-
-      repo: {{ .Values | getOrNil "homeassistant.git_repo" | default "" }}
-      secret: git-creds
-      syncPath: /config
-      keyPath: /root/.ssh
+        name: ""
+        email: ""
+    vscode:
+      enabled: true
+    configurator:
+      enabled: true
     zwave:
       enabled: false
       device: ttyACM0
-    configurator:
-      enabled: true
-    vscode:
-      enabled: true
-    postgresql:
-      enabled: true
-      global:
-        postgresql:
-          postgresqlUsername: home-assistant
-          postgresqlPassword: home-assistant-pass
-          postgresqlDatabase: home-assistant
-      persistence:
-        enabled: true
+    # Mount devices or folders from the host machine. Can be used for USB device mounting.
+    hostMounts: []
+    monitoring:
+      enabled: {{ .Values | getOrNil "prometheusoperator.enabled" | default "false" }}
+      serviceMonitor:
+        enabled: {{ .Values | getOrNil "prometheusoperator.enabled" | default "false" }}
+    appdaemon:
+      enabled: false
   - "../config/{{ .Environment.Name }}/homeassistant.override.yaml"
 
 - name: homeassistant-dashboard-ingress
