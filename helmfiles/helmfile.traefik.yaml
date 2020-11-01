@@ -73,8 +73,8 @@ releases:
     ports:
       traefik:
         expose: true
-    nodeSelector:
-      ingress-ready: "true"
+    # nodeSelector:
+    #   ingress-ready: "true"
   - "../config/{{ .Environment.Name }}/traefik.override.yaml"
 
 - name: traefik-dashboard
