@@ -94,7 +94,7 @@ releases:
     - apiVersion: traefik.containo.us/v1alpha1
       kind: IngressRoute
       metadata:
-        name: traefik-dashboard
+        name: dashboard
       spec:
         entryPoints:
           - web
