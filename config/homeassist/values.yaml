@@ -11,6 +11,7 @@ ingress:
     namespace: ingress-int
     class: internal
     zone: int
+    subnet: "192.168.1.0/24"
     ip: ""
   external:
     namespace: ingress-ext

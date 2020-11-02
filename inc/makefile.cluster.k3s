@@ -29,7 +29,7 @@ CLUSTER_CONTEXT := default
 	sudo ufw allow 443
 	sudo ufw default deny incoming
 	#sudo ufw default deny outgoing
-	sudo ufw allow in on weave from all
+	sudo ufw allow in on weave from all || true
 	sudo ufw enable
 
 .PHONY: cluster/start

@@ -24,6 +24,8 @@ lens: ## Launch lens
 
 .PHONY: lens/addcluster
 lens/addcluster: lens/clearclusters ## Adds current kube cluster to lens
+	@echo "KUBE_CONFIG: $(KUBE_CONFIG)"
+	@echo "LENS_CLUSTER_STORE: $(LENS_CLUSTER_STORE)"
 	@tmpconfig=`cat $(KUBE_CONFIG) | sed -e ':a' -e 'N' -e '$$!ba' -e 's/\n/\\n/g'`; \
 	$(jq) --arg clusterconfig "$$tmpconfig" \
 		--arg clustername $(CLUSTER) \
