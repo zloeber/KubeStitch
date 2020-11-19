@@ -540,6 +540,30 @@ To enable helm debugging pass in `DEBUG_MODE=on` to any command.
 
 I just want to note that currently, this framework will require all repositories for all helmfiles you wish to use. This list can grow quite quickly. It would not be very hard to have a per-environment configuration of each repo list. You will have to update most of the base helmfiles to accomodate though.
 
+## Minikube on Linux
+
+I actively avoid minikube on Linux as it has given me nothing but problems. If you do happen to really want to use minikube on Linux here are some notes.
+
+If you are running Ubuntu 20.04 here is a snippet to get docker-ce installed:
+
+```bash
+sudo apt update
+sudo apt install apt-transport-https ca-certificates curl software-properties-common
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable"
+sudo apt install docker-ce
+sudo usermod -aG docker ${USER}
+```
+
+And a snippet to get podman installed:
+
+```bash
+source /etc/os-release
+sudo sh -c "echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_${VERSION_ID}/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list"
+wget -nv https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable/xUbuntu_${VERSION_ID}/Release.key -O- | sudo apt-key add -
+sudo apt update && sudo apt install -y podman
+```
+
 # Advanced Usage
 
 Using Kubestich fully means you are likely needing to add/remove/change up your clusters on the regular. This is the generic process of how to do so from my experiences.

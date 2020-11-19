@@ -1,21 +1,41 @@
 ROOT_PATH?=$(abspath $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST))))))
-BIN_PATH ?= $(ROOT_PATH)/.local/bin
-minikube ?= $(BIN_PATH)/minkube
+BIN_PATH?=$(ROOT_PATH)/.local/bin
+HOST_OS:=$(shell sh -c 'uname -s 2>/dev/null || echo not supported' | tr '[:upper:]' '[:lower:]')
 
-minikube/start/cluster: ## Start minikube so we can use it
-	minikube start --kubernetes-version=$(KUBE_VERSION) --cpus=6 || true
-	$(MAKE) mini.kube/config
+minikube := $(BIN_PATH)/minikube
 
-minikube/stop/cluster: ## Stop minikube so we can use it
-	minikube delete
+CLUSTER_CONTEXT := $(CLUSTER)
 
-mini.kube/config: ## Configure minikube
-	#$(MAKE)  .metallb/install
-	#minikube addons disable ingress || true
-	#minikube addons disable dashboard || true
+.PHONY: .deps/cluster.minikube
+.deps/cluster.minikube: ## Get minikube binary dependency
+ifeq (,$(wildcard $(minikube)))
+	@$(MAKE) --no-print-directory -C $(APP_PATH)/githubapp auto kubernetes/minikube INSTALL_PATH=$(BIN_PATH)
+	@echo "Installed: $(minikube)"
+endif
+
+.PHONY: .minikube/create/cluster
+.minikube/create/cluster: ## create minikube cluster
+	$(minikube) start \
+		--cpus=4 \
+		--embed-certs=true \
+		--keep-context=true \
+		--wait=all
+
+.PHONY: .minikube/cluster/config
+.minikube/cluster/config: ## Export cluster configuration
 	kubectl apply -f $(ROOT_PATH)/deploy/k8s/minikube-storage-provisioner.yaml
 
-minikube: minikube/start mini.kube/config ## Start and configure minikube for cicd
+#$(MAKE)  .metallb/install
+#minikube addons disable ingress || true
+#minikube addons disable dashboard || true
+#cat $(shell $(minikube) get-kubeconfig --name=$(CLUSTER)) > $(KUBE_CONFIG)
+
+.PHONY: cluster/start
+cluster/start: cluster/stop .minikube/create/cluster .kube/context .minikube/cluster/config ## Start cluster
+
+.PHONY: cluster/stop
+cluster/stop: ## Stop and delete cluster
+	$(minikube) delete || true
 
 minikube/dnsforward/start: ## Forwards all dns requests to dns-proxy-server
 	tmpdir=$$(mktemp -d) && echo "$${tmpdir}" && \
