@@ -3,7 +3,7 @@ BIN_PATH ?= $(ROOT_PATH)/.local/bin
 
 METALLB_VERSION ?= 0.9.3
 CLUSTER_CONTEXT ?= $(CLUSTER)
-SUBNET_INDEX ?= 1
+SUBNET_INDEX ?= 0
 KUBE_CONFIG ?= $(ROOT_PATH)/.local/kube.$(CLUSTER).conf
 RESOLV_CONF ?= /etc/resolv.conf
 
@@ -104,10 +104,14 @@ kube/bearertoken: Return bearer token for cluster
 
 .PHONY: .kube/loadbalancer/subnet
 .kube/loadbalancer/subnet: ## Show docker bridge subnet
-	@INTERNALSUBNET=$(shell $(MAKE) .helmfile/lookup/lookup_internalIngressSubnet) && \
-		[[ ! -z "$$INTERNALSUBNET" ]] && \
-		echo "$$INTERNALSUBNET" || \
-		echo `docker network inspect $(DOCKER_NETWORK) | $(jq) '.[0].IPAM.Config[0].Gateway' | sed -e 's/\0.1/$(SUBNET_INDEX).0\/24/g'`
+	@INTERNALSUBNET=$(shell $(MAKE) .helmfile/lookup/lookup_ingressInternalSubnet) && \
+		if [[ "$$INTERNALSUBNET" == "null" ]]; then \
+		echo $(shell docker network inspect $(DOCKER_NETWORK) | $(jq) '.[0].IPAM.Config[0].Gateway' | sed -e 's/\0.1/$(SUBNET_INDEX).0\/24/g'); \
+		else echo "$$INTERNALSUBNET 1"; fi
+
+.PHONY: .kube/loadbalancer
+.kube/loadbalancer: ## Show docker bridge subnet
+	@echo $(shell docker network inspect $(DOCKER_NETWORK) | $(jq) '.[0].IPAM.Config[0].Gateway' | sed -e 's/\0.1/$(SUBNET_INDEX).0\/24/g')
 
 .PHONY: .kube/ingress/hosts
 .kube/ingress/hosts: ## Show ingress hosts

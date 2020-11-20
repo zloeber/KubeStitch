@@ -24,6 +24,12 @@ include ${ENVIRONMENT_VARS}
 export $(shell sed 's/=.*//' ${ENVIRONMENT_VARS})
 endif
 
+OVERRIDES_VARS ?= $(profile_path)/overrides.env
+ifneq (,$(wildcard $(OVERRIDES_VARS)))
+include ${OVERRIDES_VARS}
+export $(shell sed 's/=.*//' ${OVERRIDES_VARS})
+endif
+
 ## List of sane defaults for local makefile building/testing
 # Note: all values in here should be ?= in case they are already set upstream
 CLOUD ?= local
