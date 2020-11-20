@@ -1,0 +1,81 @@
+---
+bases:
+- ../config/environments.yaml
+- ../config/helmdefaults.yaml
+- ../config/repositories.yaml
+---
+
+## awx namespace
+releases:
+- name: awx-namespace
+  chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.8" }}
+  namespace: kube-system
+  condition: awx.enabled
+  installed: true
+  wait: true
+  labels:
+    chart: awx-namespace
+    component: awx
+    namespace: kube-system
+  values:
+  - app: awx
+    namespace:
+      enabled: true
+      name: {{ .Values | getOrNil "awx.namespace" | default "awx" }}
+
+## awx chart deployment
+# info: https://hub.kubeapps.com/charts/lifen/awx#!
+- name: awx
+  chart: {{ .Values | getOrNil "awx.chart" | default "lifen/awx" }}
+  version: {{ .Values | getOrNil "awx.version" | default "1.2.1" }}
+  namespace: {{ .Values | getOrNil "awx.namespace" | default "awx" }}
+  condition: awx.enabled
+  installed: true
+  missingFileHandler: Debug
+  labels:
+    chart: awx
+    component: awx
+    namespace: {{ .Values | getOrNil "awx.namespace" | default "awx" }}
+  needs:
+    - kube-system/awx-namespace
+  values:
+  - default_admin_user: admin
+    default_admin_password: password
+    awx_secret_key: awxsecret
+    #awx_url_base: https://awx.int.{{ .Values | getOrNil "dnsRoot" | default "micro.svc" }}
+    memcached:
+      install: true
+      AntiAffinity: soft
+  - "../config/{{ .Environment.Name }}/awx.override.yaml"
+
+## awx ingress deployment
+- name: awx-ingress
+  namespace: {{ .Values | getOrNil "awx.namespace" | default "awx" }}
+  chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.8" }}
+  condition: ingress.enabled
+  installed: true
+  needs:
+  - kube-system/awx-namespace
+  - {{ .Values | getOrNil "awx.namespace" | default "awx" }}/awx
+  labels:
+    chart: awx-ingress
+    component: ingress
+    namespace: {{ .Values | getOrNil "awx.namespace" | default "awx" }}
+  values:
+  - zone: internal
+    app: awx
+    dnsRoot: {{ .Values | getOrNil "dnsRoot" | default "micro.svc" }}
+    ingressClassMap:
+      internal: {{ .Values | getOrNil "ingress.internal.class" | default "internal" }}
+    ingress:
+      enabled: true
+      tlsEnabled: true
+      hosts:
+      - secretName: awx-ingress
+        paths:
+        - path: "/"
+          backend:
+            serviceName: awx
+            servicePort: 8052

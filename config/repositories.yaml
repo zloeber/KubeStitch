@@ -33,3 +33,11 @@ repositories:
   url: https://charts.appscode.com/stable/
 - name: devspace
   url: https://charts.devspace.sh/
+- name: csidriver
+  url: https://raw.githubusercontent.com/kubernetes-sigs/secrets-store-csi-driver/master/charts
+- name: lifen
+  url: https://honestica.github.io/lifen-charts
+- name: deislabs
+  url: https://deislabs.github.io/akri/
+- name: k8s-at-home
+  url: https://k8s-at-home.com/charts/

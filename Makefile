@@ -67,7 +67,7 @@ ifeq (,$(wildcard $(jq)))
 endif
 
 .PHONY: .dep/terraform
-.dep/jq: ## Install terraform
+.dep/terraform: ## Install terraform
 ifeq (,$(wildcard $(terraform)))
 	@$(MAKE) --no-print-directory -C $(APP_PATH)/githubapp install terraform INSTALL_PATH=$(BIN_PATH)
 endif

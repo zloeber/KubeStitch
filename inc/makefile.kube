@@ -1,7 +1,6 @@
 ROOT_PATH ?= $(abspath $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST))))))
 BIN_PATH ?= $(ROOT_PATH)/.local/bin
 
-METALLB_VERSION ?= 0.9.3
 CLUSTER_CONTEXT ?= $(CLUSTER)
 SUBNET_INDEX ?= 0
 KUBE_CONFIG ?= $(ROOT_PATH)/.local/kube.$(CLUSTER).conf

@@ -9,8 +9,8 @@ K3D_IMAGE_POSTFIX ?= -k3s1
 
 .PHONY: .deps/cluster.k3d
 .deps/cluster.k3d: ## Get k3d binary dependency
-ifeq (,$(wildcard $(INSTALL_PATH)/k3d))
-	@$(MAKE) --no-print-directory -C $(APP_PATH)/githubapp auto rancher/k3d INSTALL_PATH=$(INSTALL_PATH)
+ifeq (,$(wildcard $(k3d)))
+	@$(MAKE) --no-print-directory -C $(APP_PATH)/githubapp auto rancher/k3d INSTALL_PATH=$(BIN_PATH)
 	@echo "Installed: $(k3d)"
 endif
 

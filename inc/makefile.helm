@@ -9,9 +9,9 @@ HELMFILE_VERSION ?= 0.109.0
 HELM_VERSION ?= 3.2.0
 
 ifeq ($(DEBUG_MODE),on)
-HELM_FLAGS ?= --args --debug
+HELMFILE_FLAGS ?= --debug
 else
-HELM_FLAGS ?=
+HELMFILE_FLAGS ?=
 endif
 
 ENVIRONMENT ?= default
@@ -87,14 +87,14 @@ apply: .helmfile/apply ## Apply all resources only when there are changes
 
 .PHONY: .helmfile/sync
 .helmfile/sync: ## Sync STACK with cluster
-	$(helmfile) -b $(helm_binary) -f $(HELMFILE_PATH)/helmfile.$(STACK).yaml sync
+	$(helmfile) -b $(helm_binary) $(HELMFILE_FLAGS) -f $(HELMFILE_PATH)/helmfile.$(STACK).yaml sync
 
 .PHONY: sync
 sync: .helmfile/sync ## Sync STACK with cluster
 
 .PHONY: .helmfile/deploy
 .helmfile/deploy: ## Deploy STACK with cluster without syncing repos first
-	$(helmfile) -b $(helm_binary) -f $(HELMFILE_PATH)/helmfile.$(STACK).yaml sync --skip-deps
+	$(helmfile) -b $(helm_binary) $(HELMFILE_FLAGS) -f $(HELMFILE_PATH)/helmfile.$(STACK).yaml sync --skip-deps
 
 .PHONY: deploy
 deploy: .helmfile/deploy ## Deploy STACK with cluster without syncing repos first

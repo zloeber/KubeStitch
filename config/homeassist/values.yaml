@@ -1,5 +1,5 @@
 cloud: local
-dnsRoot: micro.svc
+dnsRoot: loeber.live
 init:
   enabled: true
   namespace: cluster-init  
@@ -11,6 +11,7 @@ ingress:
     namespace: ingress-int
     class: internal
     zone: int
+    subnet: "192.168.1.0/24"
     ip: ""
   external:
     namespace: ingress-ext
@@ -32,20 +33,9 @@ descendant:
 raw:
   version: "0.2.3"
   chart: incubator/raw
-istiooperator:
-  enabled: true
-  chart: istiooperator/istio-operator
-  version: "1.6.0"
-  namespace: istio-operator
-istio:
-  enabled: true
-  ingressGateway: istio-ingressgateway
-  namespace: istio-system
-  name: istiocontrolplane
-  profile: demo
 traefik:
   enabled: true
-  version: "8.3.0"
+  version: "9.1.1"
   chart: containous/traefik
   dashboard: true
   zone: internal
@@ -71,44 +61,6 @@ rbacmanager:
   chart: reactiveops-stable/rbac-manager
   namespace: rbacmanager
   zone: internal
-vault:
-  enabled: true
-  version: "0.6.0"
-  chart: hashicorp/vault
-  namespace: vault
-  zone: internal
-  ha: false
-  dev: true
-consul:
-  enabled: true
-  version: "0.21.0"
-  chart: hashicorp/consul
-  namespace: consul
-  zone: internal
-localstack:
-  enabled: true
-  version: ""
-  chart: localstack/localstack
-  namespace: localstack
-  zone: internal
-argocd:
-  enabled: true
-  version: "2.3.5"
-  chart: argocd/argo-cd
-  namespace: argocd
-  zone: internal
-rancher:
-  enabled: true
-  version: ""
-  chart: rancher/rancher
-  namespace: cattle-system
-  zone: internal
-kubefledged:
-  enabled: true
-  version: "0.7.0"
-  chart: kubefledged/kubefledged
-  namespace: kubefledged
-  zone: internal
 prometheusoperator:
   name: po
   enabled: true
@@ -123,12 +75,13 @@ nfsstorage:
   namespace: nfs-storage
   server: 10.20.20.1
   path: /nfs-kube
+  defaultClass: 
 homeassistant:
   enabled: true
-  version: "0.13.3"
-  chart: stable/home-assistant
+  version: "2.5.2"
+  chart: k8s-at-home/home-assistant
   namespace: home-assistant
-  zone: external
+  zone: internal
 gitlab:
   enabled: true
   version: "4.2.2"
@@ -136,24 +89,6 @@ gitlab:
   namespace: gitlab
   zone: internal
   gitlabVersion: "13.2.2"
-loft:
-  enabled: true
-  version: "0.3.8"
-  chart: devspace/loft
-  namespace: loft
-  zone: internal
-csi:
-  enabled: true
-  version: "0.0.12"
-  chart: csidriver/secrets-store-csi-driver
-  namespace: csi
-  zone: internal
-awx:
-  enabled: true
-  version: "1.2.1"
-  chart: lifen/awx
-  namespace: awx
-  zone: internal
 akri:
   enabled: true
   version: "0.0.36"

@@ -1,0 +1,77 @@
+---
+bases:
+- ../config/environments.yaml
+- ../config/helmdefaults.yaml
+- ../config/repositories.yaml
+---
+
+## akri namespace
+releases:
+- name: akri-namespace
+  chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
+  version: {{ .Values | getOrNil "archetype.version" | default "0.0.8" }}
+  namespace: kube-system
+  condition: akri.enabled
+  installed: true
+  wait: true
+  labels:
+    chart: akri-namespace
+    component: akri
+    namespace: kube-system
+  values:
+  - app: akri
+    namespace:
+      enabled: true
+      name: {{ .Values | getOrNil "akri.namespace" | default "akri" }}
+
+## akri chart deployment
+- name: akri
+  chart: {{ .Values | getOrNil "akri.chart" | default "deislabs/akri" }}
+  version: {{ .Values | getOrNil "akri.version" | default "0.0.36" }}
+  namespace: {{ .Values | getOrNil "akri.namespace" | default "akri" }}
+  condition: akri.enabled
+  installed: true
+  missingFileHandler: Debug
+  labels:
+    chart: akri
+    component: akri
+    namespace: {{ .Values | getOrNil "akri.namespace" | default "akri" }}
+  needs:
+    - kube-system/akri-namespace
+  values:
+  - useLatestContainers: true
+    onvifVideo:
+      enabled: true
+      discoveryTimeoutSeconds: 15
+  - "../config/{{ .Environment.Name }}/akri.override.yaml"
+
+## akri ingress deployment
+# - name: akri-ingress
+#   namespace: {{ .Values | getOrNil "akri.namespace" | default "akri" }}
+#   chart: {{ .Values | getOrNil "archetype.chart" | default "zloeber/archetype" }}
+#   version: {{ .Values | getOrNil "archetype.version" | default "0.0.8" }}
+#   condition: ingress.enabled
+#   installed: true
+#   needs:
+#   - kube-system/akri-namespace
+#   - {{ .Values | getOrNil "akri.namespace" | default "akri" }}/akri
+#   labels:
+#     chart: akri-ingress
+#     component: ingress
+#     namespace: {{ .Values | getOrNil "akri.namespace" | default "akri" }}
+#   values:
+#   - zone: internal
+#     app: akri
+#     dnsRoot: {{ .Values | getOrNil "dnsRoot" | default "micro.svc" }}
+#     ingressClassMap:
+#       internal: {{ .Values | getOrNil "ingress.internal.class" | default "internal" }}
+#     ingress:
+#       enabled: true
+#       tlsEnabled: true
+#       hosts:
+#       - secretName: akri-ingress
+#         paths:
+#         - path: "/"
+#           backend:
+#             serviceName: akri-service
+#             servicePort: 80

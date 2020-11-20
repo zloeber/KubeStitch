@@ -21,22 +21,22 @@ data:
         }
     }
 
-    template {
-    destination = "/etc/secrets/index.html"
-    contents = <<EOT
-    <html>
-    <body>
-    <p>Some secrets:</p>
-    {{- with secret "${kvpath}/data/$name/config" }}
-    <ul>
-    <li><pre>username: {{ .Data.data.username }}</pre></li>
-    <li><pre>password: {{ .Data.data.password }}</pre></li>
-    </ul>
-    {{ end }}
-    </body>
-    </html>
-    EOT
-    }
+    #template {
+    #destination = "/etc/secrets/index.html"
+    #contents = <<EOT
+    #<html>
+    #<body>
+    #<p>Some secrets:</p>
+    #{{- with secret "kv/data/<path>/config" }}
+    #<ul>
+    #<li><pre>username: {{ .Data.data.username }}</pre></li>
+    #<li><pre>password: {{ .Data.data.password }}</pre></li>
+    #</ul>
+    #{{ end }}
+    #</body>
+    #</html>
+    #EOT
+    #}
 kind: ConfigMap
 metadata:
   name: ${name}-vaultagent-config

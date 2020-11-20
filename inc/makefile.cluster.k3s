@@ -9,8 +9,8 @@ CLUSTER_CONTEXT := default
 
 .PHONY: .k3s/create/cluster
 .k3s/create/cluster: ## create k3s cluster
-	curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="server --no-deploy traefik --no-deploy=metrics-server" sh
-	#curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="server --no-deploy traefik --no-deploy=metrics-server --no-deploy servicelb" sh
+	#curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="server --no-deploy traefik --no-deploy=metrics-server" sh
+	curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="server --no-deploy traefik --no-deploy=metrics-server --no-deploy servicelb" sh
 
 .PHONY: .k3s/cluster/config
 .k3s/cluster/config: ## Export cluster configuration
@@ -29,11 +29,11 @@ CLUSTER_CONTEXT := default
 	sudo ufw allow 443
 	sudo ufw default deny incoming
 	#sudo ufw default deny outgoing
-	sudo ufw allow in on weave from all
+	sudo ufw allow in on weave from all || true
 	sudo ufw enable
 
 .PHONY: cluster/start
-cluster/start: cluster/stop .k3s/create/cluster .k3s/cluster/config .kube/context .k3s/cluster/disabledefaultstorageclass ## Start cluster
+cluster/start: cluster/stop .k3s/create/cluster .k3s/cluster/config .kube/context .k3s/cluster/disabledefaultstorageclass .metallb/deploy ## Start cluster
 
 .PHONY: cluster/stop
 cluster/stop: .prompt/yesno ## Stop and delete cluster

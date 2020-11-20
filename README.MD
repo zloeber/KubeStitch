@@ -12,7 +12,7 @@ The diagram shows a few elements which may need deployment to your clusters. The
 
 ## Goals
 
-The short goal for this project would be to narrow the gap in feature parity between what your local environment looks like versus your deployment environment. One can use kubestitch to quickly bring up and tear down local kubernetes environments for testing and vetting out Kubernetes solutions that then get deployed remotely. Additionally, multiple Kubernetes clustering technologies can be swapped out relatively quickly and easily using a single file with few variables.
+The short goal for this project would be to narrow the gap in feature parity between what your local environment looks like versus your deployment environment. One can use kubestitch to quickly bring up and tear down local kubernetes environments for testing and vetting out Kubernetes solutions that then get deployed remotely with little extra code refactoring.  Additionally, multiple Kubernetes clustering technologies can be swapped out relatively quickly and easily using a single file with few variables.
 
 ## Requirements
 
@@ -29,7 +29,7 @@ If you ever run a git pull to update this project locally, it would be safe to r
 
 ## Installing
 
-This project is only a makefile with some scripts. So clone the repo, cd to it, then run make. If you want to run it from anywhere on your system then you will have to create an alias for the command like this.
+This project is only a makefile with some scripts. So clone the repo, cd to it, then run make. If you want to run it from anywhere on your system then you will have to create an alias for the command like this from the cloned repo directory.
 
 ```bash
 alias kubestitch="make --no-print-directory -C $(pwd)"
@@ -49,7 +49,7 @@ The rest of this document will use `make` in any examples.
 
 ## Usage
 
-Standard usage is pretty simple. After cloning this repo you can start a default kind-based cluster with one command:
+Standard usage is pretty simple. After cloning this repo you can start a default kind based cluster for the current PROFILE (default=default) with one command.
 
 ```bash
 make cluster
@@ -521,10 +521,11 @@ The running cluster will be the first one in the list (at the upper left). Lens 
 
 To enable helm debugging pass in `DEBUG_MODE=on` to any command.
 
-# Additional Tips
+## Additional Tips
 
-- `cluster/start` will always first try to destroy the cluster before starting it.
-- `cluster/start` always spins up a bare deployment (no helmfile stacks applied)
+- `cluster/start` task will always first try to destroy the cluster before starting it.
+- `cluster/start` task always spins up a bare deployment (no helmfile stacks applied)
+- `cluster` task runs `cluster/start` and `sync` tasks. Unless `STACK=<stack>` is specified this defaults to syncing the cluster named helmfile stack (`helmfiles/helmfile.cluster.<profile name>.yaml`)
 - `sync` will default to `STACK=cluster.$(CLUSTER)`
 - The above information means `make cluster/start sync` will always recreate a cluster from scratch then install the default cluster helmfile stack of charts for the current profile's cluster.
 - All of the commands above are condensed into `make cluster`
@@ -535,7 +536,70 @@ To enable helm debugging pass in `DEBUG_MODE=on` to any command.
 - Currently I source in all used repositories regardless if they are used or not, this slows down initial syncing and probably can be improved upon somehow. If you have already run `make sync` once and thus have remote chart repositories already synced up, you can more quickly itterate over local helmfile changes by switching over to using `make charts STACK=<yourstack>` instead. The helmfile charts subcommand is meant for offline chart deployments.
 - The `dnsforward/*` tasks are a bit janky as it is really hard to account for all possible scenarios. Generically, only use dnsforward tasks for local cluster testing (and make any additional forwarding updates/changes via the web interface if the logic is not working for you).
 
-## Why Makefiles?
+# Known Issues
+
+I just want to note that currently, this framework will require all repositories for all helmfiles you wish to use. This list can grow quite quickly. It would not be very hard to have a per-environment configuration of each repo list. You will have to update most of the base helmfiles to accomodate though.
+
+## Minikube on Linux
+
+I actively avoid minikube on Linux as it has given me nothing but problems. If you do happen to really want to use minikube on Linux here are some notes.
+
+If you are running Ubuntu 20.04 here is a snippet to get docker-ce installed:
+
+```bash
+sudo apt update
+sudo apt install apt-transport-https ca-certificates curl software-properties-common
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable"
+sudo apt install docker-ce
+sudo usermod -aG docker ${USER}
+```
+
+And a snippet to get podman installed:
+
+```bash
+source /etc/os-release
+sudo sh -c "echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_${VERSION_ID}/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list"
+wget -nv https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable/xUbuntu_${VERSION_ID}/Release.key -O- | sudo apt-key add -
+sudo apt update && sudo apt install -y podman
+```
+
+# Advanced Usage
+
+Using Kubestich fully means you are likely needing to add/remove/change up your clusters on the regular. This is the generic process of how to do so from my experiences.
+
+1. You will likely onboard a new helm chart (usually converting a helm chart to a helmfile)
+2. You may bundle several helmfiles into a singlular helmfile chart for a cluster deployment
+3. If you get this far you may then also look to 'productionalize' the deployment to work within multiple environments or even ingress zones.
+
+This all starts with converting a helm chart to a helmfile though.
+
+## Helm to Helmfile
+Typically the development process starts with a need for a particular helm chart deployment. This deployment will typically need to be stripped of; 
+- default ingress definitions (we use our own to managed all of them from the ingress controller on down)
+- subcharts (these should each be turned into a helmfile deployment)
+- Any namespace generation
+- default metrics collection or monitoring configurations (again, we will manage that on our own across the whole cluser)
+
+To convert a typical helm chart a few templates have been dropped into the `helmfiles/templates` folder. Copy and edit one of these into the `helmfiles` directory as `helmfile.chartname.yaml`. Simply replace the 'chartname' with your chart and update the default details (and likely values). Additional noodling in the origin helm chart will need to be done to isolate any service names used so they can be used in your own ingress definitions (if the chart requires one that is).
+
+At this stage, a well authored helmfile chart can technically stand on its own and be applied to any current Kubernetes cluster. But more should be done to future proof the deployment a bit and allow for more centralized updates and puzzle piecing down the line.
+
+## Config File Updates
+
+Some files you should update at this point:
+
+|File|Purpose|
+|---|---|
+|`config/environments.yaml`|And environment specific values should be placed here (not needed for most cases though)|
+|`config/repositories.yaml`|Any additional helm repos for your chart should be added here|
+|`config/default/values.yaml`|Any default values used in the helmfile should be defined here|
+
+If all is well you should be able to apply your chart via kubestitch to any current cluster:
+
+`make sync STACK=chartname`
+
+# Why Makefiles?
 
 Great question! One which I sometimes struggle to answer. There are dozens of other taskers out there but make is probably one of the older ones that is well supported across a number of different systems. I personally use it when I might use bash scripts otherwise. It allows me to quickly view the commands being run (if I've not purposefully hidden them with a well placed prepended @ symbol). Plus I'm sort of used to slinging makefiles so why not? Besides, most repos worth their salt have at least one of these to bootstrap things in some manner so it doesn't hurt to get to know them a bit I'd say.
 
