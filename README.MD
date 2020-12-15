@@ -262,7 +262,7 @@ A provider taskset is special as it is a specific taskset for provisioning kuber
 
 > **NOTE:** I abandoned minikube earlier on for a number of reasons but it would be feasible to fix this up and use minikube as well if that's your thing.
 
-If you add a new provider ensure that the 'cluster/*' tasks exist to bring up and tear down clusters. I'd model them against the existing kind or k3d provider tasksets.
+If you choose to add a new provider ensure that they include all the base tasks found in the other `makefile.cluster.*` files and you will find that its pretty easy to automatically install dependencies and customize this thing to your needs.
 
 ## Helmfile
 
