@@ -67,13 +67,15 @@ show/env: ## Show our environment settings
 	@echo "KUBE_CONFIG: $(KUBE_CONFIG)"
 	@echo "DOCKER_NETWORK: $(DOCKER_NETWORK)"
 	@echo "HELMFILE_PATH: $(HELMFILE_PATH)"
+	@echo "HELMFILE_VALUES: $(HELMFILE_VALUES)"
 	@echo "STACK: $(STACK)"
 	@echo "CHART_PATH: $(CHART_PATH)"
-	@echo "HELMFILE_VALUES: $(HELMFILE_VALUES)"
 	@echo "ENVIRONMENT_VARS: $(ENVIRONMENT_VARS)"
 	@echo "ADDITIONAL_TASKSETS: $(ADDITIONAL_TASKSETS)"
 	@echo "CUSTOM_TASKSETS: $(CUSTOM_TASKSETS)"
 	@echo "TASKSETS: $(TASKSETS)"
+	@echo "HOME_PATH: $(HOME_PATH)"
+	@echo "SUBNET_INDEX: $(SUBNET_INDEX)"
 
 .PHONY: show
 show: ## Show basic settings

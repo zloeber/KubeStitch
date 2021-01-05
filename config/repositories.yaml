@@ -1,8 +1,8 @@
 repositories:
 - name: stable
-  url: https://kubernetes-charts.storage.googleapis.com
+  url: https://charts.helm.sh/stable
 - name: incubator
-  url: https://kubernetes-charts-incubator.storage.googleapis.com
+  url: https://charts.helm.sh/incubator
 - name: archetype
   url: https://zloeber.github.io/archetype-chart
 - name: descendant
@@ -23,10 +23,10 @@ repositories:
   url: git+https://github.com/senthilrch/kube-fledged@/deploy/kubefledged-operator/helm-charts/kubefledged
 - name: istiooperator
   url: git+https://github.com/istio/istio@/manifests/charts/istio-operator
-- name: archetype-incubator
-  url: git+https://github.com/zloeber/archetype-chart@/
-- name: descendant-incubator
-  url: git+https://github.com/zloeber/descendant-chart@/
+# - name: archetype-incubator
+#   url: git+https://github.com/zloeber/archetype-chart@/sparse=0
+# - name: descendant-incubator
+#   url: git+https://github.com/zloeber/descendant-chart@/
 - name: gitlab
   url: https://charts.gitlab.io
 - name: appscode

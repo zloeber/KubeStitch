@@ -1,6 +1,6 @@
 ROOT_PATH ?= $(abspath $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST))))))
 BIN_PATH ?= $(ROOT_PATH)/.local/bin
-METALLB_VERSION ?= 0.9.4
+METALLB_VERSION ?= 0.9.5
 
 .PHONY: .dep/metallb
 .dep/metallb: ## Install metallb locally

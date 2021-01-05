@@ -25,7 +25,7 @@ Where required, all other stand-alone cli tools will be installed to a `./.local
 
 If you ever run a git pull to update this project locally, it would be safe to run a `make clean` to ensure that all the latest updates are pulled down when running `make cluster`.
 
-> **NOTE** Mac users should be aware that while the dns-proxy-server will spin up with the correct dns internal zone forwarding configured to the correct ingress internal IP, it will not work from the mac automatically. First you will need to reconfigure your DNS resolver to point to 127.0.0.1. I could not figure out a way to make this work automatically due to how mdnsResponder takes over the DNS lookup process on Macs. I welcome pull requests to help resolve this automation snafu.
+> **NOTE** Mac users should be aware that while the dns-proxy-server will spin up with the correct dns internal zone forwarding configured to the correct ingress internal IP, it will not work from the mac automatically. First you will need to reconfigure your DNS resolver to point to 127.0.0.1. I could not figure out a way to make this work automatically due to how mdnsResponder takes over the DNS lookup process on Macs. I welcome pull requests to help resolve this automation snafu. More work in this area can be found in the [Mac Issues section of this document](#mac-issues).
 
 ## Installing
 
@@ -262,7 +262,7 @@ A provider taskset is special as it is a specific taskset for provisioning kuber
 
 > **NOTE:** I abandoned minikube earlier on for a number of reasons but it would be feasible to fix this up and use minikube as well if that's your thing.
 
-If you add a new provider ensure that the 'cluster/*' tasks exist to bring up and tear down clusters. I'd model them against the existing kind or k3d provider tasksets.
+If you choose to add a new provider ensure that they include all the base tasks found in the other `makefile.cluster.*` files and you will find that its pretty easy to automatically install dependencies and customize this thing to your needs.
 
 ## Helmfile
 
@@ -564,9 +564,11 @@ wget -nv https://download.opensuse.org/repositories/devel:kubic:libcontainers:st
 sudo apt update && sudo apt install -y podman
 ```
 
+That is all I have for you, good luck.
+
 # Advanced Usage
 
-Using Kubestich fully means you are likely needing to add/remove/change up your clusters on the regular. This is the generic process of how to do so from my experiences.
+Using Kubestich fully means you are likely needing to add/remove/change up your clusters frequently. This is the generic process of how to do so from my experiences.
 
 1. You will likely onboard a new helm chart (usually converting a helm chart to a helmfile)
 2. You may bundle several helmfiles into a singlular helmfile chart for a cluster deployment
@@ -598,6 +600,34 @@ Some files you should update at this point:
 If all is well you should be able to apply your chart via kubestitch to any current cluster:
 
 `make sync STACK=chartname`
+
+# Troubleshooting
+
+This set of Makefiles, scripts, glue, and prayers works well for me but may be problematic for some. Here are specific notes which may or may not help you fix issues you are running into.
+
+## Mac Issues
+
+There are two issues I've run into while getting this to work properly on a mac. They are largely due to difficulties with the networking stack of the most recent releases of OSX. These issues fall into 2 categories, DNS resolution and routable interface handling in hyperkit (the mac virtualization layer).
+
+### DNS
+
+TBD
+
+### Virtual Network Interfaces
+
+The best article on this particular issue [can be read here](https://www.thehumblelab.com/kind-and-metallb-on-mac/). Be warned that getting this working requires additional installation of external software and other tricks to make function. It is almost easier to just run KubeStitch from a local Ubuntu virtual machine in virtualbox or similar hypervisor.
+
+The overall steps to get things working are as follows:
+
+```bash
+brew bundle --file ./config/osx/Brewfile
+osascript -e 'quit app "Docker"'
+./config/osx/docker-tuntap-osx/sbin/docker_tap_install.sh
+./config/osx/docker_tap_up.sh
+sudo route -v add -net 172.18.0.1 -netmask 255.255.0.0 10.0.75.2
+```
+
+Once this has been done technically you should be able to bring up things as normal and access them via the Metallb provisioned loadbalancer IP that gets assigned to the traefik loadbalancer service. I do not believe this accounts for being connected to a VPN though.
 
 # Why Makefiles?
 

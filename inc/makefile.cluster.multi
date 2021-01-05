@@ -1,0 +1,69 @@
+ROOT_PATH ?= $(abspath $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST))))))
+BIN_PATH ?= $(ROOT_PATH)/.local/bin
+KIND_VERSION ?= 0.9.0
+KIND_CONFIG ?= config-1node.yaml
+KIND_VERBOSITY ?= 1
+KIND_IMAGE_POSTFIX ?=
+
+kind := $(BIN_PATH)/kind
+CLUSTER_CONTEXT := kind-$(CLUSTER)
+
+.PHONY: .deps/cluster.multi
+.deps/cluster.multi: ## Get kind binary dependency
+ifeq (,$(wildcard $(INSTALL_PATH)/kind))
+	@$(MAKE) --no-print-directory -C $(APP_PATH)/githubapp auto kubernetes-sigs/kind INSTALL_PATH=$(INSTALL_PATH)
+	@echo "Installed: $(kind)"
+endif
+
+.PHONY: .multi/start/cluster
+.multi/start/cluster: ## Start a kind cluster
+	@echo "CLUSTER: $(CLUSTER)"
+	$(kind) create cluster \
+		--name $(CLUSTER) \
+		--image=kindest/node:v$(KUBE_VERSION)$(KIND_IMAGE_POSTFIX) \
+		--config=$(DEPLOY_PATH)/kind/$(KIND_CONFIG) \
+		-v $(KIND_VERBOSITY)
+	$(kind) get kubeconfig --name $(CLUSTER) > $(KUBE_CONFIG)
+
+.PHONY: .multi/start
+.multi/start: ## Start environment of clusters
+	@echo "Starting local kind cluster: cluster_a ..."
+	@$(MAKE) --no-print-directory -C $(ROOT_PATH) CLUSTER=cluster_a  \
+		.multi/start/cluster \
+		.kube/context \
+		.kube/untaint/masternodes \
+		.kube/deploy/calico
+	@echo "Starting local kind cluster: cluster_b ..."
+	@$(MAKE) --no-print-directory -C $(ROOT_PATH) CLUSTER=cluster_b  \
+		.multi/start/cluster \
+		.kube/context \
+		.kube/untaint/masternodes \
+		.kube/deploy/calico
+
+.PHONY: cluster/start
+cluster/start: cluster/stop .multi/start ## Create local cicd cluster
+
+.PHONY: .cluster/ingress
+.cluster/ingress: ## Start cluster ingress
+	$(kubecmd) apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/nginx-0.30.0/deploy/static/mandatory.yaml
+	$(kubecmd) apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/nginx-0.30.0/deploy/static/provider/baremetal/service-nodeport.yaml
+	$(kubecmd) patch deployments -n ingress-nginx nginx-ingress-controller -p '{"spec":{"template":{"spec":{"containers":[{"name":"nginx-ingress-controller","ports":[{"containerPort":80,"hostPort":80},{"containerPort":443,"hostPort":443}]}],"nodeSelector":{"ingress-ready":"true"},"tolerations":[{"key":"node-role.kubernetes.io/master","operator":"Equal","effect":"NoSchedule"}]}}}}'
+
+.PHONY: .multi/stop/cluster
+.multi/stop/cluster: ## Stop environment of clusters
+	$(kind) delete cluster --name $(CLUSTER) || true
+
+.PHONY: cluster/stop
+cluster/stop: ## Delete local cicd cluster
+	@echo "Stopping local kind cluster: cluster_a ..."
+	@$(MAKE) --no-print-directory -C $(ROOT_PATH) CLUSTER=cluster_a .multi/stop/cluster
+	@echo "Stopping local kind cluster: cluster_b ..."
+	@$(MAKE) --no-print-directory -C $(ROOT_PATH) CLUSTER=cluster_b .multi/stop/cluster
+
+.PHONY: cluster/test
+cluster/test: ## Validate the kubernetes deployment
+	$(kubecmd) delete job kube-bench || true
+	$(kubecmd) apply -f $(DEPLOY_PATH)/kind/cluster-test.yaml
+	KUBECONFIG=$(KUBE_CONFIG) \
+		$(stern) -l app=kube-bench --container kube-bench
+

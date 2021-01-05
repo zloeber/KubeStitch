@@ -45,7 +45,7 @@ show/vault: ## Show vault env vars
 
 .PHONY: vault/addr
 vault/addr: ## Show vault address
-	@$(kubecmd) -n vault get svc -o jsonpath='{.items[?(@.spec.type=="LoadBalancer")].status.loadBalancer.ingress[0].ip}'
+	$(kubecmd) -n vault get svc -o jsonpath='{.items[?(@.spec.type=="LoadBalancer")].status.loadBalancer.ingress[0].ip}'
 
 .PHONY: vault/sync
 vault/sync: ## Use vault-sync to setup initial vault policies and secrets
@@ -69,3 +69,7 @@ vault/init: ## Setup initial vault environment
 vault/clean: ## Clean up after deployment
 	rm -rf $(ROOT_PATH)/tfstate.*
 	rm -rf $(ROOT_PATH)/.terraform
+
+.PHONY: vault/proxy
+vault/proxy: ## Clean up after deployment
+	$(kubecmd) port-forward --namespace vault vault-0 8200:8200

@@ -18,17 +18,12 @@ endif
 	$(minikube) start \
 		--cpus=4 \
 		--embed-certs=true \
-		--keep-context=true \
-		--wait=all
+		--wait=all \
+		--driver=docker
 
 .PHONY: .minikube/cluster/config
 .minikube/cluster/config: ## Export cluster configuration
-	kubectl apply -f $(ROOT_PATH)/deploy/k8s/minikube-storage-provisioner.yaml
-
-#$(MAKE)  .metallb/install
-#minikube addons disable ingress || true
-#minikube addons disable dashboard || true
-#cat $(shell $(minikube) get-kubeconfig --name=$(CLUSTER)) > $(KUBE_CONFIG)
+	$(kubectl) apply -f $(ROOT_PATH)/deploy/k8s/minikube-storage-provisioner.yaml
 
 .PHONY: cluster/start
 cluster/start: cluster/stop .minikube/create/cluster .kube/context .minikube/cluster/config ## Start cluster
