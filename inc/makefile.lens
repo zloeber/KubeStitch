@@ -1,6 +1,6 @@
 ROOT_PATH ?= $(abspath $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST))))))
 BIN_PATH ?= $(ROOT_PATH)/.local/bin
-LENS_VERSION ?= 3.4.0
+LENS_VERSION ?= 4.0.8
 LENS_CLUSTER_STORE := $(ROOT_PATH)/.local/Lens/lens-cluster-store.json
 lens := $(BIN_PATH)/lens
 
